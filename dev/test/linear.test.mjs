@@ -80,3 +80,34 @@ test("nested stars over nullable bodies", () => {
     for (const p of ["^((ab)*)*$", "^(a*b?)*$"]) assert.notDeepEqual(linearProblems(p), [], p);
     for (const p of ["^(a?)*$", "^(a|b?)+$"]) assert.deepEqual(linearProblems(p), [], p);
 });
+
+/** A longest string the parsed pattern matches: the longest branch, each repeat at its maximum, each class's first character. */
+function longest(node) {
+    switch (node.kind) {
+        case "class": return String.fromCodePoint(node.ranges[0][0]);
+        case "concat": return node.items.map(longest).join("");
+        case "alt": return node.items.map(longest).reduce((a, b) => ([...b].length > [...a].length ? b : a));
+        case "repeat": return longest(node.body).repeat(node.max);
+    }
+}
+
+test("each bounded pattern matches its derived maximum and rejects one character more", () => {
+    const bounded = patterned.filter((t) => Number.isFinite(matchLengths(t.pattern).max));
+    assert.ok(bounded.length > 20);
+    for (const t of bounded) {
+        const { max } = matchLengths(t.pattern);
+        const re = new RegExp(t.pattern, "u");
+        const top = [...longest(parsePattern(t.pattern))];
+        assert.equal(top.length, max, t.name);
+        assert.ok(re.test(top.join("")), `${t.name}: its longest string ${JSON.stringify(top.join(""))} does not match`);
+        // One more character, made by repeating the character at each position (or the last one at the end).
+        for (let i = 0; i <= top.length; i++) {
+            const longer = [...top.slice(0, i), top[Math.min(i, top.length - 1)], ...top.slice(i)].join("");
+            assert.ok(!re.test(longer), `${t.name}: accepts ${JSON.stringify(longer)}, longer than ${max}`);
+        }
+        // A valid example already at the maximum cannot take one more of its last character either.
+        for (const v of t.examples?.valid ?? []) {
+            if (typeof v === "string" && [...v].length === max) assert.ok(!re.test(v + [...v].at(-1)), `${t.name}: accepts ${JSON.stringify(v)} plus one`);
+        }
+    }
+});

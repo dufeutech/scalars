@@ -26,5 +26,6 @@ test("identifiers", () => {
     const go = identifiers(toModel(scalars), "go", []);
     assert.equal(go.get("uuid_v7"), "UuidV7");
     assert.equal(identifiers(toModel(scalars), "rust", []).get("uuid_v7"), "UUID_V7");
+    for (const lang of ["ts", "python"]) assert.equal(identifiers(toModel(scalars), lang, []).get("uuid_v7"), "uuid_v7");
     assert.throws(() => identifiers(toModel(scalars), "go", ["Email"]), /Identifier "Email" is used by/);
 });

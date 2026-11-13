@@ -43,7 +43,7 @@ export function modelOf(t) {
 const words = (name) => name.split("_");
 const IDENTIFIER_STYLES = {
     go: (n) => words(n).map((w) => w[0].toUpperCase() + w.slice(1)).join(""),
-    ts: (n) => words(n).map((w) => w[0].toUpperCase() + w.slice(1)).join(""),
+    ts: (n) => n,
     rust: (n) => n.toUpperCase(),
     python: (n) => n,
 };

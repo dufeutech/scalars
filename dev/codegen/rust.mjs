@@ -16,9 +16,15 @@ function fail(message) {
     throw new Error(message);
 }
 
+/** Fails the build on a lone surrogate, which no Rust literal can hold (it would become U+FFFD). */
+function noLoneSurrogate(s) {
+    if (/[\ud800-\udfff]/u.test(s.replace(/[\ud800-\udbff][\udc00-\udfff]/g, ""))) fail(`Lone surrogate in ${JSON.stringify(s)}`);
+    return s;
+}
+
 /** A Rust string literal. Control characters, carriage returns and the BOM are escaped; lone surrogates can't be. */
 function str(s) {
-    if (/[\ud800-\udfff]/u.test(s.replace(/[\ud800-\udbff][\udc00-\udfff]/g, ""))) fail(`Lone surrogate in ${JSON.stringify(s)}`);
+    noLoneSurrogate(s);
     const esc = { "\\": "\\\\", '"': '\\"', "\n": "\\n", "\r": "\\r", "\t": "\\t" };
     const out = s.replace(/[\\"\u0000-\u001f\u007f﻿]/g, (c) => esc[c] ?? `\\u{${c.charCodeAt(0).toString(16)}}`);
     return `"${out}"`;
@@ -26,6 +32,7 @@ function str(s) {
 
 /** A pattern as a raw string, with as many `#` as it needs. Raw strings can't hold a carriage return or the BOM. */
 function pattern(p) {
+    noLoneSurrogate(p);
     if (/[\r﻿]/.test(p)) return str(p);
     let hashes = "";
     while (p.includes(`"${hashes}`)) hashes += "#";

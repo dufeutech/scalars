@@ -21,12 +21,18 @@ const STEP = { trim: "stepTrim", lowercase: "stepLowercase", uppercase: "stepUpp
 
 /** A Go interpreted string literal. JSON escapes are valid Go escapes; Go forbids a BOM in source and lone surrogates. */
 function str(s) {
-    if (/[\ud800-\udfff]/u.test(s.replace(/[\ud800-\udbff][\udc00-\udfff]/g, ""))) throw new Error(`Lone surrogate in ${JSON.stringify(s)}`);
+    noLoneSurrogate(s);
     return JSON.stringify(s).replaceAll("﻿", "\\ufeff");
 }
 
+/** Fails the build on a lone surrogate, which no Go literal can hold (it would become U+FFFD). */
+function noLoneSurrogate(s) {
+    if (/[\ud800-\udfff]/u.test(s.replace(/[\ud800-\udbff][\udc00-\udfff]/g, ""))) throw new Error(`Lone surrogate in ${JSON.stringify(s)}`);
+    return s;
+}
+
 /** A pattern as a raw string when it can be one: raw strings can't hold a backtick, and drop carriage returns. */
-const pattern = (p) => (/[`\r﻿]/.test(p) ? str(p) : `\`${p}\``);
+const pattern = (p) => (/[`\r﻿]/.test(noLoneSurrogate(p)) ? str(p) : `\`${p}\``);
 
 const isObject = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
 const hasObject = (v) => isObject(v) || (Array.isArray(v) && v.some(hasObject));

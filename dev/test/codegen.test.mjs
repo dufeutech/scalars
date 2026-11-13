@@ -70,3 +70,14 @@ test("python: keywords and annotation builtins are reserved", () => {
         assert.throws(() => identifiers([{ name }], "python", RESERVED_PY), /reserved/, name);
     }
 });
+
+test("go and rust: a lone surrogate in a raw-string pattern fails the build", () => {
+    const probe = { name: "probe", label: "L", hint: "H", error: "E", details: "", level: "core", primitive: "string", aliases: [],
+        examples: { valid: [], invalid: [] }, kind: "text", steps: [], minLen: 0, maxLen: null, minimum: null, maximum: null };
+    const bad = [{ ...probe, pattern: `^a${String.fromCharCode(0xd800)}$` }];
+    assert.throws(() => emitGo(bad, "0"), /Lone surrogate/);
+    assert.throws(() => emitRust(bad, "0"), /Lone surrogate/);
+    const good = [{ ...probe, pattern: "^a\u{1F600}$" }];
+    assert.doesNotThrow(() => emitGo(good, "0"));
+    assert.doesNotThrow(() => emitRust(good, "0"));
+});

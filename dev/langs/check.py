@@ -114,6 +114,11 @@ if type(scalars.float64.validate(3)) is not float:
     fails.append("float64.validate(3) did not return a float")
 if scalars.object.validate({}) != {}:
     fails.append("object.validate({}) did not return {}")
+# The check runs before remove_spaces, as in every engine (in JS removing the space would join the pair).
+joiner = scalars.Scalar(name="probe", label="", hint="", error="", details="", level="", primitive="string",
+                        aliases=(), examples={}, kind="text", steps=("trim", "remove_spaces"))
+if joiner.is_valid("\ud83d \ude00"):
+    fails.append("remove_spaces joined a lone surrogate pair into valid text")
 
 slowest = (0.0, "")
 for c in cases["hostile"]:

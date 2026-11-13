@@ -59,18 +59,28 @@ export function validate(t, v) {
     const inRange = (n) => (m.minimum === null || n >= m.minimum) && (m.maximum === null || n <= m.maximum);
     switch (m.kind) {
         case "text": {
-            // Text must be Unicode scalar values (WHATWG USVString, RFC 7493): a lone surrogate fails first.
-            if (typeof v !== "string" || !v.isWellFormed()) return fail;
+            if (typeof v !== "string") return fail;
             let s = v;
+            // Once trimmed, before any other step (remove_* could join the halves of a pair): text already too long
+            // fails, unless a remove_* step can shorten it, then text that is not Unicode scalar values
+            // (WHATWG USVString, RFC 7493).
+            const shortens = m.steps.some((step) => step === "remove_spaces" || step === "remove_hyphens");
+            const formed = (s) => !(m.maxLen !== null && !shortens && codePoints(s) > m.maxLen) && s.isWellFormed();
+            let checked = false;
             // The length gate runs just before the first case step: remove_* steps shorten text, case steps never do.
             let gated = false;
             for (const step of m.steps) {
+                if (!checked && step !== "trim") {
+                    checked = true;
+                    if (!formed(s)) return fail;
+                }
                 if (!gated && (step === "lowercase" || step === "uppercase")) {
                     gated = true;
                     if (m.maxLen !== null && codePoints(s) > m.maxLen) return fail;
                 }
                 s = STEPS[step](s);
             }
+            if (!checked && !formed(s)) return fail;
             const n = codePoints(s);
             if (n < m.minLen || (m.maxLen !== null && n > m.maxLen)) return fail;
             if (re && !re.test(s)) return fail;

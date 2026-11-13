@@ -82,13 +82,16 @@ func (t *TextScalar) IsValid(s string) bool {
 }
 
 func (t *TextScalar) check(s string) (string, bool) {
-	// Text must be well-formed UTF-8 (Unicode scalar values only: WHATWG USVString, RFC 7493), checked before any
-	// step sees it. utf8.ValidString skips ASCII eight bytes at a time and allocates nothing.
-	if !utf8.ValidString(s) {
-		return "", false
-	}
-	gated := false
+	gated, formed := false, false
 	for _, st := range t.steps {
+		// Once trimming is done, before any other step: trim cannot make invalid bytes valid, but removing a
+		// space or hyphen between two stray bytes could.
+		if !formed && st != stepTrim {
+			formed = true
+			if !t.wellFormed(s) {
+				return "", false
+			}
+		}
 		// Text already too long is refused before case mapping copies it. The gate waits for the first case
 		// step because case mapping never shortens text, but stepRemoveSpaces and stepRemoveHyphens do.
 		if !gated && (st == stepLowercase || st == stepUppercase) {
@@ -98,6 +101,9 @@ func (t *TextScalar) check(s string) (string, bool) {
 			}
 		}
 		s = apply(st, s)
+	}
+	if !formed && !t.wellFormed(s) {
+		return "", false
 	}
 	if longerThan(s, t.maxLen) || shorterThan(s, t.minLen) {
 		return "", false
@@ -109,6 +115,26 @@ func (t *TextScalar) check(s string) (string, bool) {
 		}
 	}
 	return s, true
+}
+
+// wellFormed reports whether trimmed text is not already too long (settled by the byte length alone, unless a
+// later step can shorten it) and is well-formed UTF-8: Unicode scalar values only (WHATWG USVString, RFC 7493).
+// utf8.ValidString skips ASCII eight bytes at a time and allocates nothing.
+func (t *TextScalar) wellFormed(s string) bool {
+	if len(s)/utf8.UTFMax > t.maxLen && !t.shortens() {
+		return false
+	}
+	return utf8.ValidString(s)
+}
+
+// shortens reports whether a step of the type can make text shorter.
+func (t *TextScalar) shortens() bool {
+	for _, st := range t.steps {
+		if st == stepRemoveSpaces || st == stepRemoveHyphens {
+			return true
+		}
+	}
+	return false
 }
 
 func (t *TextScalar) compile() { t.re = regexp.MustCompile(t.pattern) }

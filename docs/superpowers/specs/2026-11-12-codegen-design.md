@@ -115,14 +115,25 @@ compiler does that.
 
 A text value is valid only if it is a sequence of Unicode scalar values: the WHATWG `USVString` and RFC 7493 (I-JSON)
 rule. Anything else fails `validate` with the type's normal `error`, and `is_valid` is false; `normalize` does not
-check. The check runs first, before any step, so trim and case steps never see malformed text. It is one linear pass
-that allocates nothing on valid text, except in Python, which encodes non-ASCII text once (CPython has no cheaper
-check without a regex).
+check. It is one linear pass that allocates nothing on valid text, except in Python, which encodes non-ASCII text once
+(CPython has no cheaper check without a regex).
+
+Order in the text check: trim → over-length gate → well-formed check → `remove_*` steps → length gate → case steps →
+full length check → pattern.
+
+- **After trim.** Trim strips only listed white space, never part of a malformed unit, and cannot bring two halves of
+  a pair together, so trimming first gives the same result. Text that is too long is then refused from its length
+  alone (Python `len(s)`, TypeScript `ceil(length / 2)`, Go `len(s) / 4`), before the check reads it. This early gate
+  is skipped for types with `remove_*` steps, since those can shorten the text.
+- **Before `remove_*`.** Removing a space or `-` could join two stray halves into valid text in TypeScript
+  (`"\ud83d \ude00"`) and Go (`"\xc3 \xa9"`), but not in Python, whose `str` keeps two lone surrogates. Checking
+  first keeps every language the same.
+- **Before case steps,** so case mapping never sees malformed text.
 
 | Language | Malformed text it can hold | Check |
 |---|---|---|
 | Python | lone surrogates (U+D800–U+DFFF) | `str.isascii()` (O(1)), else strict `s.encode("utf-8")` |
-| TypeScript | lone surrogates | `String.prototype.isWellFormed()` (ES2024) |
+| TypeScript | lone surrogates | `String.prototype.isWellFormed()` (ES2024); where it is missing (Node < 20, Safari < 16.4), a char-code loop |
 | Go | bytes that are not UTF-8 | `utf8.ValidString` (skips ASCII eight bytes at a time) |
 | Rust | none: `&str` is always valid UTF-8 | nothing to check |
 
@@ -144,7 +155,7 @@ hold for hostile input.
 | `scalars.email` | O(1) | none | A named member, never a search. |
 | `normalize(s)` | O(n) | none when nothing changes, else one copy per step that changes the text | No regex in any step. |
 | `validate(s)`, text | O(n) | same as `normalize` | Every pattern is proven linear by the build; lengths are checked before the pattern. The well-formed check is one linear pass (Python's copies non-ASCII text once). |
-| `validate(s)`, text longer than the type can ever be | O(n): one well-formed pass (Python: O(1) for ASCII text; Rust: none), then O(1) once trimmed; O(n) for types with `remove_*` steps | none, or one copy per `remove_*` step that changes the text (Python: plus one encode of non-ASCII text) | The longest possible value is known per type. The gate runs after any `remove_*` steps (which can shorten text), immediately before the first case step, and always again before the pattern. A type with `remove_*` steps scans the text once before the gate. The well-formed check runs before all of it. |
+| `validate(s)`, text longer than the type can ever be | O(1) once trimmed; O(n) for types with `remove_*` steps | none, or one copy per `remove_*` step that changes the text | The longest possible value is known per type. A type with no `remove_*` step refuses it right after trimming, from the length alone, before the well-formed check reads it. Otherwise the gate runs after any `remove_*` steps (which can shorten text), immediately before the first case step, and always again before the pattern. A type with `remove_*` steps scans the text once before the gate. |
 | `validate(v)`, number or boolean | O(1) | none | |
 | `is_valid(v)` | same as `validate` | none, even on failure | Shares one internal check with `validate`; never raises and catches. |
 | `get(word)` | O(w) expected | at most one short key | One hash lookup in a map built once on first use; never a scan over the types. |

@@ -89,6 +89,15 @@ if (!scalars.object.isValid(Object.create(null)) || !scalars.object.isValid({}))
 if (scalars.enum.validate("x") !== "x") fails.push('enum.validate("x") did not return "x"');
 if (scalars.float64.validate(3) !== 3) fails.push("float64.validate(3) did not return 3");
 
+// The loop used where String.prototype.isWellFormed is missing (Node < 20, Safari < 16.4) agrees with it.
+const loop: (s: string) => boolean = (Scalar as any).wellFormedLoop;
+for (const s of ["a\ud800b", "\udfff", "\ude00\ud83d", "x\udbff", "😀", "😀é", "", "abc"]) {
+    if (loop(s) !== s.isWellFormed()) fails.push(`wellFormedLoop(${show(s)}) is ${loop(s)}`);
+}
+// The check runs before remove_spaces, which would otherwise join the two halves of a pair.
+const joiner = new Scalar({ name: "probe", label: "", hint: "", error: "", details: "", level: "", primitive: "string", aliases: [], examples: { valid: [], invalid: [] }, kind: "text", steps: ["trim", "remove_spaces"] });
+if (joiner.isValid("\ud83d \ude00")) fails.push("remove_spaces joined a lone surrogate pair into valid text");
+
 let slowest = { ms: 0, type: "" };
 for (const c of cases.hostile) {
     const t = get(c.type);

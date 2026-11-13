@@ -105,7 +105,7 @@ impl Text {
 
     fn check<'a>(&self, s: &'a str) -> Option<Cow<'a, str>> {
         // Text must be Unicode scalar values (WHATWG USVString, RFC 7493). A `&str` is always valid UTF-8 with no
-        // surrogates, so there is nothing to check here; the other engines check it first.
+        // surrogates, so there is nothing to check here; the other engines check it once trimmed.
         let mut s = Cow::Borrowed(s);
         let mut gated = false;
         for &step in self.steps {

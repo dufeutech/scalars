@@ -37,8 +37,7 @@ export function emitTypeScript(models, version) {
     const header = [
         `// scalars.ts, catalogue version ${version}.`,
         "// Generated from dist/scalars.json by dev/codegen/ts.mjs. Do not edit: run `npm run build` in dev/.",
-        "// Requires TypeScript >= 5.6 or Node >= 22.18 (tested on Node 24); at run time, String.prototype.isWellFormed",
-        "// (ES2024: Node >= 20, every current browser). Erasable syntax only. No dependencies.",
+        "// Requires TypeScript >= 5.6 or Node >= 22.18 (tested on Node 24). Erasable syntax only. No dependencies.",
         "",
     ].join("\n");
     const names = `export type Name = ${models.map((m) => lit(m.name)).join(" | ")};`;

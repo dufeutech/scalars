@@ -78,7 +78,7 @@ class Scalar(Generic[T]):
 
     __slots__ = (
         "name", "label", "hint", "error", "details", "level", "primitive", "aliases", "examples",
-        "_kind", "_steps", "_case_at", "_pattern", "_min_len", "_max_len", "_minimum", "_maximum", "_re",
+        "_kind", "_steps", "_case_at", "_form_at", "_early", "_pattern", "_min_len", "_max_len", "_minimum", "_maximum", "_re",
     )
 
     def __init__(
@@ -115,6 +115,11 @@ class Scalar(Generic[T]):
         # Index of the first case step: the length gate runs just before it, since case mapping never shortens
         # text but remove_spaces and remove_hyphens do.
         self._case_at = _b.next((i for i, s in _b.enumerate(steps) if s in ("lowercase", "uppercase")), -1)
+        # Index of the first step that is not trim: the well-formed check runs just before it (or after the last
+        # step). Trim cannot join two halves of a pair; remove_spaces and remove_hyphens could, so they come after.
+        self._form_at = _b.next((i for i, s in _b.enumerate(steps) if s != "trim"), _b.len(steps))
+        # Text already too long is refused there too, before the check reads it, unless a later step can shorten it.
+        self._early = max_len is not None and not _b.any(s in ("remove_spaces", "remove_hyphens") for s in steps)
         self._pattern = pattern
         self._min_len = min_len
         self._max_len = max_len
@@ -148,20 +153,32 @@ class Scalar(Generic[T]):
         hi = self._maximum
         return (lo is None or n >= lo) and (hi is None or n <= hi)
 
+    def _formed(self, s: str) -> bool:
+        """Once trimmed: not already too long (O(1)), then well-formed Unicode."""
+        top = self._max_len
+        if self._early and top is not None and _b.len(s) > top:
+            return False
+        return _well_formed(s)
+
     def _check(self, v: _Any) -> _Any:
         kind = self._kind
         if kind == "text":
-            if not _b.isinstance(v, _b.str) or not _well_formed(v):
+            if not _b.isinstance(v, _b.str):
                 return _NO
             top = self._max_len
             gate = self._case_at if top is not None else -1
+            form = self._form_at
             i = 0
             for step in self._steps:
+                if i == form and not self._formed(v):
+                    return _NO
                 # Text already too long is refused before case mapping copies it.
                 if i == gate and _b.len(v) > top:
                     return _NO
                 v = step(v)
                 i += 1
+            if i == form and not self._formed(v):
+                return _NO
             n = _b.len(v)
             if n < self._min_len or (top is not None and n > top):
                 return _NO

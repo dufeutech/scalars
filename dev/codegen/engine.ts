@@ -72,6 +72,26 @@ interface WellFormed {
     isWellFormed(): boolean;
 }
 
+// Node < 20 and Safari < 16.4 lack isWellFormed; there the check falls back to a loop.
+const hasWellFormed = typeof (String.prototype as Partial<WellFormed>).isWellFormed === "function";
+
+/** True when `s` has no lone surrogate. One pass, no allocation: the fallback for isWellFormed. */
+function wellFormedLoop(s: string): boolean {
+    for (let i = 0; i < s.length; i++) {
+        const c = s.charCodeAt(i);
+        if (c >= 0xd800 && c < 0xe000) {
+            if (c >= 0xdc00 || !isLow(s, i + 1)) return false;
+            i++;
+        }
+    }
+    return true;
+}
+
+/** Text is Unicode scalar values only (WHATWG USVString, RFC 7493). Linear, allocates nothing. */
+function isWellFormed(s: string): boolean {
+    return hasWellFormed ? (s as string & WellFormed).isWellFormed() : wellFormedLoop(s);
+}
+
 /** A plain object: prototype is Object.prototype or null. Dates, maps and class instances are not. */
 function isPlainObject(v: unknown): boolean {
     if (typeof v !== "object" || v === null) return false;
@@ -121,6 +141,8 @@ export class Scalar<T> {
     private readonly kind: Kind;
     private readonly steps: readonly ((s: string) => string)[];
     private readonly caseAt: number; // index of the first case step, or -1
+    private readonly formAt: number; // index of the first step that is not trim, or steps.length
+    private readonly early: boolean; // a maxLen and no step that shortens text: refuse overlong text once trimmed
     private readonly pattern: string | undefined;
     private readonly minLen: number;
     private readonly maxLen: number; // Infinity when unbounded
@@ -128,6 +150,7 @@ export class Scalar<T> {
     private readonly maximum: number;
     private rx: RegExp | undefined = undefined;
     private static index: Map<string, Scalar<unknown>> | undefined = undefined; // every name and alias, built on the first lookup
+    private static readonly wellFormedLoop = wellFormedLoop; // reachable for the runner, which tests the fallback
 
     constructor(init: ScalarInit) {
         this.name = init.name;
@@ -148,6 +171,11 @@ export class Scalar<T> {
         // The length gate runs just before the first case step: case mapping never shortens text, but
         // remove_spaces and remove_hyphens do.
         this.caseAt = names.findIndex((s) => s === "lowercase" || s === "uppercase");
+        // The well-formed check runs once trimming is done, before any other step: trim cannot join two halves of
+        // a pair, but remove_spaces and remove_hyphens could.
+        const formAt = names.findIndex((s) => s !== "trim");
+        this.formAt = formAt === -1 ? names.length : formAt;
+        this.early = init.maxLen !== undefined && !names.some((s) => s === "remove_spaces" || s === "remove_hyphens");
         this.pattern = init.pattern;
         this.minLen = init.minLen ?? 0;
         this.maxLen = init.maxLen ?? Infinity;
@@ -173,20 +201,27 @@ export class Scalar<T> {
         return this.check(v) !== NO;
     }
 
+    /** Once trimmed: not already too long (O(1): a code point is at most two units), then well-formed. */
+    private formed(s: string): boolean {
+        if (this.early && Math.ceil(s.length / 2) > this.maxLen) return false;
+        return isWellFormed(s);
+    }
+
     private check(v: unknown): unknown {
         switch (this.kind) {
             case "text": {
-                // Text must be Unicode scalar values (WHATWG USVString, RFC 7493): a lone surrogate fails before
-                // any step sees it. isWellFormed is one linear pass that allocates nothing.
-                if (typeof v !== "string" || !(v as string & WellFormed).isWellFormed()) return NO;
+                if (typeof v !== "string") return NO;
                 let s = v;
                 const steps = this.steps;
                 const gate = this.caseAt;
+                const form = this.formAt;
                 for (let i = 0; i < steps.length; i++) {
+                    if (i === form && !this.formed(s)) return NO;
                     // Text already too long is refused before case mapping copies it.
                     if (i === gate && longerThan(s, this.maxLen)) return NO;
                     s = steps[i](s);
                 }
+                if (form === steps.length && !this.formed(s)) return NO;
                 if (longerThan(s, this.maxLen) || shorterThan(s, this.minLen)) return NO;
                 if (this.pattern !== undefined) {
                     const rx = (this.rx ??= new RegExp(this.pattern, "u"));

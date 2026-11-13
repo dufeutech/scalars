@@ -91,6 +91,9 @@
         { "type": "timezone", "prefix": "America/", "repeat": "a", "count": 200000, "suffix": "/", "ok": false },
         { "type": "uint64", "prefix": "", "repeat": "9", "count": 200000, "suffix": "", "ok": true },
         { "type": "wikidata_qid", "prefix": "Q1", "repeat": "0", "count": 200000, "suffix": "!", "ok": false },
-        { "type": "string", "prefix": "", "repeat": "é", "count": 200000, "suffix": "\ud800", "ok": false, "malformed": "surrogate" }
+        { "type": "string", "prefix": "", "repeat": "é", "count": 200000, "suffix": "\ud800", "ok": false, "malformed": "surrogate" },
+        { "type": "char", "prefix": "", "repeat": "é", "count": 200000, "suffix": "\ud800", "ok": false, "malformed": "surrogate" },
+        { "type": "country", "prefix": "", "repeat": " ", "count": 200000, "suffix": "US", "ok": true },
+        { "type": "char", "prefix": "", "repeat": "é", "count": 200000, "suffix": "", "ok": false }
     ]
 }

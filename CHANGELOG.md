@@ -8,7 +8,7 @@
 ### Added
 - The build rejects any pattern that is not provably linear.
 - Generated code for Python, TypeScript, Go and Rust: `dist/python/scalars.py`, `dist/ts/scalars.ts`, `dist/go/scalars.go` (with `go.mod`) and `dist/rust/scalars.rs`. Each has `normalize`, `validate` and `is_valid` per type, `get` by name or alias, and a list of all types. `validate` runs in linear time. Python and TypeScript have no dependencies, Go needs `golang.org/x/text`, Rust needs `regex`.
-- Text types reject text that is not well-formed Unicode (WHATWG `USVString`, RFC 7493): lone surrogates in Python and TypeScript, invalid UTF-8 in Go. Rust's `&str` cannot hold either. The TypeScript file needs `String.prototype.isWellFormed` (ES2024, Node 20 or newer).
+- Text types reject text that is not well-formed Unicode (WHATWG `USVString`, RFC 7493): lone surrogates in Python and TypeScript, invalid UTF-8 in Go. Rust's `&str` cannot hold either. TypeScript uses `String.prototype.isWellFormed` (ES2024) where it exists, and an equivalent loop elsewhere.
 
 ## 0.3.0 — 2026-11-12
 

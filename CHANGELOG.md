@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+- **`email`** pattern rewritten so it runs in linear time in backtracking engines (Python, JavaScript, browsers): the old one took seconds on long inputs. It accepts exactly the same values.
+
+### Added
+- The build rejects any pattern that is not provably linear.
+
 ## 0.3.0 — 2026-11-12
 
 Every rule now means the same thing in Go, Python, Rust and TypeScript, checked by a runner in each language. **The shape of `dist/scalars.json` is now stable:** from here on, releases only add or fix types. No field will be renamed or moved.

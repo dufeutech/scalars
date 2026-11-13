@@ -5,7 +5,7 @@
 // - Lookaround and backreferences are out: Go and Rust do not support them.
 
 /** Characters that may follow "\" as a literal escape. */
-const LITERAL_ESCAPES = new Set("\\^$.*+?()[]{}|/-");
+export const LITERAL_ESCAPES = new Set("\\^$.*+?()[]{}|/-");
 const HEX = /[0-9A-Fa-f]/;
 
 /** Every reason the pattern falls outside the portable subset; empty means portable. */

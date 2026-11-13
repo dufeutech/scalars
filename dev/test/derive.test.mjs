@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { htmlPattern, pgCheck, sqlString, toJsonSchema } from "../lib/derive.mjs";
+import { applyGenerated, htmlPattern, pgCheck, sqlString, toJsonSchema } from "../lib/derive.mjs";
 import { loadSources, resolve } from "../lib/resolve.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -30,6 +30,10 @@ test("html pattern keeps negated classes and ranges", () => {
     assert.ok(v("^[^~/]$").test("a") && !v("^[^~/]$").test("/") && !v("^[^~/]$").test("~"));
     assert.ok(v("^[a-z0-9-]$").test("-") && v("^[a-z0-9-]$").test("q") && !v("^[a-z0-9-]$").test("A"));
     assert.ok(!htmlPattern("^abc$").startsWith("^") && !htmlPattern("^abc$").endsWith("$"));
+});
+
+test("a pattern that is not linear fails the build", () => {
+    assert.throws(() => applyGenerated({ name: "x", pattern: "^(a+)+$" }), /^Error: Type "x" pattern is not linear: /);
 });
 
 test("quote escaped", () => {

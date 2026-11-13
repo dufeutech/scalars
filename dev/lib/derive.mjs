@@ -1,4 +1,5 @@
 // Dev-only: values generated into dist/ from the core rule, never written in source.
+import { linearProblems } from "./linear.mjs";
 import { patternProblems } from "./portable.mjs";
 
 /** Characters the `v` flag requires (syntax) or allows (reserved punctuators) escaped inside [...]. */
@@ -104,6 +105,8 @@ export function applyGenerated(t) {
     if (t.pattern) {
         const problems = patternProblems(t.pattern);
         if (problems.length) throw new Error(`Type "${t.name}" pattern is not portable: ${problems.join("; ")}`);
+        const slow = linearProblems(t.pattern);
+        if (slow.length) throw new Error(`Type "${t.name}" pattern is not linear: ${slow.join("; ")}`);
     }
     const h = t.html;
     if (h?.element === "input" && h.attrs?.type !== "file") {

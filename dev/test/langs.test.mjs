@@ -52,3 +52,9 @@ test("every unbounded patterned type has a hostile case", () => {
     assert.ok(unbounded.length > 0);
     assert.deepEqual(unbounded.filter((n) => !covered.has(n)), []);
 });
+
+test("reference object kind accepts plain objects only", () => {
+    const ok = (v) => validate(types.object, v).ok;
+    assert.deepEqual([ok({}), ok(Object.create(null)), ok([]), ok(new Date()), ok(new Map()), ok(null), ok("x")],
+        [true, true, false, false, false, false, false]);
+});

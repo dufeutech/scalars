@@ -81,8 +81,11 @@ export function validate(t, v) {
             return typeof v === "number" && Number.isFinite(v) && inRange(v) ? { ok: true, value: v } : fail;
         case "boolean":
             return typeof v === "boolean" ? { ok: true, value: v } : fail;
-        case "object":
-            return v !== null && typeof v === "object" && !Array.isArray(v) ? { ok: true, value: v } : fail;
+        case "object": {
+            // Plain objects only (prototype Object.prototype or null), as every engine: not dates, maps or arrays.
+            const proto = v !== null && typeof v === "object" ? Object.getPrototypeOf(v) : undefined;
+            return proto === Object.prototype || proto === null ? { ok: true, value: v } : fail;
+        }
         case "array":
             return Array.isArray(v) ? { ok: true, value: v } : fail;
         default:

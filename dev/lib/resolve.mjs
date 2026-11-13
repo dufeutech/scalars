@@ -101,7 +101,8 @@ export function resolve({ core, targets }) {
         }
 
         for (const k of SOURCE_ONLY) delete t[k];
-        for (const tn of TARGETS) t[tn] = r.targets[tn];
+        // Copy: applyGenerated adds keys, and the cached blocks are what children inherit.
+        for (const tn of TARGETS) t[tn] = structuredClone(r.targets[tn]);
         out[name] = applyGenerated(t);
     }
     return out;

@@ -95,6 +95,15 @@ test("docs links expand", () => {
     );
 });
 
+test("generated values never leak from parent to child", () => {
+    // slug comes first in the file, so it is fully generated before its child is resolved.
+    const r = resolve(patched({ loose: { base: "slug", level: "advanced", category: "technical", pattern: null } }));
+    assert.ok(r.slug.html.attrs.pattern, "parent keeps its own generated pattern");
+    assert.equal(r.loose.pattern, undefined);
+    for (const a of ["pattern", "title", "placeholder"]) assert.equal(r.loose.html.attrs[a], undefined, `html.${a} leaked`);
+    assert.equal(r.loose.postgres.check, undefined, "postgres.check leaked");
+});
+
 test("unknown base throws", () => {
     assert.throws(
         () => resolve(patched({ slug: { base: "nope", level: "core", category: "technical" } })),

@@ -3,10 +3,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { applyGenerated } from "./derive.mjs";
 
-export const PRIMITIVES = new Set([
-    "string", "text", "boolean", "int32", "int64", "float64", "decimal", "object", "array",
-    "any", "date", "time_local", "date_time", "date_time_local", "duration", "binary",
-]);
+/** The closed set every type maps to, read from the dist schema so it is written in one place. */
+export const PRIMITIVES = new Set(JSON.parse(fs.readFileSync(new URL("../../schema/dist.schema.json", import.meta.url), "utf8"))
+    .$defs.type.properties.primitive.enum);
 export const TARGETS = ["html", "postgres"];
 
 /** Core keys a child takes from its base unless it overrides them (null deletes). */

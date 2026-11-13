@@ -90,14 +90,14 @@ test("docs links expand", () => {
     assert.equal(r.uuid_v7.standard, undefined, "standard is not inherited");
     assert.equal(r.uuid_v7.docs_link, undefined, "docs is not inherited");
     assert.throws(
-        () => resolve(patched({ slug: { base: "string", level: "core", category: "technical", docs: "nope" } })),
+        () => resolve(patched({ slug: { base: "string", level: "core", docs: "nope" } })),
         (e) => e.message.includes("slug") && e.message.includes("nope"),
     );
 });
 
 test("generated values never leak from parent to child", () => {
     // slug comes first in the file, so it is fully generated before its child is resolved.
-    const r = resolve(patched({ loose: { base: "slug", level: "advanced", category: "technical", pattern: null } }));
+    const r = resolve(patched({ loose: { base: "slug", level: "advanced", pattern: null } }));
     assert.ok(r.slug.html.attrs.pattern, "parent keeps its own generated pattern");
     assert.equal(r.loose.pattern, undefined);
     for (const a of ["pattern", "title", "placeholder"]) assert.equal(r.loose.html.attrs[a], undefined, `html.${a} leaked`);
@@ -106,7 +106,7 @@ test("generated values never leak from parent to child", () => {
 
 test("unknown base throws", () => {
     assert.throws(
-        () => resolve(patched({ slug: { base: "nope", level: "core", category: "technical" } })),
+        () => resolve(patched({ slug: { base: "nope", level: "core" } })),
         (e) => e.message.includes("slug") && e.message.includes("nope"),
     );
 });
@@ -114,8 +114,8 @@ test("unknown base throws", () => {
 test("cycle throws", () => {
     assert.throws(
         () => resolve(patched({
-            a: { base: "b", level: "core", category: "technical" },
-            b: { base: "a", level: "core", category: "technical" },
+            a: { base: "b", level: "core" },
+            b: { base: "a", level: "core" },
         })),
         (e) => e.message.includes("cycle"),
     );
@@ -141,7 +141,7 @@ test("file schemas validate", () => {
         assert.ok(ok, `${dataFile}: ${JSON.stringify(validate.errors)}`);
     }
     const validate = ajv.getSchema(load("scalar.schema.json").$id);
-    assert.equal(validate({ x: { level: "core", category: "technical", typo: 1 } }), false, "unknown keys are rejected");
+    assert.equal(validate({ x: { level: "core", typo: 1 } }), false, "unknown keys are rejected");
 });
 
 test("repo root is pure JSON", () => {

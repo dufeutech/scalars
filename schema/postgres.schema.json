@@ -2,7 +2,7 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "https://scalars.dev/schema/postgres.schema.json",
     "title": "Postgres target (source)",
-    "description": "How each type is stored as a Postgres column. Blocks inherit from the type's base; null deletes. Regex and range CHECKs are generated, never written here; check_extra holds the few that cannot be.",
+    "description": "How each type is stored as a Postgres column. Blocks inherit from the type's base; null deletes. Length, regex and range CHECKs are generated, never written here; check holds the few that cannot be, and replaces the generated one.",
     "type": "object",
     "properties": {
         "$schema": {
@@ -35,7 +35,7 @@
                     "null"
                 ]
             },
-            "check_extra": {
+            "check": {
                 "type": [
                     "string",
                     "null"

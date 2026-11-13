@@ -25,7 +25,7 @@ test("scalars has every type and validates against the dist schema", () => {
 });
 
 test("dist is self-contained", () => {
-    for (const k of ["base", "abstract", "anchor", "docs", "check_extra"]) {
+    for (const k of ["base", "abstract", "anchor", "docs"]) {
         assert.ok(!keys(out.scalars.types).has(k), `found source-only key ${k}`);
     }
     assert.ok(!Object.keys(out.scalars.types).some((n) => n.startsWith("_")), "no abstract types");
@@ -36,7 +36,6 @@ test("meta carries the rules as data", () => {
     const m = out.scalars.$meta;
     assert.deepEqual(Object.keys(m.normalize_steps), ["trim", "lowercase", "uppercase", "remove_spaces", "remove_hyphens"]);
     assert.match(m.lookup, /alias/);
-    assert.ok(m.templates.column);
 });
 
 test("openapi components compile", () => {

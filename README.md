@@ -76,15 +76,18 @@ From `dist/scalars.json` (shortened):
     "hint": "Start with + and your country code",
     "error": "Start with + and the country code, no spaces, like +14155552671.",
     "aliases": ["tel", "telephone", "mobile", "phone_number"],
-    "type": "string",
-    "pattern": "^\\+[1-9]\\d{1,14}$",
+    "primitive": "string",
+    "schema": { "type": "string", "pattern": "^\\+[1-9][0-9]{1,14}$" },
     "normalize": ["trim", "remove_spaces", "remove_hyphens"],
     "examples": { "valid": ["+14155552671", "+442071838750"], "invalid": ["4155552671", "+1 415 555 2671"] },
-    "html": { "element": "input", "attrs": { "type": "tel", "autocomplete": "tel", "pattern": "\\+[1-9]\\d{1,14}", "title": "…", "placeholder": "+14155552671" } },
-    "postgres": { "type": "text", "check": "CHECK ({column} ~ '^\\+[1-9]\\d{1,14}$')" }
+    "html": { "element": "input", "attrs": { "type": "tel", "autocomplete": "tel", "pattern": "\\+[1-9][0-9]{1,14}", "title": "…", "placeholder": "+14155552671" } },
+    "postgres": { "type": "text", "check": "CHECK ({column} ~ '^\\+[1-9][0-9]{1,14}$')" }
 }
 ```
 
+- `primitive` is one of 16 basic types. It's all a language needs to choose a native type (`int64` → `int64` / `i64` / `int` / `bigint`).
+- `schema` is the rule as plain JSON Schema. Its `pattern` reads the same in Go, Python, Rust, JS and Postgres (in Python, use `re.fullmatch`).
+- `params` (on types like `string`, `decimal`, `enum`) lists the settings a field can take, like `length` or `values`. Each one is defined once in `$meta.params`.
 - `normalize` lists cleanup steps to run on what a person typed *before* checking it. Each step is defined in `$meta.normalize_steps`.
 - `{column}` in `postgres.check` is replaced with your column name.
 - `examples.db_invalid` holds values that pass the JSON rule but that only the database can reject, like `2026-02-30`.

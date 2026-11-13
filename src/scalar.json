@@ -113,7 +113,6 @@
     },
     "string": {
         "level": "core",
-        "category": "primitive",
         "label": "Short text",
         "hint": "A few words, like a name or a title",
         "error": "Please type some text.",
@@ -141,7 +140,6 @@
     },
     "text": {
         "level": "core",
-        "category": "primitive",
         "label": "Long text",
         "hint": "As many lines as you need",
         "error": "Please type some text.",
@@ -168,7 +166,6 @@
     },
     "boolean": {
         "level": "core",
-        "category": "primitive",
         "label": "Yes or no",
         "hint": "Pick yes or no",
         "error": "Please pick yes or no.",
@@ -193,7 +190,6 @@
     },
     "int32": {
         "level": "core",
-        "category": "primitive",
         "label": "Whole number",
         "hint": "A number with no decimal point, like 42",
         "error": "Please use a whole number, like 42.",
@@ -223,7 +219,6 @@
     "int64": {
         "base": "_token",
         "level": "core",
-        "category": "primitive",
         "label": "Big whole number",
         "hint": "A very big number with no decimal point",
         "error": "Please use only digits, like 9007199254740993.",
@@ -250,7 +245,6 @@
     },
     "float64": {
         "level": "core",
-        "category": "primitive",
         "label": "Number",
         "hint": "Any number, like 3.14",
         "error": "Please type a number, like 3.14.",
@@ -278,7 +272,6 @@
     "decimal": {
         "base": "_token",
         "level": "core",
-        "category": "primitive",
         "label": "Exact number",
         "hint": "Exact amounts like money: 1234.56",
         "error": "Please use digits and one dot, like 1234.56.",
@@ -310,7 +303,6 @@
     "object": {
         "base": "_json",
         "level": "core",
-        "category": "structure",
         "label": "Group of fields",
         "hint": "Named values kept together",
         "error": "Please give named values, like a small card of facts.",
@@ -341,7 +333,6 @@
     "array": {
         "base": "_json",
         "level": "core",
-        "category": "structure",
         "label": "List",
         "hint": "Several values in order",
         "error": "Please give a list of values.",
@@ -374,7 +365,6 @@
             "values"
         ],
         "level": "core",
-        "category": "structure",
         "label": "Choice",
         "hint": "Pick one option from a fixed list",
         "error": "Please pick one of the options.",
@@ -397,7 +387,6 @@
     "any": {
         "base": "_json",
         "level": "core",
-        "category": "structure",
         "label": "Anything",
         "hint": "Any value at all",
         "error": "Any value is allowed here.",
@@ -425,7 +414,6 @@
     },
     "date": {
         "level": "core",
-        "category": "temporal",
         "label": "Date",
         "hint": "Year-month-day, like 2026-08-16",
         "error": "Please use year-month-day, like 2026-08-16.",
@@ -456,7 +444,6 @@
     },
     "time_local": {
         "level": "core",
-        "category": "temporal",
         "label": "Time of day",
         "hint": "Hours:minutes:seconds, like 14:30:00",
         "error": "Please use hours:minutes:seconds, like 14:30:00.",
@@ -489,7 +476,6 @@
     },
     "date_time": {
         "level": "core",
-        "category": "temporal",
         "label": "Date and time",
         "hint": "An exact moment, with its time zone",
         "error": "Please use date, T, time and zone, like 2026-08-16T14:30:00Z.",
@@ -524,7 +510,6 @@
     },
     "date_time_local": {
         "level": "core",
-        "category": "temporal",
         "label": "Local date and time",
         "hint": "A date and time on the clock, no zone",
         "error": "Please use date, T and time, like 2026-08-16T14:30:00.",
@@ -558,7 +543,6 @@
     "duration": {
         "base": "_token",
         "level": "core",
-        "category": "temporal",
         "label": "Length of time",
         "hint": "How long something lasts, like P3DT4H30M",
         "error": "Please write it like P3DT4H30M (3 days, 4 hours, 30 minutes).",
@@ -590,7 +574,6 @@
     "timezone": {
         "base": "_token",
         "level": "core",
-        "category": "temporal",
         "label": "Time zone",
         "hint": "A region and city, like America/New_York",
         "error": "Please pick a time zone, like America/New_York.",
@@ -617,7 +600,6 @@
     "email": {
         "base": "_token",
         "level": "core",
-        "category": "identity",
         "label": "Email address",
         "hint": "Like name@example.com",
         "error": "That email looks wrong. Try user@example.com.",
@@ -647,7 +629,6 @@
     "hostname": {
         "base": "_token",
         "level": "core",
-        "category": "identity",
         "label": "Website name",
         "hint": "Like api.example.com",
         "error": "Please use letters, digits, dots and dashes, like api.example.com.",
@@ -683,7 +664,6 @@
     "ipv4": {
         "base": "_token",
         "level": "core",
-        "category": "identity",
         "label": "IP address (v4)",
         "hint": "Four numbers with dots, like 192.0.2.1",
         "error": "Please use four numbers from 0 to 255, like 192.0.2.1.",
@@ -711,7 +691,6 @@
     "ipv6": {
         "base": "_token",
         "level": "core",
-        "category": "identity",
         "label": "IP address (v6)",
         "hint": "Like 2001:db8::1",
         "error": "That IP address looks wrong. Try 2001:db8::1.",
@@ -738,7 +717,6 @@
     "cidr": {
         "base": "_token",
         "level": "core",
-        "category": "identity",
         "label": "Network range",
         "hint": "An address and a size, like 192.0.2.0/24",
         "error": "Please use an address, a slash and a size, like 192.0.2.0/24.",
@@ -763,7 +741,6 @@
     "uri": {
         "base": "_token",
         "level": "core",
-        "category": "identity",
         "label": "Web link",
         "hint": "Like https://example.com/page",
         "error": "That link looks wrong. Try https://example.com/page.",
@@ -787,7 +764,6 @@
     "uuid": {
         "base": "_token",
         "level": "core",
-        "category": "identity",
         "label": "Unique ID",
         "hint": "A long ID with dashes, made by the computer",
         "error": "That ID looks wrong. It should look like f81d4fae-7dec-11d0-a765-00a0c91e6bf6.",
@@ -818,7 +794,6 @@
     "phone": {
         "base": "_token",
         "level": "core",
-        "category": "identity",
         "label": "Phone number",
         "hint": "Start with + and your country code",
         "error": "Start with + and the country code, no spaces, like +14155552671.",
@@ -851,7 +826,6 @@
     "binary": {
         "base": "_bytes",
         "level": "core",
-        "category": "technical",
         "label": "File",
         "hint": "Upload a file",
         "error": "Please choose a file.",
@@ -874,7 +848,6 @@
     "secret": {
         "base": "_token",
         "level": "core",
-        "category": "technical",
         "label": "Secret",
         "hint": "Kept hidden, like a password",
         "error": "Please type the secret.",
@@ -896,7 +869,6 @@
     "media_type": {
         "base": "_token",
         "level": "core",
-        "category": "technical",
         "label": "File type",
         "hint": "What kind of file, like application/json",
         "error": "Please write kind/subkind, like application/json.",
@@ -923,7 +895,6 @@
     "slug": {
         "base": "_token",
         "level": "core",
-        "category": "technical",
         "label": "Web address name",
         "hint": "Small letters, digits and dashes",
         "error": "Use small letters, digits and single dashes, like getting-started.",
@@ -955,7 +926,6 @@
     "country": {
         "base": "_token",
         "level": "core",
-        "category": "business",
         "label": "Country",
         "hint": "Pick a country",
         "error": "Please use the 2-letter country code, like US.",
@@ -984,7 +954,6 @@
     "currency": {
         "base": "_token",
         "level": "core",
-        "category": "business",
         "label": "Currency",
         "hint": "Pick a currency, like USD or EUR",
         "error": "Please use the 3-letter currency code, like USD.",
@@ -1013,7 +982,6 @@
     "locale": {
         "base": "_token",
         "level": "core",
-        "category": "business",
         "label": "Language and region",
         "hint": "Like en-US or es-419",
         "error": "Please use a language code, like en-US.",
@@ -1042,7 +1010,6 @@
     "color": {
         "base": "_token",
         "level": "core",
-        "category": "technical",
         "label": "Color",
         "hint": "Pick a color",
         "error": "Please use # and 6 small hex digits, like #1a2b3c.",
@@ -1076,7 +1043,6 @@
     "char": {
         "base": "string",
         "level": "advanced",
-        "category": "primitive",
         "label": "Single character",
         "hint": "Exactly one character",
         "error": "Please type exactly one character, like A.",
@@ -1104,7 +1070,6 @@
     "int8": {
         "base": "int32",
         "level": "advanced",
-        "category": "primitive",
         "label": "Tiny whole number",
         "hint": "From -128 to 127",
         "error": "Please use a whole number from -128 to 127.",
@@ -1133,7 +1098,6 @@
     "int16": {
         "base": "int32",
         "level": "advanced",
-        "category": "primitive",
         "label": "Small whole number",
         "hint": "From -32768 to 32767",
         "error": "Please use a whole number from -32768 to 32767.",
@@ -1161,7 +1125,6 @@
     "uint8": {
         "base": "int32",
         "level": "advanced",
-        "category": "primitive",
         "label": "Tiny count",
         "hint": "From 0 to 255",
         "error": "Please use a whole number from 0 to 255.",
@@ -1189,7 +1152,6 @@
     "uint16": {
         "base": "int32",
         "level": "advanced",
-        "category": "primitive",
         "label": "Small count",
         "hint": "From 0 to 65535",
         "error": "Please use a whole number from 0 to 65535.",
@@ -1216,7 +1178,6 @@
     "uint32": {
         "base": "int32",
         "level": "advanced",
-        "category": "primitive",
         "alternative": "int64",
         "label": "Count",
         "hint": "From 0 to 4294967295",
@@ -1245,7 +1206,6 @@
     "uint64": {
         "base": "int64",
         "level": "advanced",
-        "category": "primitive",
         "label": "Huge count",
         "hint": "Digits only, no minus sign",
         "error": "Please use only digits, like 18446744073709551615.",
@@ -1278,7 +1238,6 @@
     "double_int": {
         "base": "int32",
         "level": "advanced",
-        "category": "primitive",
         "alternative": "int64",
         "label": "Safe whole number",
         "hint": "Whole number JavaScript keeps exact",
@@ -1306,7 +1265,6 @@
     "float32": {
         "base": "float64",
         "level": "advanced",
-        "category": "primitive",
         "label": "Small-precision number",
         "hint": "Any number, stored with ~7 digits",
         "error": "Please type a number, like 3.14.",
@@ -1331,7 +1289,6 @@
     "decimal128": {
         "base": "decimal",
         "level": "advanced",
-        "category": "primitive",
         "label": "Very exact number",
         "hint": "Up to 34 significant digits",
         "error": "Please use digits and one dot, like 1234.567890123456789012345678901234.",
@@ -1360,7 +1317,6 @@
     "time": {
         "base": "time_local",
         "level": "advanced",
-        "category": "temporal",
         "label": "Time with offset",
         "hint": "Like 14:30:00Z or 14:30:00+02:00",
         "error": "Please add the zone offset, like 14:30:00Z.",
@@ -1394,7 +1350,6 @@
     "unix_time": {
         "base": "int32",
         "level": "advanced",
-        "category": "temporal",
         "alternative": "date_time",
         "label": "Unix timestamp",
         "hint": "Seconds since 1970-01-01",
@@ -1424,7 +1379,6 @@
     "idn_email": {
         "base": "_token",
         "level": "advanced",
-        "category": "identity",
         "alternative": "email",
         "label": "International email",
         "hint": "Email that may use any alphabet",
@@ -1446,7 +1400,6 @@
     "idn_hostname": {
         "base": "_token",
         "level": "advanced",
-        "category": "identity",
         "alternative": "hostname",
         "label": "International website name",
         "hint": "A domain in any alphabet",
@@ -1468,7 +1421,6 @@
     "ipv4_cidr": {
         "base": "cidr",
         "level": "advanced",
-        "category": "identity",
         "label": "IPv4 network range",
         "hint": "Like 192.0.2.0/24",
         "error": "Please use an IPv4 address, a slash and 0-32, like 192.0.2.0/24.",
@@ -1497,7 +1449,6 @@
     "ipv6_cidr": {
         "base": "cidr",
         "level": "advanced",
-        "category": "identity",
         "label": "IPv6 network range",
         "hint": "Like 2001:db8::/32",
         "error": "Please use an IPv6 address, a slash and 0-128, like 2001:db8::/32.",
@@ -1522,7 +1473,6 @@
     "mac_address": {
         "base": "_token",
         "level": "advanced",
-        "category": "identity",
         "label": "Hardware address",
         "hint": "Six pairs of hex digits",
         "error": "Please use six hex pairs with : or -, like 00:1b:44:11:3a:b7.",
@@ -1548,7 +1498,6 @@
     "uri_reference": {
         "base": "_token",
         "level": "advanced",
-        "category": "identity",
         "alternative": "uri",
         "label": "Link or path",
         "hint": "A full link or a path like /a/b",
@@ -1573,7 +1522,6 @@
     "iri": {
         "base": "_token",
         "level": "advanced",
-        "category": "identity",
         "alternative": "uri",
         "label": "International link",
         "hint": "A link that may use any alphabet",
@@ -1595,7 +1543,6 @@
     "iri_reference": {
         "base": "_token",
         "level": "advanced",
-        "category": "identity",
         "alternative": "uri",
         "label": "International link or path",
         "hint": "A link or path in any alphabet",
@@ -1618,7 +1565,6 @@
     "uuid_v7": {
         "base": "uuid",
         "level": "advanced",
-        "category": "identity",
         "label": "Time-ordered ID",
         "hint": "A unique ID that sorts by time",
         "error": "It needs a 7 after the second dash, like 018f4b2c-9c1e-7a3b-8f2d-1a2b3c4d5e6f.",
@@ -1644,7 +1590,6 @@
     "ulid": {
         "base": "_token",
         "level": "advanced",
-        "category": "identity",
         "alternative": "uuid",
         "label": "Sortable ID",
         "hint": "26 letters and digits",
@@ -1671,7 +1616,6 @@
     "base64": {
         "base": "binary",
         "level": "advanced",
-        "category": "technical",
         "label": "Base64 data",
         "hint": "Bytes written as letters, + and /",
         "error": "Please use base64 with = padding, like SGVsbG8gd29ybGQ=.",
@@ -1699,7 +1643,6 @@
     "base64url": {
         "base": "binary",
         "level": "advanced",
-        "category": "technical",
         "label": "URL-safe base64",
         "hint": "Bytes written as letters, - and _",
         "error": "Please use letters, digits, - and _, like SGVsbG8gd29ybGQ.",
@@ -1727,7 +1670,6 @@
     "css_color": {
         "base": "_token",
         "level": "advanced",
-        "category": "technical",
         "alternative": "color",
         "label": "CSS color",
         "hint": "Any CSS color, like oklch(70% 0.15 250)",
@@ -1757,7 +1699,6 @@
     "commonmark": {
         "base": "text",
         "level": "advanced",
-        "category": "technical",
         "label": "Markdown",
         "hint": "Text with # headings and **bold**",
         "error": "Please type some Markdown text.",
@@ -1779,7 +1720,6 @@
     "html": {
         "base": "text",
         "level": "advanced",
-        "category": "technical",
         "label": "HTML",
         "hint": "Web page markup, like <p>Hello</p>",
         "error": "Please type some HTML.",
@@ -1800,7 +1740,6 @@
     "json_pointer": {
         "base": "_token",
         "level": "advanced",
-        "category": "technical",
         "label": "JSON Pointer",
         "hint": "A path inside a document, like /users/0",
         "error": "Start with / for each step, like /users/0/email.",
@@ -1827,7 +1766,6 @@
     "relative_json_pointer": {
         "base": "_token",
         "level": "advanced",
-        "category": "technical",
         "label": "Relative JSON Pointer",
         "hint": "Steps up, then a path, like 1/name",
         "error": "Please start with a number, like 1/name.",
@@ -1855,7 +1793,6 @@
     "uri_template": {
         "base": "_token",
         "level": "advanced",
-        "category": "technical",
         "alternative": "uri",
         "label": "Link template",
         "hint": "A link with {placeholders}",
@@ -1877,7 +1814,6 @@
     "regex": {
         "base": "_token",
         "level": "advanced",
-        "category": "technical",
         "label": "Text pattern",
         "hint": "A regular expression, like ^[a-z]+$",
         "error": "That regular expression looks wrong. Try ^[a-z]+$.",
@@ -1900,7 +1836,6 @@
     "semver": {
         "base": "_token",
         "level": "advanced",
-        "category": "technical",
         "label": "Version number",
         "hint": "Major.minor.patch, like 1.4.2",
         "error": "Please use three numbers with dots, like 1.4.2-rc.1.",
@@ -1927,7 +1862,6 @@
     "jwt": {
         "base": "secret",
         "level": "advanced",
-        "category": "technical",
         "label": "Login token",
         "hint": "Three parts joined by dots",
         "error": "Please paste the whole token, like eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.sig.",
@@ -1954,7 +1888,6 @@
     "sha256": {
         "base": "_token",
         "level": "advanced",
-        "category": "technical",
         "label": "SHA-256 hash",
         "hint": "64 hex characters",
         "error": "Needs 64 hex characters, like e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.",
@@ -1980,7 +1913,6 @@
     "port": {
         "base": "int32",
         "level": "advanced",
-        "category": "technical",
         "label": "Port number",
         "hint": "From 0 to 65535, like 5432",
         "error": "Please use a whole number from 0 to 65535.",
@@ -2008,7 +1940,6 @@
     "cron": {
         "base": "_token",
         "level": "advanced",
-        "category": "technical",
         "label": "Schedule",
         "hint": "Five fields, like 0 3 * * *",
         "error": "Please use five fields, like 0 3 * * * (3 AM daily).",
@@ -2029,7 +1960,6 @@
     "country_alpha3": {
         "base": "country",
         "level": "advanced",
-        "category": "business",
         "label": "Country (3-letter)",
         "hint": "Three capital letters, like USA",
         "error": "Please use the 3-letter country code, like USA.",
@@ -2054,7 +1984,6 @@
     "subdivision": {
         "base": "_token",
         "level": "advanced",
-        "category": "business",
         "label": "State or region",
         "hint": "Country, dash, region, like US-CA",
         "error": "Please use country-region, like US-CA.",
@@ -2086,7 +2015,6 @@
     "language": {
         "base": "locale",
         "level": "advanced",
-        "category": "business",
         "label": "Language",
         "hint": "Two or three small letters, like en",
         "error": "Please use the language code, like en.",
@@ -2111,7 +2039,6 @@
     "http_date": {
         "base": "date_time",
         "level": "domain",
-        "category": "temporal",
         "label": "HTTP date",
         "hint": "Like Sun, 16 Aug 2026 14:30:00 GMT",
         "error": "Please use the HTTP date form, like Sun, 16 Aug 2026 14:30:00 GMT.",
@@ -2141,7 +2068,6 @@
     "wikidata_qid": {
         "base": "_token",
         "level": "domain",
-        "category": "identity",
         "label": "Wikidata ID",
         "hint": "Q and a number, like Q42",
         "error": "Please use Q and a number, like Q42.",
@@ -2166,7 +2092,6 @@
     "doi": {
         "base": "_token",
         "level": "domain",
-        "category": "identity",
         "label": "DOI",
         "hint": "A paper ID, like 10.1000/182",
         "error": "Please start with 10., like 10.1000/182.",
@@ -2191,7 +2116,6 @@
     "orcid": {
         "base": "_token",
         "level": "domain",
-        "category": "identity",
         "label": "ORCID iD",
         "hint": "Four groups of four digits",
         "error": "Please use four groups of 4 with dashes, like 0000-0002-1825-0097.",
@@ -2216,7 +2140,6 @@
     "lei": {
         "base": "_token",
         "level": "domain",
-        "category": "identity",
         "label": "Legal Entity ID",
         "hint": "20 capital letters and digits",
         "error": "Please use 20 capital letters and digits, like 5493001KJTIIGC8Y1R12.",
@@ -2241,7 +2164,6 @@
     "media_range": {
         "base": "media_type",
         "level": "domain",
-        "category": "technical",
         "label": "Accepted file types",
         "hint": "Like text/html or image/*",
         "error": "Please use kind/subkind or a *, like text/html;q=0.9.",
@@ -2269,7 +2191,6 @@
     "sf_integer": {
         "base": "int32",
         "level": "domain",
-        "category": "technical",
         "alternative": "int64",
         "label": "Header number",
         "hint": "Up to 15 digits",
@@ -2298,7 +2219,6 @@
     "sf_decimal": {
         "base": "float64",
         "level": "domain",
-        "category": "technical",
         "alternative": "decimal",
         "label": "Header decimal",
         "hint": "Up to 3 digits after the dot",
@@ -2331,7 +2251,6 @@
     "sf_string": {
         "base": "_token",
         "level": "domain",
-        "category": "technical",
         "label": "Header text",
         "hint": "Plain ASCII characters only",
         "error": "Please use plain ASCII characters, like hello world.",
@@ -2358,7 +2277,6 @@
     "sf_token": {
         "base": "_token",
         "level": "domain",
-        "category": "technical",
         "label": "Header token",
         "hint": "A short word like gzip",
         "error": "Please start with a letter, no spaces, like gzip.",
@@ -2386,7 +2304,6 @@
     "sf_binary": {
         "base": "binary",
         "level": "domain",
-        "category": "technical",
         "label": "Header bytes",
         "hint": "Base64 between colons",
         "error": "Please wrap base64 in colons, like :aGVsbG8=:.",
@@ -2414,7 +2331,6 @@
     "sf_boolean": {
         "base": "boolean",
         "level": "domain",
-        "category": "technical",
         "label": "Header yes/no",
         "hint": "True or false",
         "error": "Please pick true or false.",
@@ -2439,7 +2355,6 @@
     "iban": {
         "base": "_token",
         "level": "domain",
-        "category": "business",
         "label": "Bank account (IBAN)",
         "hint": "Country code, 2 digits, then account",
         "error": "Please use capitals and digits, no spaces, like DE89370400440532013000.",
@@ -2469,7 +2384,6 @@
     "bic": {
         "base": "_token",
         "level": "domain",
-        "category": "business",
         "label": "Bank code (BIC)",
         "hint": "8 or 11 capital letters and digits",
         "error": "Please use 8 or 11 capital letters and digits, like DEUTDEFF500.",
@@ -2499,7 +2413,6 @@
     "isbn": {
         "base": "_token",
         "level": "domain",
-        "category": "business",
         "label": "Book number (ISBN)",
         "hint": "10 or 13 digits",
         "error": "Please use 10 or 13 digits, no dashes, like 9780306406157.",
@@ -2529,7 +2442,6 @@
     "gtin": {
         "base": "_token",
         "level": "domain",
-        "category": "business",
         "label": "Barcode number",
         "hint": "8, 12, 13 or 14 digits",
         "error": "Please use 8, 12, 13 or 14 digits, like 0614141000036.",

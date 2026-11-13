@@ -49,14 +49,13 @@ test("range check only when narrower", () => {
     assert.equal(pgCheck(int32), null);
 });
 
-test("check_extra wins and is not emitted", () => {
+test("a hand-written check replaces the generated one", () => {
     const r = resolve((() => {
         const s = loadSources(path.join(here, "fixtures/mini"));
-        s.targets.postgres.quiet = { note: null, check_extra: "CHECK (length({column}) < 9)" };
+        s.targets.postgres.slug = { check: "CHECK (length({column}) < 9)" };
         return s;
     })());
-    assert.equal(r.quiet.postgres.check, "CHECK (length({column}) < 9)");
-    assert.ok(!("check_extra" in r.quiet.postgres));
+    assert.equal(r.slug.postgres.check, "CHECK (length({column}) < 9)");
 });
 
 test("override drives check and html pattern", () => {
@@ -77,7 +76,7 @@ test("html pattern only on text-like inputs", () => {
 
 test("json schema strips extras", () => {
     const js = toJsonSchema({ ...mini().slug, label: "Slug", hint: "a-b", examples: { valid: ["a-b"], invalid: ["A"] }, normalize: ["trim"] });
-    for (const k of ["level", "html", "postgres", "normalize", "name", "primitive", "category"]) assert.ok(!(k in js), k);
+    for (const k of ["level", "html", "postgres", "normalize", "name", "primitive"]) assert.ok(!(k in js), k);
     assert.equal(js.type, "string");
     assert.equal(js.pattern, mini().slug.pattern);
     assert.equal(js.title, "Slug");

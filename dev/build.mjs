@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { canonical, loadSources, resolve } from "./lib/resolve.mjs";
-import { toJsonSchema } from "./lib/derive.mjs";
+import { groupSchema } from "./lib/derive.mjs";
 
 const LOOKUP_RULE =
     "To find a type from a word: trim it, lowercase it, and turn spaces and '-' into '_'. " +
@@ -22,6 +22,7 @@ export function build(root) {
     for (const t of Object.values(types)) {
         const docs = pgDefs.postgres_docs?.[t.postgres.type];
         if (docs) t.postgres.docs_link = docs;
+        groupSchema(t);
     }
 
     const scalars = {
@@ -32,14 +33,15 @@ export function build(root) {
             normalize_steps: Object.fromEntries(schema.$defs.normalize_step.oneOf.map((s) => [s.const, s.description])),
             params: sources.core.$defs.params,
             postgres_attrs: pgDefs.attr,
-            templates: pgDefs.templates,
         },
         types,
     };
+    // Each OpenAPI schema is the type's rule plus its text.
+    const component = (t) => ({ ...t.schema, title: t.label, description: t.hint, examples: t.examples.valid });
     const openapi = {
         openapi: "3.1.0",
         info: { title: "Scalar types", version },
-        components: { schemas: Object.fromEntries(Object.entries(types).map(([n, t]) => [n, toJsonSchema(t)])) },
+        components: { schemas: Object.fromEntries(Object.entries(types).map(([n, t]) => [n, component(t)])) },
     };
     return { scalars, openapi };
 }

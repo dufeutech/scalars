@@ -58,12 +58,6 @@
             "timetz": "https://www.postgresql.org/docs/current/datatype-datetime.html",
             "uuid": "https://www.postgresql.org/docs/current/datatype-uuid.html",
             "varchar": "https://www.postgresql.org/docs/current/datatype-character.html"
-        },
-        "templates": {
-            "column": {
-                "description": "Placeholder in postgres.check, replaced with the quoted column name when the constraint is emitted.",
-                "example": "CHECK (\"slug\" ~ '^[a-z0-9]+(-[a-z0-9]+)*$')"
-            }
         }
     },
     "_token": {
@@ -191,7 +185,7 @@
     "uint64": {
         "type": "numeric",
         "note": "No unsigned 64-bit type; numeric(20, 0) covers the whole uint64 range.",
-        "check_extra": "CHECK ({column} >= 0 AND {column} <= 18446744073709551615 AND {column} = trunc({column}))"
+        "check": "CHECK ({column} >= 0 AND {column} <= 18446744073709551615 AND {column} = trunc({column}))"
     },
     "double_int": {
         "type": "bigint",
@@ -248,7 +242,7 @@
     "sha256": {
         "type": "bytea",
         "note": "32 decoded bytes; bytea has no fixed-length form, so length is enforced by a check.",
-        "check_extra": "CHECK (octet_length({column}) = 32)"
+        "check": "CHECK (octet_length({column}) = 32)"
     },
     "port": {
         "note": "No unsigned 16-bit type; integer plus a range check covers 0-65535."
@@ -269,7 +263,7 @@
     "sf_decimal": {
         "type": "numeric",
         "note": "At most twelve integer and three fractional digits, which numeric keeps exactly.",
-        "check_extra": "CHECK (abs({column}) < 1000000000000 AND {column} = round({column}, 3))"
+        "check": "CHECK (abs({column}) < 1000000000000 AND {column} = round({column}, 3))"
     },
     "sf_string": {
         "note": "Printable ASCII only; DQUOTE and backslash are escaped in transport."

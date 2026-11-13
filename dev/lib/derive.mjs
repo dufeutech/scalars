@@ -59,7 +59,7 @@ const INT_RANGES = {
 /** The CHECK constraint for a resolved type, with a {column} placeholder, or null. */
 export function pgCheck(t) {
     const pg = t.postgres ?? {};
-    if (pg.check_extra) return pg.check_extra;
+    if (pg.check) return pg.check; // hand-written: the rule can't be generated
     if (TEXT_COLUMNS.has(pg.type)) {
         // char_length counts code points, as JSON Schema's maxLength does.
         const rules = [];
@@ -76,9 +76,18 @@ export function pgCheck(t) {
     return null;
 }
 
-const SCHEMA_KEYS = ["type", "format", "pattern", "minLength", "maxLength", "minimum", "maximum", "contentEncoding"];
+/** The JSON Schema keywords a type's rule is made of; dist groups them under `schema`. */
+export const SCHEMA_KEYS = ["type", "format", "pattern", "minLength", "maxLength", "minimum", "maximum", "contentEncoding"];
 
-/** A plain JSON Schema (OpenAPI 3.1 compatible) for one resolved type. */
+/** Moves a resolved type's validation keys under `schema` (mutates and returns t). */
+export function groupSchema(t) {
+    const schema = {};
+    for (const k of SCHEMA_KEYS) if (t[k] !== undefined) { schema[k] = t[k]; delete t[k]; }
+    t.schema = schema;
+    return t;
+}
+
+/** A plain JSON Schema (OpenAPI 3.1 compatible) for one resolved type: its rule plus its text. */
 export function toJsonSchema(t) {
     const s = {};
     for (const k of SCHEMA_KEYS) if (t[k] !== undefined) s[k] = t[k];
@@ -108,7 +117,6 @@ export function applyGenerated(t) {
         if (t.examples?.valid?.length) h.attrs.placeholder = String(t.examples.valid[0]);
     }
     const check = pgCheck(t);
-    delete t.postgres.check_extra;
     if (check) t.postgres.check = check;
     return t;
 }

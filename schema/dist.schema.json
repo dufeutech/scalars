@@ -10,7 +10,7 @@
         "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
         "$meta": {
             "type": "object",
-            "required": ["lookup", "normalize_steps", "params", "postgres_attrs", "templates"],
+            "required": ["lookup", "normalize_steps", "params", "postgres_attrs"],
             "properties": {
                 "lookup": { "type": "string", "description": "How to find a type from a word a person typed." },
                 "normalize_steps": {
@@ -27,8 +27,7 @@
                     "type": "object",
                     "description": "Settings only Postgres has, defined once. A type's postgres.attr lists the ones it accepts; collation applies to every text and varchar column.",
                     "additionalProperties": { "type": "object", "required": ["description", "sql"] }
-                },
-                "templates": { "type": "object", "description": "Placeholders used in generated text, like {column} in postgres.check." }
+                }
             },
             "additionalProperties": false
         },
@@ -42,25 +41,34 @@
     "$defs": {
         "type": {
             "type": "object",
-            "required": ["name", "primitive", "level", "category", "label", "hint", "error", "examples", "html", "postgres"],
+            "required": ["name", "primitive", "level", "label", "hint", "error", "schema", "examples", "html", "postgres"],
             "properties": {
                 "name": { "type": "string" },
-                "primitive": { "type": "string", "description": "The basic type this one is built from." },
+                "primitive": {
+                    "description": "The basic type this one is built from: the only thing a language needs to map to a native type.",
+                    "enum": ["string", "text", "boolean", "int32", "int64", "float64", "decimal", "object", "array", "any", "date", "time_local", "date_time", "date_time_local", "duration", "binary"]
+                },
                 "level": { "enum": ["core", "advanced", "domain"] },
-                "category": { "type": "string" },
                 "alternative": { "type": "string", "description": "For advanced and domain types: the core type to use instead." },
                 "label": { "type": "string" },
                 "hint": { "type": "string" },
                 "error": { "type": "string" },
                 "aliases": { "type": "array", "items": { "type": "string" } },
-                "type": { "enum": ["string", "integer", "number", "boolean", "object", "array"] },
-                "format": { "type": "string" },
-                "pattern": { "type": "string", "description": "Anchored ^...$ and limited to a subset every common engine reads the same (Go, Python, Rust, JS, Postgres): no \\d \\s \\w, no '.', no lookaround or backreferences. In Python use re.fullmatch: '$' alone also matches before a trailing newline." },
-                "minLength": { "type": "integer", "description": "Fewest characters, counted as Unicode code points." },
-                "maxLength": { "type": "integer", "description": "Most characters, counted as Unicode code points." },
-                "minimum": { "type": "number" },
-                "maximum": { "type": "number" },
-                "contentEncoding": { "type": "string" },
+                "schema": {
+                    "type": "object",
+                    "description": "The rule, as plain JSON Schema keywords: pass it to any JSON Schema validator.",
+                    "properties": {
+                        "type": { "enum": ["string", "integer", "number", "boolean", "object", "array"] },
+                        "format": { "type": "string" },
+                        "pattern": { "type": "string", "description": "Anchored ^...$ and limited to a subset every common engine reads the same (Go, Python, Rust, JS, Postgres): no \\d \\s \\w, no '.', no lookaround or backreferences. In Python use re.fullmatch: '$' alone also matches before a trailing newline." },
+                        "minLength": { "type": "integer", "description": "Fewest characters, counted as Unicode code points." },
+                        "maxLength": { "type": "integer", "description": "Most characters, counted as Unicode code points." },
+                        "minimum": { "type": "number" },
+                        "maximum": { "type": "number" },
+                        "contentEncoding": { "type": "string" }
+                    },
+                    "additionalProperties": false
+                },
                 "normalize": { "type": "array", "items": { "type": "string" } },
                 "params": { "type": "array", "items": { "type": "string" }, "description": "Names from $meta.params that a field of this type can set." },
                 "examples": {
@@ -93,7 +101,7 @@
                         "type": { "type": "string" },
                         "attr": { "type": "array", "items": { "type": "string" }, "description": "Names from $meta.postgres_attrs." },
                         "note": { "type": "string" },
-                        "check": { "type": "string" },
+                        "check": { "type": "string", "description": "A CHECK constraint enforcing the same rule as schema. Replace {column} with the quoted column name, like CHECK (\"slug\" ~ '^[a-z0-9]+(-[a-z0-9]+)*$')." },
                         "docs_link": { "type": "string" }
                     },
                     "required": ["type"],

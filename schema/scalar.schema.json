@@ -119,16 +119,6 @@
                         "domain"
                     ]
                 },
-                "category": {
-                    "enum": [
-                        "primitive",
-                        "structure",
-                        "temporal",
-                        "identity",
-                        "technical",
-                        "business"
-                    ]
-                },
                 "alternative": {
                     "type": "string",
                     "description": "The core type to use instead. Defaults to the nearest core ancestor; write it only when that is wrong."
@@ -249,8 +239,7 @@
             "then": {},
             "else": {
                 "required": [
-                    "level",
-                    "category"
+                    "level"
                 ]
             }
         }

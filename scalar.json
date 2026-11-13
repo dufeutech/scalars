@@ -70,6 +70,13 @@
     "string": {
         "level": "core",
         "category": "primitive",
+        "label": "Short text",
+        "hint": "A few words, like a name or a title",
+        "error": "Please type some text.",
+        "aliases": [
+            "short_text",
+            "varchar"
+        ],
         "type": "string",
         "examples": {
             "valid": [
@@ -88,6 +95,13 @@
     "text": {
         "level": "core",
         "category": "primitive",
+        "label": "Long text",
+        "hint": "As many lines as you need",
+        "error": "Please type some text.",
+        "aliases": [
+            "long_text",
+            "paragraph"
+        ],
         "type": "string",
         "examples": {
             "valid": [
@@ -108,6 +122,13 @@
     "boolean": {
         "level": "core",
         "category": "primitive",
+        "label": "Yes or no",
+        "hint": "Pick yes or no",
+        "error": "Please pick yes or no.",
+        "aliases": [
+            "bool",
+            "yes_no"
+        ],
         "type": "boolean",
         "examples": {
             "valid": [
@@ -126,6 +147,13 @@
     "int32": {
         "level": "core",
         "category": "primitive",
+        "label": "Whole number",
+        "hint": "A number with no decimal point, like 42",
+        "error": "Please use a whole number, like 42.",
+        "aliases": [
+            "int",
+            "integer"
+        ],
         "type": "integer",
         "format": "int32",
         "minimum": -2147483648,
@@ -149,6 +177,13 @@
         "base": "_token",
         "level": "core",
         "category": "primitive",
+        "label": "Big whole number",
+        "hint": "A very big number with no decimal point",
+        "error": "Please use only digits, like 9007199254740993.",
+        "aliases": [
+            "bigint",
+            "long"
+        ],
         "format": "int64",
         "pattern": "^-?\\d+$",
         "examples": {
@@ -169,6 +204,14 @@
     "float64": {
         "level": "core",
         "category": "primitive",
+        "label": "Number",
+        "hint": "Any number, like 3.14",
+        "error": "Please type a number, like 3.14.",
+        "aliases": [
+            "number",
+            "float",
+            "double"
+        ],
         "type": "number",
         "format": "double",
         "examples": {
@@ -189,6 +232,13 @@
         "base": "_token",
         "level": "core",
         "category": "primitive",
+        "label": "Exact number",
+        "hint": "Exact amounts like money: 1234.56",
+        "error": "Please use digits and one dot, like 1234.56.",
+        "aliases": [
+            "money",
+            "numeric"
+        ],
         "format": "decimal",
         "pattern": "^-?\\d+(\\.\\d+)?$",
         "examples": {
@@ -210,6 +260,14 @@
         "base": "_json",
         "level": "core",
         "category": "structure",
+        "label": "Group of fields",
+        "hint": "Named values kept together",
+        "error": "Please give named values, like a small card of facts.",
+        "aliases": [
+            "map",
+            "dict",
+            "record"
+        ],
         "type": "object",
         "examples": {
             "valid": [
@@ -233,6 +291,12 @@
         "base": "_json",
         "level": "core",
         "category": "structure",
+        "label": "List",
+        "hint": "Several values in order",
+        "error": "Please give a list of values.",
+        "aliases": [
+            "list"
+        ],
         "type": "array",
         "examples": {
             "valid": [
@@ -257,6 +321,13 @@
         "base": "string",
         "level": "core",
         "category": "structure",
+        "label": "Choice",
+        "hint": "Pick one option from a fixed list",
+        "error": "Please pick one of the options.",
+        "aliases": [
+            "choice",
+            "select"
+        ],
         "examples": {
             "valid": [
                 "active",
@@ -273,6 +344,13 @@
         "base": "_json",
         "level": "core",
         "category": "structure",
+        "label": "Anything",
+        "hint": "Any value at all",
+        "error": "Any value is allowed here.",
+        "aliases": [
+            "json",
+            "jsonb"
+        ],
         "examples": {
             "valid": [
                 {
@@ -294,6 +372,12 @@
     "date": {
         "level": "core",
         "category": "temporal",
+        "label": "Date",
+        "hint": "Year-month-day, like 2026-08-16",
+        "error": "Please use year-month-day, like 2026-08-16.",
+        "aliases": [
+            "day"
+        ],
         "type": "string",
         "format": "date",
         "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
@@ -319,6 +403,13 @@
     "time_local": {
         "level": "core",
         "category": "temporal",
+        "label": "Time of day",
+        "hint": "Hours:minutes:seconds, like 14:30:00",
+        "error": "Please use hours:minutes:seconds, like 14:30:00.",
+        "aliases": [
+            "time_of_day",
+            "local_time"
+        ],
         "type": "string",
         "format": "time-local",
         "pattern": "^\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?$",
@@ -342,6 +433,14 @@
     "date_time": {
         "level": "core",
         "category": "temporal",
+        "label": "Date and time",
+        "hint": "An exact moment, with its time zone",
+        "error": "Please use date, T, time and zone, like 2026-08-16T14:30:00Z.",
+        "aliases": [
+            "datetime",
+            "timestamp",
+            "instant"
+        ],
         "type": "string",
         "format": "date-time",
         "pattern": "^\\d{4}-\\d{2}-\\d{2}[Tt]\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?([Zz]|[+-]\\d{2}:\\d{2})$",
@@ -366,6 +465,13 @@
     "date_time_local": {
         "level": "core",
         "category": "temporal",
+        "label": "Local date and time",
+        "hint": "A date and time on the clock, no zone",
+        "error": "Please use date, T and time, like 2026-08-16T14:30:00.",
+        "aliases": [
+            "local_datetime",
+            "wall_time"
+        ],
         "type": "string",
         "format": "date-time-local",
         "pattern": "^\\d{4}-\\d{2}-\\d{2}[Tt]\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?$",
@@ -390,6 +496,13 @@
         "base": "_token",
         "level": "core",
         "category": "temporal",
+        "label": "Length of time",
+        "hint": "How long something lasts, like P3DT4H30M",
+        "error": "Please write it like P3DT4H30M (3 days, 4 hours, 30 minutes).",
+        "aliases": [
+            "interval",
+            "timespan"
+        ],
         "format": "duration",
         "pattern": "^P(?!$)(\\d+Y)?(\\d+M)?(\\d+W)?(\\d+D)?(T(?=\\d)(\\d+H)?(\\d+M)?(\\d+(\\.\\d+)?S)?)?$",
         "examples": {
@@ -412,6 +525,13 @@
         "base": "_token",
         "level": "core",
         "category": "temporal",
+        "label": "Time zone",
+        "hint": "A region and city, like America/New_York",
+        "error": "Please pick a time zone, like America/New_York.",
+        "aliases": [
+            "tz",
+            "time_zone"
+        ],
         "pattern": "^(UTC|[A-Za-z_]+/[A-Za-z0-9_+-]+(/[A-Za-z0-9_+-]+)?)$",
         "examples": {
             "valid": [
@@ -432,6 +552,13 @@
         "base": "_token",
         "level": "core",
         "category": "identity",
+        "label": "Email address",
+        "hint": "Like name@example.com",
+        "error": "That email looks wrong. Try user@example.com.",
+        "aliases": [
+            "email_address",
+            "mail"
+        ],
         "format": "email",
         "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
         "examples": {
@@ -452,6 +579,14 @@
         "base": "_token",
         "level": "core",
         "category": "identity",
+        "label": "Website name",
+        "hint": "Like api.example.com",
+        "error": "Please use letters, digits, dots and dashes, like api.example.com.",
+        "aliases": [
+            "domain",
+            "domain_name",
+            "host"
+        ],
         "format": "hostname",
         "pattern": "^(?=.{1,253}$)[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$",
         "examples": {
@@ -474,6 +609,13 @@
         "base": "_token",
         "level": "core",
         "category": "identity",
+        "label": "IP address (v4)",
+        "hint": "Four numbers with dots, like 192.0.2.1",
+        "error": "Please use four numbers from 0 to 255, like 192.0.2.1.",
+        "aliases": [
+            "ip",
+            "ip_address"
+        ],
         "format": "ipv4",
         "pattern": "^((25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]?\\d)\\.){3}(25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]?\\d)$",
         "examples": {
@@ -495,6 +637,12 @@
         "base": "_token",
         "level": "core",
         "category": "identity",
+        "label": "IP address (v6)",
+        "hint": "Like 2001:db8::1",
+        "error": "That IP address looks wrong. Try 2001:db8::1.",
+        "aliases": [
+            "ipv6_address"
+        ],
         "format": "ipv6",
         "examples": {
             "valid": [
@@ -516,6 +664,13 @@
         "base": "_token",
         "level": "core",
         "category": "identity",
+        "label": "Network range",
+        "hint": "An address and a size, like 192.0.2.0/24",
+        "error": "Please use an address, a slash and a size, like 192.0.2.0/24.",
+        "aliases": [
+            "subnet",
+            "network"
+        ],
         "examples": {
             "valid": [
                 "192.0.2.0/24",
@@ -534,6 +689,14 @@
         "base": "_token",
         "level": "core",
         "category": "identity",
+        "label": "Web link",
+        "hint": "Like https://example.com/page",
+        "error": "That link looks wrong. Try https://example.com/page.",
+        "aliases": [
+            "url",
+            "link",
+            "website"
+        ],
         "format": "uri",
         "examples": {
             "valid": [
@@ -550,6 +713,13 @@
         "base": "_token",
         "level": "core",
         "category": "identity",
+        "label": "Unique ID",
+        "hint": "A long ID with dashes, made by the computer",
+        "error": "That ID looks wrong. It should look like f81d4fae-7dec-11d0-a765-00a0c91e6bf6.",
+        "aliases": [
+            "guid",
+            "unique_id"
+        ],
         "format": "uuid",
         "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
         "examples": {
@@ -570,6 +740,15 @@
         "base": "_token",
         "level": "core",
         "category": "identity",
+        "label": "Phone number",
+        "hint": "Start with + and your country code",
+        "error": "Start with + and the country code, no spaces, like +14155552671.",
+        "aliases": [
+            "tel",
+            "telephone",
+            "mobile",
+            "phone_number"
+        ],
         "pattern": "^\\+[1-9]\\d{1,14}$",
         "examples": {
             "valid": [
@@ -589,6 +768,14 @@
         "base": "_bytes",
         "level": "core",
         "category": "technical",
+        "label": "File",
+        "hint": "Upload a file",
+        "error": "Please choose a file.",
+        "aliases": [
+            "bytes",
+            "file",
+            "blob"
+        ],
         "examples": {
             "valid": [
                 "SGVsbG8gd29ybGQ=",
@@ -604,6 +791,13 @@
         "base": "_token",
         "level": "core",
         "category": "technical",
+        "label": "Secret",
+        "hint": "Kept hidden, like a password",
+        "error": "Please type the secret.",
+        "aliases": [
+            "password",
+            "api_key"
+        ],
         "format": "password",
         "examples": {
             "valid": [
@@ -619,6 +813,13 @@
         "base": "_token",
         "level": "core",
         "category": "technical",
+        "label": "File type",
+        "hint": "What kind of file, like application/json",
+        "error": "Please write kind/subkind, like application/json.",
+        "aliases": [
+            "mime_type",
+            "content_type"
+        ],
         "pattern": "^[A-Za-z0-9!#$&^_.+-]+/[A-Za-z0-9!#$&^_.+-]+(;.*)?$",
         "examples": {
             "valid": [
@@ -639,6 +840,13 @@
         "base": "_token",
         "level": "core",
         "category": "technical",
+        "label": "Web address name",
+        "hint": "Small letters, digits and dashes",
+        "error": "Use small letters, digits and single dashes, like getting-started.",
+        "aliases": [
+            "permalink",
+            "url_name"
+        ],
         "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
         "examples": {
             "valid": [
@@ -660,6 +868,12 @@
         "base": "_token",
         "level": "core",
         "category": "business",
+        "label": "Country",
+        "hint": "Pick a country",
+        "error": "Please use the 2-letter country code, like US.",
+        "aliases": [
+            "country_code"
+        ],
         "pattern": "^[A-Z]{2}$",
         "examples": {
             "valid": [
@@ -679,6 +893,12 @@
         "base": "_token",
         "level": "core",
         "category": "business",
+        "label": "Currency",
+        "hint": "Pick a currency, like USD or EUR",
+        "error": "Please use the 3-letter currency code, like USD.",
+        "aliases": [
+            "currency_code"
+        ],
         "pattern": "^[A-Z]{3}$",
         "examples": {
             "valid": [
@@ -698,6 +918,13 @@
         "base": "_token",
         "level": "core",
         "category": "business",
+        "label": "Language and region",
+        "hint": "Like en-US or es-419",
+        "error": "Please use a language code, like en-US.",
+        "aliases": [
+            "language_tag",
+            "lang"
+        ],
         "format": "language",
         "pattern": "^[a-zA-Z]{2,3}(-[a-zA-Z]{4})?(-([a-zA-Z]{2}|\\d{3}))?$",
         "examples": {
@@ -720,6 +947,14 @@
         "base": "_token",
         "level": "core",
         "category": "technical",
+        "label": "Color",
+        "hint": "Pick a color",
+        "error": "Please use # and 6 small hex digits, like #1a2b3c.",
+        "aliases": [
+            "colour",
+            "rgb",
+            "hex_color"
+        ],
         "pattern": "^#[0-9a-f]{6}([0-9a-f]{2})?$",
         "examples": {
             "valid": [
@@ -742,6 +977,13 @@
         "base": "string",
         "level": "advanced",
         "category": "primitive",
+        "label": "Single character",
+        "hint": "Exactly one character",
+        "error": "Please type exactly one character, like A.",
+        "aliases": [
+            "character",
+            "letter"
+        ],
         "format": "char",
         "pattern": "^[\\s\\S]$",
         "examples": {
@@ -762,6 +1004,13 @@
         "base": "int32",
         "level": "advanced",
         "category": "primitive",
+        "label": "Tiny whole number",
+        "hint": "From -128 to 127",
+        "error": "Please use a whole number from -128 to 127.",
+        "aliases": [
+            "tinyint",
+            "byte"
+        ],
         "format": "int8",
         "minimum": -128,
         "maximum": 127,
@@ -784,6 +1033,13 @@
         "base": "int32",
         "level": "advanced",
         "category": "primitive",
+        "label": "Small whole number",
+        "hint": "From -32768 to 32767",
+        "error": "Please use a whole number from -32768 to 32767.",
+        "aliases": [
+            "smallint",
+            "short"
+        ],
         "format": "int16",
         "minimum": -32768,
         "maximum": 32767,
@@ -805,6 +1061,12 @@
         "base": "int32",
         "level": "advanced",
         "category": "primitive",
+        "label": "Tiny count",
+        "hint": "From 0 to 255",
+        "error": "Please use a whole number from 0 to 255.",
+        "aliases": [
+            "ubyte"
+        ],
         "format": "uint8",
         "minimum": 0,
         "maximum": 255,
@@ -827,6 +1089,12 @@
         "base": "int32",
         "level": "advanced",
         "category": "primitive",
+        "label": "Small count",
+        "hint": "From 0 to 65535",
+        "error": "Please use a whole number from 0 to 65535.",
+        "aliases": [
+            "ushort"
+        ],
         "format": "uint16",
         "minimum": 0,
         "maximum": 65535,
@@ -849,6 +1117,13 @@
         "level": "advanced",
         "category": "primitive",
         "alternative": "int64",
+        "label": "Count",
+        "hint": "From 0 to 4294967295",
+        "error": "Please use a whole number from 0 to 4294967295.",
+        "aliases": [
+            "uint",
+            "unsigned"
+        ],
         "format": "uint32",
         "minimum": 0,
         "maximum": 4294967295,
@@ -870,6 +1145,12 @@
         "base": "int64",
         "level": "advanced",
         "category": "primitive",
+        "label": "Huge count",
+        "hint": "Digits only, no minus sign",
+        "error": "Please use only digits, like 18446744073709551615.",
+        "aliases": [
+            "ulong"
+        ],
         "format": "uint64",
         "pattern": "^\\d+$",
         "examples": {
@@ -894,6 +1175,12 @@
         "level": "advanced",
         "category": "primitive",
         "alternative": "int64",
+        "label": "Safe whole number",
+        "hint": "Whole number JavaScript keeps exact",
+        "error": "Please use a whole number between ±9007199254740991.",
+        "aliases": [
+            "safe_integer"
+        ],
         "format": "double-int",
         "minimum": -9007199254740991,
         "maximum": 9007199254740991,
@@ -915,6 +1202,13 @@
         "base": "float64",
         "level": "advanced",
         "category": "primitive",
+        "label": "Small-precision number",
+        "hint": "Any number, stored with ~7 digits",
+        "error": "Please type a number, like 3.14.",
+        "aliases": [
+            "real",
+            "single"
+        ],
         "format": "float",
         "examples": {
             "valid": [
@@ -933,6 +1227,12 @@
         "base": "decimal",
         "level": "advanced",
         "category": "primitive",
+        "label": "Very exact number",
+        "hint": "Up to 34 significant digits",
+        "error": "Please use digits and one dot, like 1234.567890123456789012345678901234.",
+        "aliases": [
+            "dec128"
+        ],
         "format": "decimal128",
         "examples": {
             "valid": [
@@ -952,6 +1252,13 @@
         "base": "time_local",
         "level": "advanced",
         "category": "temporal",
+        "label": "Time with offset",
+        "hint": "Like 14:30:00Z or 14:30:00+02:00",
+        "error": "Please add the zone offset, like 14:30:00Z.",
+        "aliases": [
+            "timetz",
+            "offset_time"
+        ],
         "format": "time",
         "pattern": "^\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?([Zz]|[+-]\\d{2}:\\d{2})$",
         "examples": {
@@ -977,6 +1284,13 @@
         "level": "advanced",
         "category": "temporal",
         "alternative": "date_time",
+        "label": "Unix timestamp",
+        "hint": "Seconds since 1970-01-01",
+        "error": "Please use whole seconds since 1970, like 1786000000.",
+        "aliases": [
+            "epoch",
+            "epoch_seconds"
+        ],
         "format": "unixtime",
         "minimum": null,
         "maximum": null,
@@ -1000,6 +1314,12 @@
         "level": "advanced",
         "category": "identity",
         "alternative": "email",
+        "label": "International email",
+        "hint": "Email that may use any alphabet",
+        "error": "That email looks wrong. Try ñoño@ejemplo.es.",
+        "aliases": [
+            "unicode_email"
+        ],
         "format": "idn-email",
         "examples": {
             "valid": [
@@ -1016,6 +1336,12 @@
         "level": "advanced",
         "category": "identity",
         "alternative": "hostname",
+        "label": "International website name",
+        "hint": "A domain in any alphabet",
+        "error": "That domain looks wrong. Try bücher.example.",
+        "aliases": [
+            "unicode_domain"
+        ],
         "format": "idn-hostname",
         "examples": {
             "valid": [
@@ -1031,6 +1357,12 @@
         "base": "cidr",
         "level": "advanced",
         "category": "identity",
+        "label": "IPv4 network range",
+        "hint": "Like 192.0.2.0/24",
+        "error": "Please use an IPv4 address, a slash and 0-32, like 192.0.2.0/24.",
+        "aliases": [
+            "ipv4_subnet"
+        ],
         "format": "ipv4-cidr",
         "pattern": "^((25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]?\\d)\\.){3}(25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]?\\d)/(3[0-2]|[12]?\\d)$",
         "examples": {
@@ -1054,6 +1386,12 @@
         "base": "cidr",
         "level": "advanced",
         "category": "identity",
+        "label": "IPv6 network range",
+        "hint": "Like 2001:db8::/32",
+        "error": "Please use an IPv6 address, a slash and 0-128, like 2001:db8::/32.",
+        "aliases": [
+            "ipv6_subnet"
+        ],
         "format": "ipv6-cidr",
         "examples": {
             "valid": [
@@ -1073,6 +1411,13 @@
         "base": "_token",
         "level": "advanced",
         "category": "identity",
+        "label": "Hardware address",
+        "hint": "Six pairs of hex digits",
+        "error": "Please use six hex pairs with : or -, like 00:1b:44:11:3a:b7.",
+        "aliases": [
+            "mac",
+            "mac_addr"
+        ],
         "pattern": "^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$",
         "examples": {
             "valid": [
@@ -1093,6 +1438,13 @@
         "level": "advanced",
         "category": "identity",
         "alternative": "uri",
+        "label": "Link or path",
+        "hint": "A full link or a path like /a/b",
+        "error": "That link or path looks wrong. Try /a/b?c=1.",
+        "aliases": [
+            "relative_url",
+            "href"
+        ],
         "format": "uri-reference",
         "examples": {
             "valid": [
@@ -1111,6 +1463,12 @@
         "level": "advanced",
         "category": "identity",
         "alternative": "uri",
+        "label": "International link",
+        "hint": "A link that may use any alphabet",
+        "error": "That link looks wrong. Try https://bücher.example/straße.",
+        "aliases": [
+            "unicode_url"
+        ],
         "format": "iri",
         "examples": {
             "valid": [
@@ -1127,6 +1485,12 @@
         "level": "advanced",
         "category": "identity",
         "alternative": "uri",
+        "label": "International link or path",
+        "hint": "A link or path in any alphabet",
+        "error": "That link or path looks wrong. Try ../straße.",
+        "aliases": [
+            "unicode_href"
+        ],
         "format": "iri-reference",
         "examples": {
             "valid": [
@@ -1143,6 +1507,12 @@
         "base": "uuid",
         "level": "advanced",
         "category": "identity",
+        "label": "Time-ordered ID",
+        "hint": "A unique ID that sorts by time",
+        "error": "It needs a 7 after the second dash, like 018f4b2c-9c1e-7a3b-8f2d-1a2b3c4d5e6f.",
+        "aliases": [
+            "uuidv7"
+        ],
         "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
         "examples": {
             "valid": [
@@ -1164,6 +1534,12 @@
         "level": "advanced",
         "category": "identity",
         "alternative": "uuid",
+        "label": "Sortable ID",
+        "hint": "26 letters and digits",
+        "error": "Please use 26 letters and digits, like 01ARZ3NDEKTSV4RRFFQ69G5FAV.",
+        "aliases": [
+            "sortable_id"
+        ],
         "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
         "examples": {
             "valid": [
@@ -1184,6 +1560,12 @@
         "base": "binary",
         "level": "advanced",
         "category": "technical",
+        "label": "Base64 data",
+        "hint": "Bytes written as letters, + and /",
+        "error": "Please use base64 with = padding, like SGVsbG8gd29ybGQ=.",
+        "aliases": [
+            "b64"
+        ],
         "pattern": "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$",
         "contentEncoding": null,
         "examples": {
@@ -1206,6 +1588,12 @@
         "base": "binary",
         "level": "advanced",
         "category": "technical",
+        "label": "URL-safe base64",
+        "hint": "Bytes written as letters, - and _",
+        "error": "Please use letters, digits, - and _, like SGVsbG8gd29ybGQ.",
+        "aliases": [
+            "b64url"
+        ],
         "pattern": "^[A-Za-z0-9_-]*={0,2}$",
         "contentEncoding": null,
         "examples": {
@@ -1229,6 +1617,12 @@
         "level": "advanced",
         "category": "technical",
         "alternative": "color",
+        "label": "CSS color",
+        "hint": "Any CSS color, like oklch(70% 0.15 250)",
+        "error": "That doesn't look like a CSS color. Try oklch(70% 0.15 250).",
+        "aliases": [
+            "css_colour"
+        ],
         "pattern": "^(#[0-9a-fA-F]{3,4}|#[0-9a-fA-F]{6}|#[0-9a-fA-F]{8}|[a-zA-Z]+|(rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\\([^()]*\\))$",
         "examples": {
             "valid": [
@@ -1252,6 +1646,13 @@
         "base": "text",
         "level": "advanced",
         "category": "technical",
+        "label": "Markdown",
+        "hint": "Text with # headings and **bold**",
+        "error": "Please type some Markdown text.",
+        "aliases": [
+            "markdown",
+            "md"
+        ],
         "format": "commonmark",
         "examples": {
             "valid": [
@@ -1267,6 +1668,12 @@
         "base": "text",
         "level": "advanced",
         "category": "technical",
+        "label": "HTML",
+        "hint": "Web page markup, like <p>Hello</p>",
+        "error": "Please type some HTML.",
+        "aliases": [
+            "markup"
+        ],
         "format": "html",
         "examples": {
             "valid": [
@@ -1282,6 +1689,12 @@
         "base": "_token",
         "level": "advanced",
         "category": "technical",
+        "label": "JSON Pointer",
+        "hint": "A path inside a document, like /users/0",
+        "error": "Start with / for each step, like /users/0/email.",
+        "aliases": [
+            "pointer"
+        ],
         "format": "json-pointer",
         "pattern": "^(/([^~/]|~[01])*)*$",
         "examples": {
@@ -1303,6 +1716,12 @@
         "base": "_token",
         "level": "advanced",
         "category": "technical",
+        "label": "Relative JSON Pointer",
+        "hint": "Steps up, then a path, like 1/name",
+        "error": "Please start with a number, like 1/name.",
+        "aliases": [
+            "relative_pointer"
+        ],
         "format": "relative-json-pointer",
         "pattern": "^(0|[1-9]\\d*)(#|(/([^~/]|~[01])*)*)$",
         "examples": {
@@ -1326,6 +1745,12 @@
         "level": "advanced",
         "category": "technical",
         "alternative": "uri",
+        "label": "Link template",
+        "hint": "A link with {placeholders}",
+        "error": "That template looks wrong. Try /users/{id}.",
+        "aliases": [
+            "url_template"
+        ],
         "format": "uri-template",
         "examples": {
             "valid": [
@@ -1341,6 +1766,13 @@
         "base": "_token",
         "level": "advanced",
         "category": "technical",
+        "label": "Text pattern",
+        "hint": "A regular expression, like ^[a-z]+$",
+        "error": "That regular expression looks wrong. Try ^[a-z]+$.",
+        "aliases": [
+            "regexp",
+            "regular_expression"
+        ],
         "format": "regex",
         "examples": {
             "valid": [
@@ -1357,6 +1789,13 @@
         "base": "_token",
         "level": "advanced",
         "category": "technical",
+        "label": "Version number",
+        "hint": "Major.minor.patch, like 1.4.2",
+        "error": "Please use three numbers with dots, like 1.4.2-rc.1.",
+        "aliases": [
+            "version",
+            "semantic_version"
+        ],
         "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
         "examples": {
             "valid": [
@@ -1377,6 +1816,13 @@
         "base": "secret",
         "level": "advanced",
         "category": "technical",
+        "label": "Login token",
+        "hint": "Three parts joined by dots",
+        "error": "Please paste the whole token, like eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.sig.",
+        "aliases": [
+            "json_web_token",
+            "bearer_token"
+        ],
         "format": null,
         "pattern": "^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]*$",
         "examples": {
@@ -1397,6 +1843,13 @@
         "base": "_token",
         "level": "advanced",
         "category": "technical",
+        "label": "SHA-256 hash",
+        "hint": "64 hex characters",
+        "error": "Needs 64 hex characters, like e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.",
+        "aliases": [
+            "hash",
+            "digest"
+        ],
         "pattern": "^[A-Fa-f0-9]{64}$",
         "examples": {
             "valid": [
@@ -1416,6 +1869,12 @@
         "base": "int32",
         "level": "advanced",
         "category": "technical",
+        "label": "Port number",
+        "hint": "From 0 to 65535, like 5432",
+        "error": "Please use a whole number from 0 to 65535.",
+        "aliases": [
+            "port_number"
+        ],
         "format": "uint16",
         "minimum": 0,
         "maximum": 65535,
@@ -1438,6 +1897,13 @@
         "base": "_token",
         "level": "advanced",
         "category": "technical",
+        "label": "Schedule",
+        "hint": "Five fields, like 0 3 * * *",
+        "error": "Please use five fields, like 0 3 * * * (3 AM daily).",
+        "aliases": [
+            "cron_expression",
+            "crontab"
+        ],
         "examples": {
             "valid": [
                 "0 3 * * *",
@@ -1452,6 +1918,12 @@
         "base": "country",
         "level": "advanced",
         "category": "business",
+        "label": "Country (3-letter)",
+        "hint": "Three capital letters, like USA",
+        "error": "Please use the 3-letter country code, like USA.",
+        "aliases": [
+            "country_code3"
+        ],
         "pattern": "^[A-Z]{3}$",
         "examples": {
             "valid": [
@@ -1471,6 +1943,14 @@
         "base": "_token",
         "level": "advanced",
         "category": "business",
+        "label": "State or region",
+        "hint": "Country, dash, region, like US-CA",
+        "error": "Please use country-region, like US-CA.",
+        "aliases": [
+            "region",
+            "state",
+            "province"
+        ],
         "pattern": "^[A-Z]{2}-[A-Z0-9]{1,3}$",
         "examples": {
             "valid": [
@@ -1491,6 +1971,12 @@
         "base": "locale",
         "level": "advanced",
         "category": "business",
+        "label": "Language",
+        "hint": "Two or three small letters, like en",
+        "error": "Please use the language code, like en.",
+        "aliases": [
+            "language_code"
+        ],
         "pattern": "^[a-z]{2,3}$",
         "examples": {
             "valid": [
@@ -1510,6 +1996,12 @@
         "base": "date_time",
         "level": "domain",
         "category": "temporal",
+        "label": "HTTP date",
+        "hint": "Like Sun, 16 Aug 2026 14:30:00 GMT",
+        "error": "Please use the HTTP date form, like Sun, 16 Aug 2026 14:30:00 GMT.",
+        "aliases": [
+            "imf_fixdate"
+        ],
         "format": "http-date",
         "pattern": "^(Mon|Tue|Wed|Thu|Fri|Sat|Sun), \\d{2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \\d{4} \\d{2}:\\d{2}:\\d{2} GMT$",
         "examples": {
@@ -1531,6 +2023,12 @@
         "base": "_token",
         "level": "domain",
         "category": "identity",
+        "label": "Wikidata ID",
+        "hint": "Q and a number, like Q42",
+        "error": "Please use Q and a number, like Q42.",
+        "aliases": [
+            "qid"
+        ],
         "pattern": "^Q[1-9]\\d*$",
         "examples": {
             "valid": [
@@ -1550,6 +2048,12 @@
         "base": "_token",
         "level": "domain",
         "category": "identity",
+        "label": "DOI",
+        "hint": "A paper ID, like 10.1000/182",
+        "error": "Please start with 10., like 10.1000/182.",
+        "aliases": [
+            "doi_name"
+        ],
         "pattern": "^10\\.\\d{4,9}/[-._;()/:A-Za-z0-9]+$",
         "examples": {
             "valid": [
@@ -1569,6 +2073,12 @@
         "base": "_token",
         "level": "domain",
         "category": "identity",
+        "label": "ORCID iD",
+        "hint": "Four groups of four digits",
+        "error": "Please use four groups of 4 with dashes, like 0000-0002-1825-0097.",
+        "aliases": [
+            "orcid_id"
+        ],
         "pattern": "^\\d{4}-\\d{4}-\\d{4}-\\d{3}[\\dX]$",
         "examples": {
             "valid": [
@@ -1588,6 +2098,12 @@
         "base": "_token",
         "level": "domain",
         "category": "identity",
+        "label": "Legal Entity ID",
+        "hint": "20 capital letters and digits",
+        "error": "Please use 20 capital letters and digits, like 5493001KJTIIGC8Y1R12.",
+        "aliases": [
+            "legal_entity_identifier"
+        ],
         "pattern": "^[A-Z0-9]{18}\\d{2}$",
         "examples": {
             "valid": [
@@ -1607,6 +2123,12 @@
         "base": "media_type",
         "level": "domain",
         "category": "technical",
+        "label": "Accepted file types",
+        "hint": "Like text/html or image/*",
+        "error": "Please use kind/subkind or a *, like text/html;q=0.9.",
+        "aliases": [
+            "accept"
+        ],
         "format": "media-range",
         "pattern": "^(\\*/\\*|[A-Za-z0-9!#$&^_.+-]+/\\*|[A-Za-z0-9!#$&^_.+-]+/[A-Za-z0-9!#$&^_.+-]+)(\\s*;.*)?$",
         "examples": {
@@ -1630,6 +2152,12 @@
         "level": "domain",
         "category": "technical",
         "alternative": "int64",
+        "label": "Header number",
+        "hint": "Up to 15 digits",
+        "error": "Please use a whole number with up to 15 digits.",
+        "aliases": [
+            "structured_integer"
+        ],
         "format": "sf-integer",
         "minimum": -999999999999999,
         "maximum": 999999999999999,
@@ -1653,6 +2181,12 @@
         "level": "domain",
         "category": "technical",
         "alternative": "decimal",
+        "label": "Header decimal",
+        "hint": "Up to 3 digits after the dot",
+        "error": "Please use a number with at most 3 decimals, like 4.5.",
+        "aliases": [
+            "structured_decimal"
+        ],
         "format": "sf-decimal",
         "examples": {
             "valid": [
@@ -1675,6 +2209,12 @@
         "base": "_token",
         "level": "domain",
         "category": "technical",
+        "label": "Header text",
+        "hint": "Plain ASCII characters only",
+        "error": "Please use plain ASCII characters, like hello world.",
+        "aliases": [
+            "structured_string"
+        ],
         "format": "sf-string",
         "pattern": "^[\\x20-\\x7E]*$",
         "examples": {
@@ -1696,6 +2236,12 @@
         "base": "_token",
         "level": "domain",
         "category": "technical",
+        "label": "Header token",
+        "hint": "A short word like gzip",
+        "error": "Please start with a letter, no spaces, like gzip.",
+        "aliases": [
+            "structured_token"
+        ],
         "format": "sf-token",
         "pattern": "^[A-Za-z*][A-Za-z0-9:/!#$%&'*+\\-.^_`|~]*$",
         "examples": {
@@ -1718,6 +2264,12 @@
         "base": "binary",
         "level": "domain",
         "category": "technical",
+        "label": "Header bytes",
+        "hint": "Base64 between colons",
+        "error": "Please wrap base64 in colons, like :aGVsbG8=:.",
+        "aliases": [
+            "structured_binary"
+        ],
         "format": "sf-binary",
         "pattern": "^:[A-Za-z0-9+/]*={0,2}:$",
         "contentEncoding": null,
@@ -1740,6 +2292,12 @@
         "base": "boolean",
         "level": "domain",
         "category": "technical",
+        "label": "Header yes/no",
+        "hint": "True or false",
+        "error": "Please pick true or false.",
+        "aliases": [
+            "structured_boolean"
+        ],
         "format": "sf-boolean",
         "examples": {
             "valid": [
@@ -1759,6 +2317,12 @@
         "base": "_token",
         "level": "domain",
         "category": "business",
+        "label": "Bank account (IBAN)",
+        "hint": "Country code, 2 digits, then account",
+        "error": "Please use capitals and digits, no spaces, like DE89370400440532013000.",
+        "aliases": [
+            "bank_account"
+        ],
         "pattern": "^[A-Z]{2}\\d{2}[A-Z0-9]{11,30}$",
         "examples": {
             "valid": [
@@ -1778,6 +2342,13 @@
         "base": "_token",
         "level": "domain",
         "category": "business",
+        "label": "Bank code (BIC)",
+        "hint": "8 or 11 capital letters and digits",
+        "error": "Please use 8 or 11 capital letters and digits, like DEUTDEFF500.",
+        "aliases": [
+            "swift",
+            "swift_code"
+        ],
         "pattern": "^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$",
         "examples": {
             "valid": [
@@ -1797,6 +2368,13 @@
         "base": "_token",
         "level": "domain",
         "category": "business",
+        "label": "Book number (ISBN)",
+        "hint": "10 or 13 digits",
+        "error": "Please use 10 or 13 digits, no dashes, like 9780306406157.",
+        "aliases": [
+            "isbn13",
+            "isbn10"
+        ],
         "pattern": "^(\\d{9}[\\dXx]|97[89]\\d{10})$",
         "examples": {
             "valid": [
@@ -1816,6 +2394,14 @@
         "base": "_token",
         "level": "domain",
         "category": "business",
+        "label": "Barcode number",
+        "hint": "8, 12, 13 or 14 digits",
+        "error": "Please use 8, 12, 13 or 14 digits, like 0614141000036.",
+        "aliases": [
+            "barcode",
+            "ean",
+            "upc"
+        ],
         "pattern": "^(\\d{8}|\\d{12}|\\d{13}|\\d{14})$",
         "examples": {
             "valid": [

@@ -87,6 +87,9 @@ export function applyGenerated(t) {
     const h = t.html;
     if (h?.element === "input" && PATTERN_INPUTS.has(h.attrs?.type) && t.pattern) {
         h.attrs = { ...h.attrs, pattern: htmlPattern(t.pattern) };
+        // The browser shows title when the pattern fails; placeholder shows the shape before typing.
+        if (t.error) h.attrs.title = t.error;
+        if (t.examples?.valid?.length) h.attrs.placeholder = String(t.examples.valid[0]);
     }
     const check = pgCheck(t);
     delete t.postgres.check_extra;

@@ -170,8 +170,8 @@ The new form names one split point (the first such dot) instead of leaving the e
 349,525 strings of up to 9 characters over the four kinds of character the pattern can tell apart (dot, `@`,
 whitespace, other): 0 differences. The rewrite takes 0.9 ms on 512,000 characters in Node.
 
-It also fixes the generated HTML `pattern` attribute (browsers run the same kind of engine) and regenerates the
-Postgres CHECK. Gets a CHANGELOG entry as a fix: the string changes, the accepted values do not.
+It also regenerates the Postgres CHECK. (No HTML `pattern` attribute is generated for `email`: its input is
+`type="email"`.) Gets a CHANGELOG entry as a fix: the string changes, the accepted values do not.
 
 ### New build check: every pattern is provably linear
 
@@ -179,6 +179,9 @@ Next to `dev/lib/portable.mjs`. The build fails, naming the type, unless a patte
 match any input prefix. In automaton terms: no nested repeat that yields the same step twice, no exponential ambiguity
 (EDA) and no polynomial ambiguity (IDA) in the pattern's position automaton. This is decidable for the portable subset
 because it has no backreferences or lookaround.
+
+The position automaton keeps edge multiplicities (each distinct way a transition arises), so a nested repeat that
+yields the same step twice, like `^(a+)+$`, is caught as exponential ambiguity.
 
 - Fixtures that must fail: `^(a+)+$`, `^(a|a)*$`, `^(a|aa)+$`, `^a*a*$`, and today's `email` pattern.
 - Fixtures that must pass: every pattern in dist after the `email` rewrite, including the ambiguous-but-bounded ones

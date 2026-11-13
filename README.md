@@ -4,7 +4,7 @@
 
 Pick `phone` once and you get the form input (`<input type="tel">`), the JSON rule (`^\+[1-9]\d{1,14}$`), the database column with a matching `CHECK`, a friendly label, a hint, an error message, and examples, all agreeing with each other.
 
-The whole release is plain JSON. You don't need to install anything to use it.
+The source of truth is plain JSON; `dist/` also has a ready-to-copy file per language.
 
 ## Which file do I use?
 
@@ -16,8 +16,69 @@ The whole release is plain JSON. You don't need to install anything to use it.
 |---|---|
 | Build a tool, form generator or code generator | [`dist/scalars.json`](dist/scalars.json): every type fully resolved, nothing to look up |
 | Reference the types from an OpenAPI document | [`dist/openapi.json`](dist/openapi.json): one JSON Schema per type under `components.schemas` |
+| Validate in Python | [`dist/python/scalars.py`](dist/python/scalars.py): one file, no dependencies |
+| Validate in TypeScript | [`dist/ts/scalars.ts`](dist/ts/scalars.ts): one file, no dependencies |
+| Validate in Go | [`dist/go/`](dist/go/): a module (`scalars.go` and `go.mod`), needs `golang.org/x/text` |
+| Validate in Rust | [`dist/rust/scalars.rs`](dist/rust/scalars.rs): one file, needs the `regex` crate |
 | Change or add a type | [`src/scalar.json`](src/scalar.json) plus [`src/targets/html.json`](src/targets/html.json) and [`src/targets/postgres.json`](src/targets/postgres.json) (then rebuild, see below) |
 | Check a file in your editor | [`schema/`](schema/): schemas for every file above |
+
+## Use it from code
+
+Copy the file for your language. Every type has `normalize`, `validate` and `is_valid`. `validate` cleans the value first, then checks it: `" us "` becomes `"US"`. `get` finds a type by name or alias, and `all` lists them.
+
+**Python** (3.10 or newer, no dependencies):
+
+```python
+import scalars
+
+print(scalars.country.validate(" us "))  # "US"
+print(scalars.email.is_valid("user@example.com"))  # True
+try:
+    scalars.phone.validate("4155552671")
+except scalars.ScalarError as e:
+    print(e)  # the type's error text
+print(scalars.get("money").name)  # "decimal"
+```
+
+**TypeScript** (5.6 or newer, or Node 22.18 or newer; no dependencies):
+
+```ts
+import { scalars, ScalarError } from "./scalars.ts";
+
+console.log(scalars.country.validate(" us ")); // "US"
+console.log(scalars.email.isValid("user@example.com")); // true
+try {
+    scalars.phone.validate("4155552671");
+} catch (e) {
+    if (e instanceof ScalarError) console.log(e.message); // the type's error text
+}
+console.log(scalars.get("money")?.name); // "decimal"
+```
+
+**Go** (1.21 or newer): copy `dist/go/` into your project as the module `scalars`, point to it with a `replace` in your `go.mod`, and run `go mod tidy` to fetch `golang.org/x/text`.
+
+```go
+s, _ := scalars.Country.Validate(" us ") // "US"
+ok := scalars.Email.IsValid("user@example.com") // true
+_, err := scalars.Phone.Validate("4155552671") // err.Error() is the type's error text
+m, found := scalars.Get("money") // m.Name is "decimal"
+```
+
+Go also has `scalars.Lookup(name)` (the typed value, as `any`) and `scalars.All`.
+
+**Rust** (1.80 or newer): add `mod scalars;` and the `regex` crate to `Cargo.toml`.
+
+```rust
+let s = scalars::COUNTRY.validate(" us ").unwrap(); // "US"
+let ok = scalars::EMAIL.is_valid("user@example.com"); // true
+let err = scalars::PHONE.validate("4155552671"); // Err(ScalarError): displays the type's error text
+let m = scalars::get("money").unwrap(); // m.name is "decimal"
+```
+
+Rust also has `scalars::lookup(name)` (returns the typed value as a `Kind`) and `scalars::ALL`. Its `Meta` has no examples, and Go leaves out the four object-valued ones, so neither needs start-up code. Examples are in `dist/scalars.json`.
+
+**Fast on any input.** `validate` takes time proportional to the input length, in all four languages. The build rejects any pattern that isn't provably linear, so no input can make a regex run for seconds.
 
 ## Pick a type
 
@@ -98,12 +159,12 @@ From `dist/scalars.json` (shortened):
 
 The files in `src/` avoid repeating themselves. A type can say `"base": "string"` and then list only what differs. Three hidden building blocks (`_token`, `_json`, `_bytes`) hold settings that many types share. The HTML `pattern`, the Postgres `CHECK`s and the `docs_link`s are never written by hand; they're generated from the type's one `pattern`.
 
-After editing, rebuild and test. This is development tooling only, and the release doesn't need it:
+After editing, rebuild and test. `npm run build` also regenerates the four language files. This is development tooling only, and the release doesn't need it:
 
 ```sh
 cd dev
 npm install
-npm run build   # rewrites dist/
+npm run build   # rewrites dist/, including the four language files
 npm test        # every example runs through JSON Schema, the browser's regex engine and real Postgres
 npm run check:langs   # the same examples, normalize and lookup in TypeScript, Python, Go and Rust
 ```

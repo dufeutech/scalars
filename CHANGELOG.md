@@ -7,6 +7,7 @@
 
 ### Added
 - The build rejects any pattern that is not provably linear.
+- Generated code for Python, TypeScript, Go and Rust: `dist/python/scalars.py`, `dist/ts/scalars.ts`, `dist/go/scalars.go` (with `go.mod`) and `dist/rust/scalars.rs`. Each has `normalize`, `validate` and `is_valid` per type, `get` by name or alias, and a list of all types. `validate` runs in linear time. Python and TypeScript have no dependencies, Go needs `golang.org/x/text`, Rust needs `regex`.
 
 ## 0.3.0 — 2026-11-12
 

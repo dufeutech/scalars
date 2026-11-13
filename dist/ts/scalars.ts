@@ -253,7 +253,7 @@ export const scalars = {
         aliases: ["short_text","varchar"],
         examples: { valid: ["hello","Ada Lovelace"], invalid: [42,null] },
         kind: "text",
-        }),
+    }),
     /** Long text — As many lines as you need. Unbounded prose: article bodies, comments, logs. Prefer string when a length limit is part of the contract. */
     "text": new Scalar<string>({
         name: "text",
@@ -266,7 +266,7 @@ export const scalars = {
         aliases: ["long_text","paragraph"],
         examples: { valid: ["unbounded multi-line body","Line one\nLine two"], invalid: [["not","text"]] },
         kind: "text",
-        }),
+    }),
     /** Yes or no — Pick yes or no. A true/false fact: flags, toggles, switches. Prefer enum if a third state could ever appear, rather than a nullable boolean. */
     "boolean": new Scalar<boolean>({
         name: "boolean",
@@ -279,7 +279,7 @@ export const scalars = {
         aliases: ["bool","yes_no"],
         examples: { valid: [true,false], invalid: ["true",1] },
         kind: "boolean",
-        }),
+    }),
     /** Whole number — A number with no decimal point, like 42. The general-purpose signed integer: counts, quantities, offsets. Prefer int64 for identifiers or anything that can outgrow two billion. */
     "int32": new Scalar<number>({
         name: "int32",
@@ -294,7 +294,7 @@ export const scalars = {
         kind: "integer",
         minimum: -2147483648,
         maximum: 2147483647,
-        }),
+    }),
     /** Big whole number — A very big number with no decimal point. Signed 64-bit integers: database keys, byte sizes, high-resolution counters. Values beyond 2^53 lose precision as JSON numbers, so they travel as strings; storage is still a native 64-bit integer. */
     "int64": new Scalar<string>({
         name: "int64",
@@ -309,7 +309,7 @@ export const scalars = {
         kind: "text",
         pattern: "^-?[0-9]+$",
         minLen: 1,
-        }),
+    }),
     /** Number — Any number, like 3.14. The default floating-point number: measurements, ratios, scores. Never money or exact quantities - use decimal for anything where digits must be exact. */
     "float64": new Scalar<number>({
         name: "float64",
@@ -322,7 +322,7 @@ export const scalars = {
         aliases: ["number","float","double"],
         examples: { valid: [3.141592653589793,-0.5,1e+21], invalid: ["3.14"] },
         kind: "number",
-        }),
+    }),
     /** Exact number — Exact amounts like money: 1234.56. Exact decimal value represented as text. Use for money, rates, quantities, and other values where decimal precision must be preserved. Precision and scale are determined by the target system. */
     "decimal": new Scalar<string>({
         name: "decimal",
@@ -337,7 +337,7 @@ export const scalars = {
         kind: "text",
         pattern: "^-?[0-9]+(\\.[0-9]+)?$",
         minLen: 1,
-        }),
+    }),
     /** Group of fields — Named values kept together. A nested JSON object: structured payloads, settings blobs, documents. Prefer dedicated fields or columns once the shape is stable enough to query. */
     "object": new Scalar<Record<string, unknown>>({
         name: "object",
@@ -350,7 +350,7 @@ export const scalars = {
         aliases: ["map","dict","record"],
         examples: { valid: [{"key":"value"},{}], invalid: [[1,2]] },
         kind: "object",
-        }),
+    }),
     /** List — Several values in order. An ordered JSON list: tags, attachments, embedded collections. Prefer a separate table or repeated field when elements need identity or independent querying. */
     "array": new Scalar<unknown[]>({
         name: "array",
@@ -363,7 +363,7 @@ export const scalars = {
         aliases: ["list"],
         examples: { valid: [[1,2,3],[]], invalid: [{"a":1}] },
         kind: "array",
-        }),
+    }),
     /** Choice — Pick one option from a fixed list. One value from a closed, named set: statuses, roles, kinds. Prefer string for open-ended sets and boolean for exactly two states. */
     "enum": new Scalar<string>({
         name: "enum",
@@ -376,7 +376,7 @@ export const scalars = {
         aliases: ["choice","select"],
         examples: { valid: ["active","draft","archived"], invalid: [] },
         kind: "text",
-        }),
+    }),
     /** Anything — Any value at all. Deliberately unconstrained: passthrough payloads and escape hatches. Reach for it last - every consumer inherits the validation burden. */
     "any": new Scalar<unknown>({
         name: "any",
@@ -389,7 +389,7 @@ export const scalars = {
         aliases: ["json","jsonb"],
         examples: { valid: [{"anything":[1,"two",true]},null,"text",7], invalid: [] },
         kind: "any",
-        }),
+    }),
     /** Date — Year-month-day, like 2026-08-16. A calendar date with no time or zone: birthdays, due dates, effective dates. Prefer date_time for an actual instant. */
     "date": new Scalar<string>({
         name: "date",
@@ -405,7 +405,7 @@ export const scalars = {
         pattern: "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
         minLen: 10,
         maxLen: 10,
-        }),
+    }),
     /** Time of day — Hours:minutes:seconds, like 14:30:00. A wall-clock time with no offset: daily schedules like 'every day at 14:30' that follow whatever zone applies. Pair with timezone when the zone is fixed. */
     "time_local": new Scalar<string>({
         name: "time_local",
@@ -420,7 +420,7 @@ export const scalars = {
         kind: "text",
         pattern: "^[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?$",
         minLen: 8,
-        }),
+    }),
     /** Date and time — An exact moment, with its time zone. An absolute instant with offset - the default for created/updated timestamps and anything that really happened. Prefer date_time_local only for deliberately floating times. */
     "date_time": new Scalar<string>({
         name: "date_time",
@@ -435,7 +435,7 @@ export const scalars = {
         kind: "text",
         pattern: "^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt][0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?([Zz]|[+-][0-9]{2}:[0-9]{2})$",
         minLen: 20,
-        }),
+    }),
     /** Local date and time — A date and time on the clock, no zone. A date and time with no offset: floating events like 'Jan 1 at midnight, wherever the user is'. Prefer date_time for real instants; pair with timezone to reconstruct one. */
     "date_time_local": new Scalar<string>({
         name: "date_time_local",
@@ -450,7 +450,7 @@ export const scalars = {
         kind: "text",
         pattern: "^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt][0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?$",
         minLen: 19,
-        }),
+    }),
     /** Length of time — How long something lasts, like P3DT4H30M. A span of time (ISO 8601): timeouts, retention windows, billing periods. A length, not a position - prefer date_time for points in time. */
     "duration": new Scalar<string>({
         name: "duration",
@@ -465,7 +465,7 @@ export const scalars = {
         kind: "text",
         pattern: "^P(([0-9]+Y([0-9]+M)?([0-9]+W)?([0-9]+D)?|[0-9]+M([0-9]+W)?([0-9]+D)?|[0-9]+W([0-9]+D)?|[0-9]+D)(T([0-9]+H([0-9]+M)?([0-9]+(\\.[0-9]+)?S)?|[0-9]+M([0-9]+(\\.[0-9]+)?S)?|[0-9]+(\\.[0-9]+)?S))?|T([0-9]+H([0-9]+M)?([0-9]+(\\.[0-9]+)?S)?|[0-9]+M([0-9]+(\\.[0-9]+)?S)?|[0-9]+(\\.[0-9]+)?S))$",
         minLen: 3,
-        }),
+    }),
     /** Time zone — A region and city, like America/New_York. An IANA zone name like America/New_York: user preferences and scheduling context. Store the name, never a raw offset - offsets change with DST and law. */
     "timezone": new Scalar<string>({
         name: "timezone",
@@ -480,7 +480,7 @@ export const scalars = {
         kind: "text",
         pattern: "^(UTC|[A-Za-z_]+/[A-Za-z0-9_+-]+(/[A-Za-z0-9_+-]+)?)$",
         minLen: 3,
-        }),
+    }),
     /** Email address — Like name@example.com. An email address: login and contact fields. Accepting internationalized mailboxes is a validation choice, not a separate type. */
     "email": new Scalar<string>({
         name: "email",
@@ -496,7 +496,7 @@ export const scalars = {
         steps: ["trim"],
         pattern: "^[^@\\x09-\\x0D\\x20]+@[^@\\x09-\\x0D\\x20][^.@\\x09-\\x0D\\x20]*\\.[^@\\x09-\\x0D\\x20]+$",
         minLen: 5,
-        }),
+    }),
     /** Website name — Like api.example.com. A DNS hostname: servers and endpoints without scheme or path. Prefer uri when a full locator travels; internationalized names are a validation choice. */
     "hostname": new Scalar<string>({
         name: "hostname",
@@ -513,7 +513,7 @@ export const scalars = {
         pattern: "^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$",
         minLen: 1,
         maxLen: 253,
-        }),
+    }),
     /** IP address (v4) — Four numbers with dots, like 192.0.2.1. A dotted-quad IPv4 host address. Prefer cidr for networks rather than hosts. */
     "ipv4": new Scalar<string>({
         name: "ipv4",
@@ -529,7 +529,7 @@ export const scalars = {
         pattern: "^((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])$",
         minLen: 7,
         maxLen: 15,
-        }),
+    }),
     /** IP address (v6) — Like 2001:db8::1. An IPv6 host address. Prefer cidr for prefixes rather than hosts. */
     "ipv6": new Scalar<string>({
         name: "ipv6",
@@ -542,7 +542,7 @@ export const scalars = {
         aliases: ["ipv6_address"],
         examples: { valid: ["2001:db8::1","::1","fe80::1ff:fe23:4567:890a"], invalid: [] },
         kind: "text",
-        }),
+    }),
     /** Network range — An address and a size, like 192.0.2.0/24. A network prefix of either IP family: allowlists, routing rules. Prefer ipv4 or ipv6 for a single host. */
     "cidr": new Scalar<string>({
         name: "cidr",
@@ -555,7 +555,7 @@ export const scalars = {
         aliases: ["subnet","network"],
         examples: { valid: ["192.0.2.0/24","2001:db8::/32","10.0.0.0/8"], invalid: [] },
         kind: "text",
-        }),
+    }),
     /** Web link — Like https://example.com/page. An absolute URI with scheme: links, webhooks, resource locators. Use string for relative paths. */
     "uri": new Scalar<string>({
         name: "uri",
@@ -568,7 +568,7 @@ export const scalars = {
         aliases: ["url","link","website"],
         examples: { valid: ["https://example.com/a/b?c=1","mailto:user@example.com","urn:isbn:9780306406157"], invalid: [] },
         kind: "text",
-        }),
+    }),
     /** Unique ID — A long ID with dashes, made by the computer. A 128-bit universal identifier, any version: primary keys and references. Which version to mint (such as time-ordered v7) is a generation option, not a separate type. */
     "uuid": new Scalar<string>({
         name: "uuid",
@@ -585,7 +585,7 @@ export const scalars = {
         pattern: "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
         minLen: 36,
         maxLen: 36,
-        }),
+    }),
     /** Phone number — Start with + and your country code. An E.164 phone number (+country code, digits only): dialing and SMS. Store normalized; display formatting is presentation, not data. */
     "phone": new Scalar<string>({
         name: "phone",
@@ -602,7 +602,7 @@ export const scalars = {
         pattern: "^\\+[1-9][0-9]{1,14}$",
         minLen: 3,
         maxLen: 16,
-        }),
+    }),
     /** File — Upload a file. Raw bytes: file uploads, blobs, digests. Inside JSON they travel as standard base64 (RFC 4648); storage keeps the decoded bytes. */
     "binary": new Scalar<string>({
         name: "binary",
@@ -615,7 +615,7 @@ export const scalars = {
         aliases: ["bytes","file","blob"],
         examples: { valid: ["SGVsbG8gd29ybGQ=",""], invalid: [] },
         kind: "text",
-        }),
+    }),
     /** Secret — Kept hidden, like a password. Sensitive text that must never be displayed or logged: passwords, API keys. The format is a masking hint, not protection - hash or encrypt at rest. */
     "secret": new Scalar<string>({
         name: "secret",
@@ -628,7 +628,7 @@ export const scalars = {
         aliases: ["password","api_key"],
         examples: { valid: ["••••••••","correct horse battery staple"], invalid: [] },
         kind: "text",
-        }),
+    }),
     /** File type — What kind of file, like application/json. A concrete media type like application/json: labeling stored content. */
     "media_type": new Scalar<string>({
         name: "media_type",
@@ -643,7 +643,7 @@ export const scalars = {
         kind: "text",
         pattern: "^[A-Za-z0-9!#$&^_.+-]+/[A-Za-z0-9!#$&^_.+-]+(;[^\\x00-\\x1F\\x7F]*)?$",
         minLen: 3,
-        }),
+    }),
     /** Web address name — Small letters, digits and dashes. A lowercase-hyphen URL token (getting-started): readable path segments derived from a title. Presentation identity only - prefer uuid as the real key. */
     "slug": new Scalar<string>({
         name: "slug",
@@ -659,7 +659,7 @@ export const scalars = {
         steps: ["trim","lowercase"],
         pattern: "^[a-z0-9]+(-[a-z0-9]+)*$",
         minLen: 1,
-        }),
+    }),
     /** Country — Pick a country. An ISO 3166-1 alpha-2 country code (US): the interchange default for countries. */
     "country": new Scalar<string>({
         name: "country",
@@ -676,7 +676,7 @@ export const scalars = {
         pattern: "^[A-Z]{2}$",
         minLen: 2,
         maxLen: 2,
-        }),
+    }),
     /** Currency — Pick a currency, like USD or EUR. An ISO 4217 currency code (USD): pair it with a decimal amount to represent money. Never derive it from country or locale - people transact across borders. */
     "currency": new Scalar<string>({
         name: "currency",
@@ -693,7 +693,7 @@ export const scalars = {
         pattern: "^[A-Z]{3}$",
         minLen: 3,
         maxLen: 3,
-        }),
+    }),
     /** Language and region — Like en-US or es-419. A BCP 47 language tag (en, en-US): a language with optional script and region, for formatting, translations, and user preferences. */
     "locale": new Scalar<string>({
         name: "locale",
@@ -709,7 +709,7 @@ export const scalars = {
         pattern: "^[a-zA-Z]{2,3}(-[a-zA-Z]{4})?(-([a-zA-Z]{2}|[0-9]{3}))?$",
         minLen: 2,
         maxLen: 12,
-        }),
+    }),
     /** Color — Pick a color. An sRGB color as lowercase #rrggbb or #rrggbbaa - the exact form <input type="color"> produces, so it round-trips through forms, JSON, JS/TS and SQL unchanged. Prefer css_color only for wide-gamut or design-token values. */
     "color": new Scalar<string>({
         name: "color",
@@ -726,7 +726,7 @@ export const scalars = {
         pattern: "^#[0-9a-f]{6}([0-9a-f]{2})?$",
         minLen: 7,
         maxLen: 9,
-        }),
+    }),
     /** Single character — Exactly one character. Exactly one character: a grade, flag, or single-letter code. Prefer string for anything that can grow, and enum when the values form a closed set. */
     "char": new Scalar<string>({
         name: "char",
@@ -741,7 +741,7 @@ export const scalars = {
         kind: "text",
         minLen: 1,
         maxLen: 1,
-        }),
+    }),
     /** Tiny whole number — From -128 to 127. Tiny signed integers (-128..127) where the bound is part of the contract. Prefer int32 as the general-purpose default. */
     "int8": new Scalar<number>({
         name: "int8",
@@ -756,7 +756,7 @@ export const scalars = {
         kind: "integer",
         minimum: -128,
         maximum: 127,
-        }),
+    }),
     /** Small whole number — From -32768 to 32767. Signed 16-bit integers: compact numeric codes and small bounded quantities. Prefer int32 as the general-purpose default. */
     "int16": new Scalar<number>({
         name: "int16",
@@ -771,7 +771,7 @@ export const scalars = {
         kind: "integer",
         minimum: -32768,
         maximum: 32767,
-        }),
+    }),
     /** Tiny count — From 0 to 255. Unsigned bytes (0..255): color channels, small numeric codes. Prefer int32 unless the byte range is intrinsic to the data. */
     "uint8": new Scalar<number>({
         name: "uint8",
@@ -786,7 +786,7 @@ export const scalars = {
         kind: "integer",
         minimum: 0,
         maximum: 255,
-        }),
+    }),
     /** Small count — From 0 to 65535. Unsigned 16-bit integers (0..65535). Prefer port for network ports specifically, and int32 when a negative value could ever appear. */
     "uint16": new Scalar<number>({
         name: "uint16",
@@ -801,7 +801,7 @@ export const scalars = {
         kind: "integer",
         minimum: 0,
         maximum: 65535,
-        }),
+    }),
     /** Count — From 0 to 4294967295. Unsigned 32-bit integers: large counters and IDs from systems that use them. Prefer int64 in new designs; signed types survive arithmetic and language boundaries better. */
     "uint32": new Scalar<number>({
         name: "uint32",
@@ -816,7 +816,7 @@ export const scalars = {
         kind: "integer",
         minimum: 0,
         maximum: 4294967295,
-        }),
+    }),
     /** Huge count — Digits only, no minus sign. The full unsigned 64-bit range: hashes and foreign systems' identifiers. Most languages and JSON cannot represent the upper half natively, so values travel as strings; prefer int64 unless the source really uses all 64 bits. */
     "uint64": new Scalar<string>({
         name: "uint64",
@@ -831,7 +831,7 @@ export const scalars = {
         kind: "text",
         pattern: "^[0-9]+$",
         minLen: 1,
-        }),
+    }),
     /** Safe whole number — Whole number JavaScript keeps exact. Integers exactly representable in an IEEE double (up to 2^53-1): safe as a plain number for every JSON consumer, including JavaScript. Prefer int64 when the full 64-bit range matters and consumers accept strings. */
     "double_int": new Scalar<number>({
         name: "double_int",
@@ -846,7 +846,7 @@ export const scalars = {
         kind: "integer",
         minimum: -9007199254740991,
         maximum: 9007199254740991,
-        }),
+    }),
     /** Small-precision number — Any number, stored with ~7 digits. Single-precision floats: bulk sensor readings or ML weights where memory beats precision. Prefer float64 as the default floating-point type. */
     "float32": new Scalar<number>({
         name: "float32",
@@ -859,7 +859,7 @@ export const scalars = {
         aliases: ["real","single"],
         examples: { valid: [3.14,-1.5], invalid: ["3.14"] },
         kind: "number",
-        }),
+    }),
     /** Very exact number — Up to 34 significant digits. IEEE 754 decimal128: exact decimals with a defined 34-significant-digit width, for interchange with fixed-width financial systems. Prefer decimal when arbitrary precision is acceptable. */
     "decimal128": new Scalar<string>({
         name: "decimal128",
@@ -874,7 +874,7 @@ export const scalars = {
         kind: "text",
         pattern: "^-?[0-9]+(\\.[0-9]+)?$",
         minLen: 1,
-        }),
+    }),
     /** Time with offset — Like 14:30:00Z or 14:30:00+02:00. A wall-clock time with an explicit UTC offset. Prefer time_local for schedules that float with the local zone. */
     "time": new Scalar<string>({
         name: "time",
@@ -889,7 +889,7 @@ export const scalars = {
         kind: "text",
         pattern: "^[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?([Zz]|[+-][0-9]{2}:[0-9]{2})$",
         minLen: 9,
-        }),
+    }),
     /** Unix timestamp — Seconds since 1970-01-01. Seconds since the Unix epoch as an integer: compact machine timestamps and TTLs. Prefer date_time for anything humans or APIs read directly. */
     "unix_time": new Scalar<number>({
         name: "unix_time",
@@ -902,7 +902,7 @@ export const scalars = {
         aliases: ["epoch","epoch_seconds"],
         examples: { valid: [1786000000,0,-86400], invalid: [1.5] },
         kind: "integer",
-        }),
+    }),
     /** International email — Email that may use any alphabet. An internationalized email address: non-ASCII local parts and domains. Prefer email when every consumer requires ASCII. */
     "idn_email": new Scalar<string>({
         name: "idn_email",
@@ -915,7 +915,7 @@ export const scalars = {
         aliases: ["unicode_email"],
         examples: { valid: ["用户@例子.广告","ñoño@ejemplo.es"], invalid: [] },
         kind: "text",
-        }),
+    }),
     /** International website name — A domain in any alphabet. An internationalized (IDNA2008) hostname. Prefer hostname when values are guaranteed ASCII or already punycode-encoded. */
     "idn_hostname": new Scalar<string>({
         name: "idn_hostname",
@@ -928,7 +928,7 @@ export const scalars = {
         aliases: ["unicode_domain"],
         examples: { valid: ["例子.广告","bücher.example"], invalid: [] },
         kind: "text",
-        }),
+    }),
     /** IPv4 network range — Like 192.0.2.0/24. An IPv4 network prefix like 192.0.2.0/24. Prefer cidr when either family may appear, and ipv4 for a single host. */
     "ipv4_cidr": new Scalar<string>({
         name: "ipv4_cidr",
@@ -944,7 +944,7 @@ export const scalars = {
         pattern: "^((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])/(3[0-2]|[12]?[0-9])$",
         minLen: 9,
         maxLen: 18,
-        }),
+    }),
     /** IPv6 network range — Like 2001:db8::/32. An IPv6 network prefix like 2001:db8::/32. Prefer cidr when either family may appear, and ipv6 for a single host. */
     "ipv6_cidr": new Scalar<string>({
         name: "ipv6_cidr",
@@ -957,7 +957,7 @@ export const scalars = {
         aliases: ["ipv6_subnet"],
         examples: { valid: ["2001:db8::/32","::/0"], invalid: [] },
         kind: "text",
-        }),
+    }),
     /** Hardware address — Six pairs of hex digits. An EUI-48 hardware address: device inventory, DHCP leases. Never an identity for people or accounts - MACs are spoofable and privacy-sensitive. */
     "mac_address": new Scalar<string>({
         name: "mac_address",
@@ -973,7 +973,7 @@ export const scalars = {
         pattern: "^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$",
         minLen: 17,
         maxLen: 17,
-        }),
+    }),
     /** Link or path — A full link or a path like /a/b. A URI reference, absolute or relative: redirect targets, in-site paths. Prefer uri when an absolute, scheme-carrying value is required. */
     "uri_reference": new Scalar<string>({
         name: "uri_reference",
@@ -986,7 +986,7 @@ export const scalars = {
         aliases: ["relative_url","href"],
         examples: { valid: ["/a/b?c=1","../up","#fragment"], invalid: [] },
         kind: "text",
-        }),
+    }),
     /** International link — A link that may use any alphabet. An internationalized absolute URI: user-facing links in any script, unencoded. Prefer uri when consumers require ASCII with percent-encoding. */
     "iri": new Scalar<string>({
         name: "iri",
@@ -999,7 +999,7 @@ export const scalars = {
         aliases: ["unicode_url"],
         examples: { valid: ["https://例子.广告/路径","https://bücher.example/straße"], invalid: [] },
         kind: "text",
-        }),
+    }),
     /** International link or path — A link or path in any alphabet. An internationalized URI reference, absolute or relative. Prefer iri for absolute-only values and uri_reference for ASCII-only ones. */
     "iri_reference": new Scalar<string>({
         name: "iri_reference",
@@ -1012,7 +1012,7 @@ export const scalars = {
         aliases: ["unicode_href"],
         examples: { valid: ["/路径?c=1","../straße"], invalid: [] },
         kind: "text",
-        }),
+    }),
     /** Time-ordered ID — A unique ID that sorts by time. A time-ordered UUID: new primary keys that index and sort by creation time. Prefer uuid when accepting identifiers you did not mint. */
     "uuid_v7": new Scalar<string>({
         name: "uuid_v7",
@@ -1029,7 +1029,7 @@ export const scalars = {
         pattern: "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
         minLen: 36,
         maxLen: 36,
-        }),
+    }),
     /** Sortable ID — 26 letters and digits. A lexically sortable 128-bit ID in Crockford Base32: time-ordered keys that stay readable as text. Prefer uuid_v7 where native UUID column types and tooling matter. */
     "ulid": new Scalar<string>({
         name: "ulid",
@@ -1045,7 +1045,7 @@ export const scalars = {
         pattern: "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
         minLen: 26,
         maxLen: 26,
-        }),
+    }),
     /** Base64 data — Bytes written as letters, + and /. Binary content as standard base64 text: payloads embedded in JSON. Prefer binary for raw transport and base64url when the value travels in URLs or filenames. */
     "base64": new Scalar<string>({
         name: "base64",
@@ -1059,7 +1059,7 @@ export const scalars = {
         examples: { valid: ["SGVsbG8gd29ybGQ=","","YQ=="], invalid: ["SGVsbG8gd29ybGQ","SGVsbG8_d29ybGQ="] },
         kind: "text",
         pattern: "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$",
-        }),
+    }),
     /** URL-safe base64 — Bytes written as letters, - and _. URL-safe base64 (no + or /): tokens and digests placed in URLs. Prefer base64 for ordinary embedded payloads. */
     "base64url": new Scalar<string>({
         name: "base64url",
@@ -1073,7 +1073,7 @@ export const scalars = {
         examples: { valid: ["SGVsbG8gd29ybGQ","YQ","-_-_"], invalid: ["SGVsbG8+d29ybGQ","SGVs/bG8"] },
         kind: "text",
         pattern: "^[A-Za-z0-9_-]*={0,2}$",
-        }),
+    }),
     /** CSS color — Any CSS color, like oklch(70% 0.15 250). Any single CSS Color 4 value: hex, named, rgb(), hsl(), hwb(), lab(), lch(), oklab(), oklch() or color(display-p3 ...). The pattern only checks the shape; validate for real with CSS.supports('color', value). Level 5 expressions (color-mix(), relative colors, light-dark(), var()) are computed in context and are deliberately not data. */
     "css_color": new Scalar<string>({
         name: "css_color",
@@ -1088,7 +1088,7 @@ export const scalars = {
         kind: "text",
         pattern: "^(#[0-9a-fA-F]{3,4}|#[0-9a-fA-F]{6}|#[0-9a-fA-F]{8}|[a-zA-Z]+|(rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\\([^()]*\\))$",
         minLen: 1,
-        }),
+    }),
     /** Markdown — Text with # headings and **bold**. Markdown (CommonMark) source: user-authored rich content stored as written. Prefer html for already-rendered markup and text for plain prose. */
     "commonmark": new Scalar<string>({
         name: "commonmark",
@@ -1101,7 +1101,7 @@ export const scalars = {
         aliases: ["markdown","md"],
         examples: { valid: ["# Title\n\nSome **bold** text.","- one\n- two"], invalid: [] },
         kind: "text",
-        }),
+    }),
     /** HTML — Web page markup, like <p>Hello</p>. HTML markup stored as-is: rendered output, email bodies. Sanitize on the way in; prefer commonmark when users author the content. */
     "html": new Scalar<string>({
         name: "html",
@@ -1114,7 +1114,7 @@ export const scalars = {
         aliases: ["markup"],
         examples: { valid: ["<p>Hello</p>","<ul><li>one</li></ul>"], invalid: [] },
         kind: "text",
-        }),
+    }),
     /** JSON Pointer — A path inside a document, like /users/0. An absolute JSON Pointer (/users/0/email): addressing a location inside a document from its root. */
     "json_pointer": new Scalar<string>({
         name: "json_pointer",
@@ -1128,7 +1128,7 @@ export const scalars = {
         examples: { valid: ["/users/0/email","","/a~1b/~0c"], invalid: ["users/0","/a~2b"] },
         kind: "text",
         pattern: "^(/([^~/]|~[01])*)*$",
-        }),
+    }),
     /** Relative JSON Pointer — Steps up, then a path, like 1/name. A JSON Pointer relative to a known position (1/name). Prefer json_pointer when addressing from the document root. */
     "relative_json_pointer": new Scalar<string>({
         name: "relative_json_pointer",
@@ -1143,7 +1143,7 @@ export const scalars = {
         kind: "text",
         pattern: "^(0|[1-9][0-9]*)(#|(/([^~/]|~[01])*)*)$",
         minLen: 1,
-        }),
+    }),
     /** Link template — A link with {placeholders}. An RFC 6570 URL pattern with {variables}: route and link templates. Prefer uri for concrete, already-expanded links. */
     "uri_template": new Scalar<string>({
         name: "uri_template",
@@ -1156,7 +1156,7 @@ export const scalars = {
         aliases: ["url_template"],
         examples: { valid: ["/users/{id}{?fields}","https://api.example.com{/version}/items"], invalid: [] },
         kind: "text",
-        }),
+    }),
     /** Text pattern — A regular expression, like ^[a-z]+$. An ECMA-262 regular expression source: validation rules and matchers stored as data. Prefer enum when the acceptable values are simply a closed set. */
     "regex": new Scalar<string>({
         name: "regex",
@@ -1169,7 +1169,7 @@ export const scalars = {
         aliases: ["regexp","regular_expression"],
         examples: { valid: ["^[a-z][a-z0-9_]*$","\\d+"], invalid: [] },
         kind: "text",
-        }),
+    }),
     /** Version number — Major.minor.patch, like 1.4.2. A Semantic Version (1.4.2-rc.1): package and API versions with defined precedence. Prefer string for version-ish labels that do not follow SemVer. */
     "semver": new Scalar<string>({
         name: "semver",
@@ -1184,7 +1184,7 @@ export const scalars = {
         kind: "text",
         pattern: "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
         minLen: 5,
-        }),
+    }),
     /** Login token — Three parts joined by dots. A compact JSON Web Token: signed claims passed between parties. Handle like secret in storage and logs; prefer secret for opaque credentials. */
     "jwt": new Scalar<string>({
         name: "jwt",
@@ -1199,7 +1199,7 @@ export const scalars = {
         kind: "text",
         pattern: "^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]*$",
         minLen: 4,
-        }),
+    }),
     /** SHA-256 hash — 64 hex characters. A SHA-256 digest: content addressing, integrity checks, dedup keys. Never for passwords - those take a dedicated password hash stored as secret. */
     "sha256": new Scalar<string>({
         name: "sha256",
@@ -1215,7 +1215,7 @@ export const scalars = {
         pattern: "^[A-Fa-f0-9]{64}$",
         minLen: 64,
         maxLen: 64,
-        }),
+    }),
     /** Port number — From 0 to 65535, like 5432. A TCP/UDP port number (0..65535): service endpoints and configuration. Prefer uint16 for 16-bit values that are not ports. */
     "port": new Scalar<number>({
         name: "port",
@@ -1230,7 +1230,7 @@ export const scalars = {
         kind: "integer",
         minimum: 0,
         maximum: 65535,
-        }),
+    }),
     /** Schedule — Five fields, like 0 3 * * *. A POSIX crontab expression (0 3 * * *): recurring schedules. Prefer duration for simple intervals and date_time for one-shot schedules. */
     "cron": new Scalar<string>({
         name: "cron",
@@ -1243,7 +1243,7 @@ export const scalars = {
         aliases: ["cron_expression","crontab"],
         examples: { valid: ["0 3 * * *","*/15 9-17 * * 1-5"], invalid: [] },
         kind: "text",
-        }),
+    }),
     /** Country (3-letter) — Three capital letters, like USA. An ISO 3166-1 alpha-3 country code (USA): feeds and standards that require three letters. Prefer country (alpha-2) as the default. */
     "country_alpha3": new Scalar<string>({
         name: "country_alpha3",
@@ -1260,7 +1260,7 @@ export const scalars = {
         pattern: "^[A-Z]{3}$",
         minLen: 3,
         maxLen: 3,
-        }),
+    }),
     /** State or region — Country, dash, region, like US-CA. An ISO 3166-2 subdivision code (US-CA): states, provinces, regions. Carries its country prefix, so no separate country field is needed to interpret it. */
     "subdivision": new Scalar<string>({
         name: "subdivision",
@@ -1277,7 +1277,7 @@ export const scalars = {
         pattern: "^[A-Z]{2}-[A-Z0-9]{1,3}$",
         minLen: 4,
         maxLen: 6,
-        }),
+    }),
     /** Language — Two or three small letters, like en. An ISO 639 language code (en): tagging what language content is in. Prefer locale when region or script variants matter. */
     "language": new Scalar<string>({
         name: "language",
@@ -1293,7 +1293,7 @@ export const scalars = {
         pattern: "^[a-z]{2,3}$",
         minLen: 2,
         maxLen: 3,
-        }),
+    }),
     /** HTTP date — Like Sun, 16 Aug 2026 14:30:00 GMT. The HTTP header date format (IMF-fixdate): Last-Modified, Expires, and friends. HTTP interchange only - prefer date_time everywhere else. */
     "http_date": new Scalar<string>({
         name: "http_date",
@@ -1309,7 +1309,7 @@ export const scalars = {
         pattern: "^(Mon|Tue|Wed|Thu|Fri|Sat|Sun), [0-9]{2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2} GMT$",
         minLen: 29,
         maxLen: 29,
-        }),
+    }),
     /** Wikidata ID — Q and a number, like Q42. A Wikidata entity ID (Q42): linking records to globally known entities. Prefer the domain registry when one exists - doi, orcid, lei, isbn. */
     "wikidata_qid": new Scalar<string>({
         name: "wikidata_qid",
@@ -1324,7 +1324,7 @@ export const scalars = {
         kind: "text",
         pattern: "^Q[1-9][0-9]*$",
         minLen: 2,
-        }),
+    }),
     /** DOI — A paper ID, like 10.1000/182. A Digital Object Identifier: citations to papers, datasets, publications. Prefer uri only for links that are not registered DOIs. */
     "doi": new Scalar<string>({
         name: "doi",
@@ -1339,7 +1339,7 @@ export const scalars = {
         kind: "text",
         pattern: "^10\\.[0-9]{4,9}/[-._;()/:A-Za-z0-9]+$",
         minLen: 9,
-        }),
+    }),
     /** ORCID iD — Four groups of four digits. An ORCID iD identifying a researcher. Prefer lei for organizations and wikidata_qid for entities outside scholarly identity. */
     "orcid": new Scalar<string>({
         name: "orcid",
@@ -1355,7 +1355,7 @@ export const scalars = {
         pattern: "^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{3}[0-9X]$",
         minLen: 19,
         maxLen: 19,
-        }),
+    }),
     /** Legal Entity ID — 20 capital letters and digits. A Legal Entity Identifier: organizations in financial and regulatory contexts. Identity, not routing - prefer bic for payment routing. */
     "lei": new Scalar<string>({
         name: "lei",
@@ -1371,7 +1371,7 @@ export const scalars = {
         pattern: "^[A-Z0-9]{18}[0-9]{2}$",
         minLen: 20,
         maxLen: 20,
-        }),
+    }),
     /** Accepted file types — Like text/html or image/*. An HTTP media range with wildcards and parameters: Accept-style negotiation. Prefer media_type for one concrete type. */
     "media_range": new Scalar<string>({
         name: "media_range",
@@ -1386,7 +1386,7 @@ export const scalars = {
         kind: "text",
         pattern: "^(\\*/\\*|[A-Za-z0-9!#$&^_.+-]+/\\*|[A-Za-z0-9!#$&^_.+-]+/[A-Za-z0-9!#$&^_.+-]+)([\\x09\\x20]*;[^\\x00-\\x1F\\x7F]*)?$",
         minLen: 3,
-        }),
+    }),
     /** Header number — Up to 15 digits. An HTTP Structured Fields integer (15 digits max): numeric members of structured headers. Prefer int64 outside header serialization. */
     "sf_integer": new Scalar<number>({
         name: "sf_integer",
@@ -1401,7 +1401,7 @@ export const scalars = {
         kind: "integer",
         minimum: -999999999999999,
         maximum: 999999999999999,
-        }),
+    }),
     /** Header decimal — Up to 3 digits after the dot. An HTTP Structured Fields decimal (three fractional digits): weights and q-values in headers. Prefer decimal outside header serialization. */
     "sf_decimal": new Scalar<number>({
         name: "sf_decimal",
@@ -1414,7 +1414,7 @@ export const scalars = {
         aliases: ["structured_decimal"],
         examples: { valid: [4.5,-999999999999.999], invalid: ["4.5"] },
         kind: "number",
-        }),
+    }),
     /** Header text — Plain ASCII characters only. An HTTP Structured Fields quoted string (printable ASCII): textual members of structured headers. Prefer string outside header serialization. */
     "sf_string": new Scalar<string>({
         name: "sf_string",
@@ -1428,7 +1428,7 @@ export const scalars = {
         examples: { valid: ["hello world",""], invalid: ["tab\there","café"] },
         kind: "text",
         pattern: "^[\\x20-\\x7E]*$",
-        }),
+    }),
     /** Header token — A short word like gzip. An HTTP Structured Fields token like gzip: short symbolic header values. Prefer enum for closed sets outside HTTP. */
     "sf_token": new Scalar<string>({
         name: "sf_token",
@@ -1443,7 +1443,7 @@ export const scalars = {
         kind: "text",
         pattern: "^[A-Za-z*][A-Za-z0-9:/!#$%&'*+\\-.^_`|~]*$",
         minLen: 1,
-        }),
+    }),
     /** Header bytes — Base64 between colons. An HTTP Structured Fields byte sequence (colon-delimited base64): binary members of structured headers. Prefer base64 outside header serialization. */
     "sf_binary": new Scalar<string>({
         name: "sf_binary",
@@ -1458,7 +1458,7 @@ export const scalars = {
         kind: "text",
         pattern: "^:[A-Za-z0-9+/]*={0,2}:$",
         minLen: 2,
-        }),
+    }),
     /** Header yes/no — True or false. An HTTP Structured Fields boolean (?1 / ?0): flags in structured headers. Prefer boolean outside header serialization. */
     "sf_boolean": new Scalar<boolean>({
         name: "sf_boolean",
@@ -1471,7 +1471,7 @@ export const scalars = {
         aliases: ["structured_boolean"],
         examples: { valid: [true,false], invalid: ["?1"] },
         kind: "boolean",
-        }),
+    }),
     /** Bank account (IBAN) — Country code, 2 digits, then account. An International Bank Account Number: identifying accounts for payments. Pair with bic for cross-border routing and treat as sensitive data. */
     "iban": new Scalar<string>({
         name: "iban",
@@ -1488,7 +1488,7 @@ export const scalars = {
         pattern: "^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$",
         minLen: 15,
         maxLen: 34,
-        }),
+    }),
     /** Bank code (BIC) — 8 or 11 capital letters and digits. A BIC/SWIFT code identifying a bank for payment routing. Routing, not identity - prefer lei to identify the legal entity itself. */
     "bic": new Scalar<string>({
         name: "bic",
@@ -1505,7 +1505,7 @@ export const scalars = {
         pattern: "^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$",
         minLen: 8,
         maxLen: 11,
-        }),
+    }),
     /** Book number (ISBN) — 10 or 13 digits. An ISBN identifying a book edition. Prefer gtin for general retail products; every ISBN-13 is a GTIN, but not the reverse. */
     "isbn": new Scalar<string>({
         name: "isbn",
@@ -1522,7 +1522,7 @@ export const scalars = {
         pattern: "^([0-9]{9}[0-9Xx]|97[89][0-9]{10})$",
         minLen: 10,
         maxLen: 13,
-        }),
+    }),
     /** Barcode number — 8, 12, 13 or 14 digits. A GS1 GTIN (UPC/EAN family) identifying a retail product. Prefer isbn when the domain is specifically books. */
     "gtin": new Scalar<string>({
         name: "gtin",
@@ -1539,7 +1539,7 @@ export const scalars = {
         pattern: "^([0-9]{8}|[0-9]{12}|[0-9]{13}|[0-9]{14})$",
         minLen: 8,
         maxLen: 14,
-        }),
+    }),
     /** Find a type by name or alias; spacing, hyphens and case are forgiven. Nothing found gives undefined. */
     get(word: Name | (string & {})): Scalar<unknown> | undefined {
         return find(word, scalars.all);

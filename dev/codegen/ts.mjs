@@ -29,7 +29,7 @@ function record(m, id) {
     if (m.minimum !== null) fields.push(["minimum", lit(m.minimum)]);
     if (m.maximum !== null) fields.push(["maximum", lit(m.maximum)]);
     const body = fields.map(([k, v]) => `        ${k}: ${v},`).join("\n");
-    return `    ${doc(m)}\n    ${lit(id)}: new Scalar<${NATIVE[m.kind]}>({\n${body}\n        }),`;
+    return `    ${doc(m)}\n    ${lit(id)}: new Scalar<${NATIVE[m.kind]}>({\n${body}\n    }),`;
 }
 
 export function emitTypeScript(models, version) {

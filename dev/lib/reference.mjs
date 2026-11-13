@@ -59,7 +59,8 @@ export function validate(t, v) {
     const inRange = (n) => (m.minimum === null || n >= m.minimum) && (m.maximum === null || n <= m.maximum);
     switch (m.kind) {
         case "text": {
-            if (typeof v !== "string") return fail;
+            // Text must be Unicode scalar values (WHATWG USVString, RFC 7493): a lone surrogate fails first.
+            if (typeof v !== "string" || !v.isWellFormed()) return fail;
             let s = v;
             // The length gate runs just before the first case step: remove_* steps shorten text, case steps never do.
             let gated = false;

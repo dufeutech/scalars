@@ -46,17 +46,19 @@ type Cases struct {
 		Ok       bool
 	} `json:"match"`
 	Validate []struct {
-		Type    string `json:"type"`
-		In      any    `json:"in"`
-		Out     *any   `json:"out"` // nil when the case gives no output
-		Ok      bool   `json:"ok"`
-		Special string `json:"special"`
-		Dynamic bool   `json:"dynamic"`
+		Type      string `json:"type"`
+		In        any    `json:"in"`
+		Out       *any   `json:"out"` // nil when the case gives no output
+		Ok        bool   `json:"ok"`
+		Special   string `json:"special"`
+		Dynamic   bool   `json:"dynamic"`
+		Malformed string `json:"malformed"`
 	} `json:"validate"`
 	Hostile []struct {
 		Type, Prefix, Repeat, Suffix string
 		Count                        int
 		Ok                           bool
+		Malformed                    string
 	} `json:"hostile"`
 }
 
@@ -322,6 +324,9 @@ func main() {
 		if c.Dynamic {
 			continue // Go's compiler rejects a value of the wrong kind
 		}
+		if c.Malformed != "" {
+			continue // encoding/json turns a lone surrogate into U+FFFD; invalid UTF-8 is checked below
+		}
 		v := c.In
 		switch c.Special {
 		case "NaN":
@@ -372,8 +377,20 @@ func main() {
 		fail(`Enum.Validate("x") did not return "x"`)
 	}
 
+	// A Go string can hold bytes that are not UTF-8, which JSON cannot carry: every text type refuses them.
+	for _, t := range []*scalars.TextScalar{scalars.Text, scalars.Email, scalars.String} {
+		for _, s := range []string{"a\xffb", "\xc3", " a@b.co\xed\xa0\x80 "} { // \xed\xa0\x80 encodes U+D800
+			if _, err := t.Validate(s); err == nil || t.IsValid(s) {
+				fail("%s accepts invalid UTF-8 %q", t.Name, s)
+			}
+		}
+	}
+
 	slowest, slowestType := 0.0, ""
 	for _, c := range cases.Hostile {
+		if c.Malformed != "" {
+			continue // a lone surrogate does not survive encoding/json
+		}
 		t, ok := scalars.Lookup(c.Type).(*scalars.TextScalar)
 		if !ok {
 			fail("hostile %s is not a text type", c.Type)

@@ -67,6 +67,11 @@ function shorterThan(s: string, min: number): boolean {
     return n < min;
 }
 
+/** String.prototype.isWellFormed (ES2024), typed here so the file also checks under an older `lib`. */
+interface WellFormed {
+    isWellFormed(): boolean;
+}
+
 /** A plain object: prototype is Object.prototype or null. Dates, maps and class instances are not. */
 function isPlainObject(v: unknown): boolean {
     if (typeof v !== "object" || v === null) return false;
@@ -171,7 +176,9 @@ export class Scalar<T> {
     private check(v: unknown): unknown {
         switch (this.kind) {
             case "text": {
-                if (typeof v !== "string") return NO;
+                // Text must be Unicode scalar values (WHATWG USVString, RFC 7493): a lone surrogate fails before
+                // any step sees it. isWellFormed is one linear pass that allocates nothing.
+                if (typeof v !== "string" || !(v as string & WellFormed).isWellFormed()) return NO;
                 let s = v;
                 const steps = this.steps;
                 const gate = this.caseAt;

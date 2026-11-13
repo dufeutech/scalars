@@ -50,7 +50,15 @@
         { "type": "float64", "special": "Infinity", "ok": false },
         { "type": "boolean", "in": false, "ok": true, "out": false },
         { "type": "object", "in": [], "ok": false, "dynamic": true },
-        { "type": "any", "in": [1, "two"], "ok": true, "out": [1, "two"] }
+        { "type": "any", "in": [1, "two"], "ok": true, "out": [1, "two"] },
+        { "type": "string", "in": "a\ud800b", "ok": false, "malformed": "surrogate" },
+        { "type": "string", "in": "\udfff", "ok": false, "malformed": "surrogate" },
+        { "type": "string", "in": "\ude00\ud83d", "ok": false, "malformed": "surrogate" },
+        { "type": "string", "in": "😀", "ok": true, "out": "😀" },
+        { "type": "text", "in": "x\udbff", "ok": false, "malformed": "surrogate" },
+        { "type": "email", "in": "\udc00a@b.co", "ok": false, "malformed": "surrogate" },
+        { "type": "email", "in": " a@b.co\ud800 ", "ok": false, "malformed": "surrogate" },
+        { "type": "char", "in": "\ud800", "ok": false, "malformed": "surrogate" }
     ],
     "hostile": [
         { "type": "email", "prefix": "a@", "repeat": ".", "count": 200000, "suffix": "@", "ok": false },
@@ -82,6 +90,7 @@
         { "type": "time_local", "prefix": "14:30:00.", "repeat": "1", "count": 200000, "suffix": "", "ok": true },
         { "type": "timezone", "prefix": "America/", "repeat": "a", "count": 200000, "suffix": "/", "ok": false },
         { "type": "uint64", "prefix": "", "repeat": "9", "count": 200000, "suffix": "", "ok": true },
-        { "type": "wikidata_qid", "prefix": "Q1", "repeat": "0", "count": 200000, "suffix": "!", "ok": false }
+        { "type": "wikidata_qid", "prefix": "Q1", "repeat": "0", "count": 200000, "suffix": "!", "ok": false },
+        { "type": "string", "prefix": "", "repeat": "é", "count": 200000, "suffix": "\ud800", "ok": false, "malformed": "surrogate" }
     ]
 }

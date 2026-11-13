@@ -25,7 +25,7 @@ The source of truth is plain JSON; `dist/` also has a ready-to-copy file per lan
 
 ## Use it from code
 
-Copy the file for your language. In Python and TypeScript every type has `normalize`, `validate` and `is_valid` (`isValid` in TypeScript). In Go and Rust only text types have `normalize`; every other type has just `validate` and `is_valid` (`Validate` and `IsValid` in Go), except that in Rust the `object`, `array` and `any` types are metadata only. `validate` cleans the value first, then checks it: `" us "` becomes `"US"`. `get` finds a type by name or alias, and `all` lists them.
+Copy the file for your language. In Python and TypeScript every type has `normalize`, `validate` and `is_valid` (`isValid` in TypeScript). In Go and Rust only text types have `normalize`; every other type has just `validate` and `is_valid` (`Validate` and `IsValid` in Go), except that in Rust the `object`, `array` and `any` types are metadata only. `validate` cleans the value first, then checks it: `" us "` becomes `"US"`. Text must be well-formed Unicode (no lone surrogates, no invalid UTF-8), as the web's `USVString` and RFC 7493 require; anything else fails `validate` like any other bad value. `get` finds a type by name or alias, and `all` lists them.
 
 **Python** (3.10 or newer, no dependencies):
 

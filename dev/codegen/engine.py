@@ -35,6 +35,21 @@ def _trim(s: str) -> str:
     return s.strip(_WS)
 
 
+def _well_formed(s: str) -> bool:
+    """True when `s` is Unicode scalar values only (no lone surrogate), as WHATWG USVString and RFC 7493 require.
+
+    A Python str can hold U+D800-U+DFFF (from "\\ud800", surrogateescape, json.loads); strict UTF-8 encoding
+    refuses exactly those. ASCII text is skipped in O(1): CPython records it when it builds the string.
+    """
+    if s.isascii():
+        return True
+    try:
+        s.encode("utf-8")
+    except _b.UnicodeEncodeError:
+        return False
+    return True
+
+
 def _remove_spaces(s: str) -> str:
     return s.replace(" ", "")
 
@@ -136,7 +151,7 @@ class Scalar(Generic[T]):
     def _check(self, v: _Any) -> _Any:
         kind = self._kind
         if kind == "text":
-            if not _b.isinstance(v, _b.str):
+            if not _b.isinstance(v, _b.str) or not _well_formed(v):
                 return _NO
             top = self._max_len
             gate = self._case_at if top is not None else -1

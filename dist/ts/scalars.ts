@@ -1,6 +1,7 @@
 // scalars.ts, catalogue version 0.3.0.
 // Generated from dist/scalars.json by dev/codegen/ts.mjs. Do not edit: run `npm run build` in dev/.
-// Requires TypeScript >= 5.6 or Node >= 22.18 (tested on Node 24). Erasable syntax only. No dependencies.
+// Requires TypeScript >= 5.6 or Node >= 22.18 (tested on Node 24); at run time, String.prototype.isWellFormed
+// (ES2024: Node >= 20, every current browser). Erasable syntax only. No dependencies.
 /** A value failed a type's rule. `message` is the type's `error` text; `scalar` is the type. */
 export class ScalarError extends Error {
     readonly scalar: Scalar<unknown>;
@@ -68,6 +69,11 @@ function shorterThan(s: string, min: number): boolean {
         if (c >= 0xd800 && c < 0xdc00 && isLow(s, i + 1)) i++;
     }
     return n < min;
+}
+
+/** String.prototype.isWellFormed (ES2024), typed here so the file also checks under an older `lib`. */
+interface WellFormed {
+    isWellFormed(): boolean;
 }
 
 /** A plain object: prototype is Object.prototype or null. Dates, maps and class instances are not. */
@@ -174,7 +180,9 @@ export class Scalar<T> {
     private check(v: unknown): unknown {
         switch (this.kind) {
             case "text": {
-                if (typeof v !== "string") return NO;
+                // Text must be Unicode scalar values (WHATWG USVString, RFC 7493): a lone surrogate fails before
+                // any step sees it. isWellFormed is one linear pass that allocates nothing.
+                if (typeof v !== "string" || !(v as string & WellFormed).isWellFormed()) return NO;
                 let s = v;
                 const steps = this.steps;
                 const gate = this.caseAt;

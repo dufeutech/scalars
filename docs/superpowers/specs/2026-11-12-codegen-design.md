@@ -75,7 +75,7 @@ naming rules):
 |---|---|
 | `name`, `label`, `hint`, `error`, `level`, `primitive`, `aliases`, `examples` | Copied from dist. |
 | `normalize(s)` | Apply the type's `normalize` steps, in order. Only meaningful for text types; identity otherwise. |
-| `validate(v)` | Normalize (text), then check kind, length, pattern, min/max. Returns the cleaned value, or fails with `error`. |
+| `validate(v)` | Normalize (text), then check kind, length, pattern, min/max. Returns the cleaned value, or fails with `error`. Text that is not well-formed Unicode fails first (see below). |
 | `is_valid(v)` | `True` exactly when `validate(v)` would succeed. Never builds an error. |
 
 Module level: `get(word)` implements `$meta.lookup` (name, then alias) and returns the type or nothing; `all` is a
@@ -111,6 +111,21 @@ The engine is generic over the value, so `validate` returns the right native typ
 In Python and TypeScript `validate` also checks the value's kind, since callers may pass anything. In Go and Rust the
 compiler does that.
 
+### Text must be well-formed Unicode
+
+A text value is valid only if it is a sequence of Unicode scalar values: the WHATWG `USVString` and RFC 7493 (I-JSON)
+rule. Anything else fails `validate` with the type's normal `error`, and `is_valid` is false; `normalize` does not
+check. The check runs first, before any step, so trim and case steps never see malformed text. It is one linear pass
+that allocates nothing on valid text, except in Python, which encodes non-ASCII text once (CPython has no cheaper
+check without a regex).
+
+| Language | Malformed text it can hold | Check |
+|---|---|---|
+| Python | lone surrogates (U+D800–U+DFFF) | `str.isascii()` (O(1)), else strict `s.encode("utf-8")` |
+| TypeScript | lone surrogates | `String.prototype.isWellFormed()` (ES2024) |
+| Go | bytes that are not UTF-8 | `utf8.ValidString` (skips ASCII eight bytes at a time) |
+| Rust | none: `&str` is always valid UTF-8 | nothing to check |
+
 ### Naming rules
 
 - Python, TypeScript: the dist name as is (`scalars.uuid_v7`, `scalars.any`).
@@ -128,8 +143,8 @@ hold for hostile input.
 | Loading the file | Go, Rust: O(1), no startup code. Python, TypeScript: O(T) small records | O(T) | The table is plain data. No regex is compiled and no map is built at load. |
 | `scalars.email` | O(1) | none | A named member, never a search. |
 | `normalize(s)` | O(n) | none when nothing changes, else one copy per step that changes the text | No regex in any step. |
-| `validate(s)`, text | O(n) | same as `normalize` | Every pattern is proven linear by the build; lengths are checked before the pattern. |
-| `validate(s)`, text longer than the type can ever be | O(1) once trimmed; O(n) for types with `remove_*` steps | none, or one copy per `remove_*` step that changes the text | The longest possible value is known per type. The gate runs after any `remove_*` steps (which can shorten text), immediately before the first case step, and always again before the pattern. A type with `remove_*` steps scans the text once before the gate. |
+| `validate(s)`, text | O(n) | same as `normalize` | Every pattern is proven linear by the build; lengths are checked before the pattern. The well-formed check is one linear pass (Python's copies non-ASCII text once). |
+| `validate(s)`, text longer than the type can ever be | O(n): one well-formed pass (Python: O(1) for ASCII text; Rust: none), then O(1) once trimmed; O(n) for types with `remove_*` steps | none, or one copy per `remove_*` step that changes the text (Python: plus one encode of non-ASCII text) | The longest possible value is known per type. The gate runs after any `remove_*` steps (which can shorten text), immediately before the first case step, and always again before the pattern. A type with `remove_*` steps scans the text once before the gate. The well-formed check runs before all of it. |
 | `validate(v)`, number or boolean | O(1) | none | |
 | `is_valid(v)` | same as `validate` | none, even on failure | Shares one internal check with `validate`; never raises and catches. |
 | `get(word)` | O(w) expected | at most one short key | One hash lookup in a map built once on first use; never a scan over the types. |

@@ -12,10 +12,48 @@ fn load(path: &str) -> Value {
         println!("{path}: {e}");
         process::exit(2)
     });
-    serde_json::from_str(&text).unwrap_or_else(|e| {
+    serde_json::from_str(&lone_surrogates_replaced(&text)).unwrap_or_else(|e| {
         println!("{path}: {e}");
         process::exit(2)
     })
+}
+
+/// `text` with each lone surrogate escape ("\ud800" without its pair) as "�". serde_json refuses a lone
+/// surrogate in a string, and cases.json writes some for its "malformed" cases, which this runner skips: a Rust
+/// `&str` cannot hold one. A pair ("😀") and an escaped backslash ("\\ud800") stay as they are.
+fn lone_surrogates_replaced(text: &str) -> String {
+    let b = text.as_bytes();
+    let unit = |i: usize| -> Option<u16> {
+        if b.get(i) == Some(&b'\\') && b.get(i + 1) == Some(&b'u') {
+            u16::from_str_radix(text.get(i + 2..i + 6)?, 16).ok()
+        } else {
+            None
+        }
+    };
+    let mut out = String::with_capacity(text.len());
+    let (mut i, mut kept) = (0, 0);
+    while i < b.len() {
+        if b[i] != b'\\' {
+            i += 1;
+            continue;
+        }
+        let Some(u) = unit(i) else {
+            i += 2; // another escape: "\\", "\"", "\n" and so on
+            continue;
+        };
+        match u {
+            0xd800..=0xdbff if matches!(unit(i + 6), Some(0xdc00..=0xdfff)) => i += 12,
+            0xd800..=0xdfff => {
+                out.push_str(&text[kept..i]);
+                out.push_str("\\ufffd");
+                i += 6;
+                kept = i;
+            }
+            _ => i += 6,
+        }
+    }
+    out.push_str(&text[kept..]);
+    out
 }
 
 fn strs(v: &Value) -> Vec<&str> {
@@ -200,6 +238,9 @@ fn main() {
         if c["dynamic"].as_bool() == Some(true) {
             continue; // Rust's compiler rejects a value of the wrong kind
         }
+        if c["malformed"].is_string() {
+            continue; // a &str cannot hold a lone surrogate, so there is nothing to refuse
+        }
         let name = c["type"].as_str().unwrap();
         let ok = c["ok"].as_bool().unwrap();
         let v = &c["in"];
@@ -261,6 +302,9 @@ fn main() {
 
     let (mut slowest, mut slowest_type) = (0.0, "");
     for c in cases["hostile"].as_array().unwrap() {
+        if c["malformed"].is_string() {
+            continue; // a &str cannot hold a lone surrogate
+        }
         let name = c["type"].as_str().unwrap();
         let Some(Kind::Text(t)) = scalars::lookup(name) else {
             fails.push(format!("hostile {name} is not a text type"));

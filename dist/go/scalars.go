@@ -82,6 +82,11 @@ func (t *TextScalar) IsValid(s string) bool {
 }
 
 func (t *TextScalar) check(s string) (string, bool) {
+	// Text must be well-formed UTF-8 (Unicode scalar values only: WHATWG USVString, RFC 7493), checked before any
+	// step sees it. utf8.ValidString skips ASCII eight bytes at a time and allocates nothing.
+	if !utf8.ValidString(s) {
+		return "", false
+	}
 	gated := false
 	for _, st := range t.steps {
 		// Text already too long is refused before case mapping copies it. The gate waits for the first case

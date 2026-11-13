@@ -23,7 +23,7 @@
 - Inherited from `base`: `type`, `format`, `pattern`, `minimum`, `maximum`, `contentEncoding`, `normalize`. Not inherited: `level`, `category`, `alternative` (it has its own default), `label`, `hint`, `error`, `aliases`, `examples`, `details`, `standard`, `anchor`, `abstract`.
 - A child value of `null` deletes the inherited key.
 - Target blocks are inherited from the nearest ancestor that has one. `attrs` merge shallowly. **`note` is inherited**, because it describes the storage the child shares. A child can override it, or set it to `null`.
-- `standard` is an id into `$defs.standards` (`{ "<id>": { "name", "url" } }`) in `scalar.json`. An optional `anchor` (e.g. `"#section-5.6"`) is added to the URL. `dist/` writes out `standard` (name) and `docs_link` (url + anchor).
+- `standard` is free text (kept from v1). `docs` is an id into `$defs.docs` (`{ "<id>": "<url>" }`) in `scalar.json`, and an optional `anchor` (e.g. `"#section-5.6"`) is added to the URL. `dist/` writes out `docs_link` (url + anchor). *(Changed during Task 3: 74 of 77 standard names were unique, so the URLs are what gets registered.)*
 - Never stored in source, only generated into `dist/`: HTML `pattern`, `title`, `placeholder`; Postgres regex/range `check`; `primitive`; default `alternative`; `docs_link`.
 - `scalar.json` is a single file holding every type. There is no file per type.
 - `normalize` steps are exactly: `trim`, `lowercase`, `uppercase`, `remove_spaces`, `remove_hyphens`, applied in the order listed. Their meaning is defined in JSON (`schema/scalar.schema.json` → `$defs.normalize_step`), so any language can implement them.
@@ -343,6 +343,6 @@ Not scheduled. Move an item into a task when it's picked up, and record the choi
 | 2026-11-12 | `invalid` examples promise only that JSON validation rejects them, and `db_invalid` covers values only the database rejects | Regex can't check calendar validity, while Postgres can. |
 | 2026-11-12 | **Release 0.2.0 is pure JSON. Node is dev-only, isolated in `dev/`.** | The user wants a JSON-only first release. Rules like normalize and lookup are defined as data, so any language can implement them. |
 | 2026-11-12 | DRY via one mechanism: `base`, plus three abstract bases (`_token`, `_json`, `_bytes`) | Measured v1 repeats: Postgres text+collation 43×, machine-text HTML 31×, derivable CHECKs 30×, links 29×, alternatives 55×. One idea for beginners: "like that type, except…". |
-| 2026-11-12 | Target notes inherit. `alternative` defaults to the nearest core ancestor. Standards live in a registry. | Removes the remaining repeats without new syntax. |
+| 2026-11-12 | Target notes inherit. `alternative` defaults to the nearest core ancestor. Doc links live in a registry (`$defs.docs`). | Removes the remaining repeats without new syntax. Standard names stay per type, since 74 of 77 were unique. Result: source is 54.3 KB minified vs v1's 68.1 KB, with nothing lost. |
 | 2026-11-12 | No regex fragments, no nesting by level, no file per type. `scalar.json` stays one file. | Fragments make patterns unreadable without running code. Nesting makes a level change a block move. One sorted file is easiest to browse. |
 | open | Keep Node dev tooling after 0.2.0, or replace it | Decide after the release. The JSON files don't depend on the choice. |

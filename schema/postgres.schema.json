@@ -19,19 +19,14 @@
                 "type": "string"
             },
             "attr": {
+                "description": "Names from $defs.attr: settings only Postgres has. Settings every target shares are core params.",
                 "type": [
-                    "object",
+                    "array",
                     "null"
                 ],
-                "additionalProperties": {
-                    "anyOf": [
-                        {
-                            "type": "string"
-                        },
-                        {
-                            "type": "object"
-                        }
-                    ]
+                "uniqueItems": true,
+                "items": {
+                    "type": "string"
                 }
             },
             "note": {

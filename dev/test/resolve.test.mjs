@@ -54,7 +54,7 @@ test("targets and notes inherit", () => {
     const r = mini();
     assert.equal(r.slug.postgres.type, "text");
     assert.equal(r.slug.postgres.note, "N");
-    assert.deepEqual(r.slug.postgres.attr, { collation: "collation" });
+    assert.deepEqual(r.slug.postgres.attr, ["collation"]);
     assert.equal(r.quiet.postgres.note, undefined);
     assert.equal(r.quiet.postgres.type, "text");
     assert.equal(r.uuid.postgres.type, "uuid");

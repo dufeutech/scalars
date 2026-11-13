@@ -53,6 +53,50 @@
             "iso9362": "https://www.iso.org/standard/60390.html",
             "isbn": "https://www.isbn-international.org/",
             "gs1_gtin": "https://www.gs1.org/standards/id-keys/gtin"
+        },
+        "params": {
+            "length": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10485760,
+                "level": "core",
+                "description": "Most characters a value may have; omitted means unlimited. HTML: maxlength. Postgres: varchar(n)."
+            },
+            "precision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1000,
+                "level": "core",
+                "description": "Total significant digits; omitted means unlimited. Postgres: numeric(precision, scale)."
+            },
+            "scale": {
+                "type": "integer",
+                "minimum": -1000,
+                "maximum": 1000,
+                "default": 0,
+                "level": "core",
+                "description": "Digits kept right of the decimal point; requires precision. Negative rounds left of the point. Postgres: numeric(precision, scale)."
+            },
+            "fractional_seconds": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 6,
+                "default": 6,
+                "level": "advanced",
+                "description": "Fractional-second digits kept; values beyond it are rounded. Postgres: time(p), timestamp(p), timestamptz(p), interval(p)."
+            },
+            "values": {
+                "type": "array",
+                "minItems": 1,
+                "level": "core",
+                "description": "The allowed values, in order; the order is also the sort order. HTML: the select options. Postgres: CREATE TYPE ... AS ENUM (...); values can be added later, never removed."
+            },
+            "nullable": {
+                "type": "boolean",
+                "default": false,
+                "level": "core",
+                "description": "Whether the field accepts null. Applies to every type, so no type lists it. Postgres: false emits NOT NULL."
+            }
         }
     },
     "_token": {
@@ -78,6 +122,9 @@
             "varchar"
         ],
         "type": "string",
+        "params": [
+            "length"
+        ],
         "examples": {
             "valid": [
                 "hello",
@@ -241,6 +288,10 @@
         ],
         "format": "decimal",
         "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
+        "params": [
+            "precision",
+            "scale"
+        ],
         "examples": {
             "valid": [
                 "1234.56",
@@ -319,6 +370,9 @@
     },
     "enum": {
         "base": "string",
+        "params": [
+            "values"
+        ],
         "level": "core",
         "category": "structure",
         "label": "Choice",
@@ -413,6 +467,9 @@
         "type": "string",
         "format": "time-local",
         "pattern": "^[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?$",
+        "params": [
+            "fractional_seconds"
+        ],
         "examples": {
             "valid": [
                 "14:30:00",
@@ -444,6 +501,9 @@
         "type": "string",
         "format": "date-time",
         "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt][0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?([Zz]|[+-][0-9]{2}:[0-9]{2})$",
+        "params": [
+            "fractional_seconds"
+        ],
         "examples": {
             "valid": [
                 "2026-08-16T14:30:00Z",
@@ -475,6 +535,9 @@
         "type": "string",
         "format": "date-time-local",
         "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt][0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?$",
+        "params": [
+            "fractional_seconds"
+        ],
         "examples": {
             "valid": [
                 "2026-08-16T14:30:00",
@@ -505,6 +568,9 @@
         ],
         "format": "duration",
         "pattern": "^P(([0-9]+Y([0-9]+M)?([0-9]+W)?([0-9]+D)?|[0-9]+M([0-9]+W)?([0-9]+D)?|[0-9]+W([0-9]+D)?|[0-9]+D)(T([0-9]+H([0-9]+M)?([0-9]+(\\.[0-9]+)?S)?|[0-9]+M([0-9]+(\\.[0-9]+)?S)?|[0-9]+(\\.[0-9]+)?S))?|T([0-9]+H([0-9]+M)?([0-9]+(\\.[0-9]+)?S)?|[0-9]+M([0-9]+(\\.[0-9]+)?S)?|[0-9]+(\\.[0-9]+)?S))$",
+        "params": [
+            "fractional_seconds"
+        ],
         "examples": {
             "valid": [
                 "P3DT4H30M",
@@ -1188,6 +1254,10 @@
         ],
         "format": "uint64",
         "pattern": "^[0-9]+$",
+        "params": [
+            "precision",
+            "scale"
+        ],
         "examples": {
             "valid": [
                 "18446744073709551615",
@@ -1269,6 +1339,10 @@
             "dec128"
         ],
         "format": "decimal128",
+        "params": [
+            "precision",
+            "scale"
+        ],
         "examples": {
             "valid": [
                 "1234.567890123456789012345678901234",
@@ -1296,6 +1370,9 @@
         ],
         "format": "time",
         "pattern": "^[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?([Zz]|[+-][0-9]{2}:[0-9]{2})$",
+        "params": [
+            "fractional_seconds"
+        ],
         "examples": {
             "valid": [
                 "14:30:00Z",
@@ -2043,6 +2120,9 @@
         ],
         "format": "http-date",
         "pattern": "^(Mon|Tue|Wed|Thu|Fri|Sat|Sun), [0-9]{2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2} GMT$",
+        "params": [
+            "fractional_seconds"
+        ],
         "examples": {
             "valid": [
                 "Sun, 16 Aug 2026 14:30:00 GMT",
@@ -2227,6 +2307,10 @@
             "structured_decimal"
         ],
         "format": "sf-decimal",
+        "params": [
+            "precision",
+            "scale"
+        ],
         "examples": {
             "valid": [
                 4.5,

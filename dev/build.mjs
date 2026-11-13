@@ -19,19 +19,9 @@ export function build(root) {
     const schema = JSON.parse(fs.readFileSync(path.join(root, "schema/scalar.schema.json"), "utf8"));
     const version = sources.core.version;
 
-    // Inline every Postgres reference so a tool never has to look anything up.
     for (const t of Object.values(types)) {
-        const pg = t.postgres;
-        if (pg.attr) {
-            pg.attr = Object.fromEntries(Object.entries(pg.attr).map(([k, v]) => {
-                if (typeof v !== "string") return [k, v];
-                const def = pgDefs.attr?.[v];
-                if (!def) throw new Error(`Type "${t.name}" postgres attr "${k}" names unknown attr "${v}"`);
-                return [k, def];
-            }));
-        }
-        const docs = pgDefs.postgres_docs?.[pg.type];
-        if (docs) pg.docs_link = docs;
+        const docs = pgDefs.postgres_docs?.[t.postgres.type];
+        if (docs) t.postgres.docs_link = docs;
     }
 
     const scalars = {
@@ -40,6 +30,8 @@ export function build(root) {
         $meta: {
             lookup: LOOKUP_RULE,
             normalize_steps: Object.fromEntries(schema.$defs.normalize_step.oneOf.map((s) => [s.const, s.description])),
+            params: sources.core.$defs.params,
+            postgres_attrs: pgDefs.attr,
             templates: pgDefs.templates,
         },
         types,

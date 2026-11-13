@@ -11,6 +11,7 @@ export const TARGETS = ["html", "postgres"];
 
 /** Core keys a child takes from its base unless it overrides them (null deletes). */
 const INHERITED = ["type", "format", "pattern", "minLength", "maxLength", "minimum", "maximum", "contentEncoding", "normalize"];
+// Not inherited, so each type lists its own: `params`.
 /** Source-only keys that never appear in resolved output. */
 const SOURCE_ONLY = new Set(["base", "abstract", "anchor", "docs"]);
 const RESERVED = new Set(["$schema", "version", "$defs"]);
@@ -40,6 +41,8 @@ function mergeBlock(parent, own) {
 export function resolve({ core, targets }) {
     const defs = Object.fromEntries(entries(core));
     const docs = core.$defs?.docs ?? {};
+    const params = core.$defs?.params ?? {};
+    const pgAttrs = targets.postgres?.$defs?.attr ?? {};
 
     for (const [tname, file] of Object.entries(targets)) {
         for (const [k] of entries(file)) {
@@ -98,6 +101,13 @@ export function resolve({ core, targets }) {
             const url = docs[def.docs];
             if (!url) throw new Error(`Type "${name}" references unknown docs id "${def.docs}"`);
             t.docs_link = url + (def.anchor ?? "");
+        }
+
+        for (const p of t.params ?? []) {
+            if (!params[p]) throw new Error(`Type "${name}" names unknown param "${p}"`);
+        }
+        for (const a of r.targets.postgres?.attr ?? []) {
+            if (!pgAttrs[a]) throw new Error(`Type "${name}" postgres attr names unknown attr "${a}"`);
         }
 
         for (const k of SOURCE_ONLY) delete t[k];

@@ -26,6 +26,27 @@
                         "format": "uri",
                         "pattern": "^https://[^#]*$"
                     }
+                },
+                "params": {
+                    "type": "object",
+                    "description": "Settings a field of a type can take (like a length), defined once. A type lists the ones it accepts in params.",
+                    "propertyNames": {
+                        "pattern": "^[a-z][a-z0-9_]*$"
+                    },
+                    "additionalProperties": {
+                        "type": "object",
+                        "required": ["type", "description", "level"],
+                        "properties": {
+                            "type": { "enum": ["integer", "boolean", "array", "string"] },
+                            "minimum": { "type": "integer" },
+                            "maximum": { "type": "integer" },
+                            "minItems": { "type": "integer" },
+                            "default": {},
+                            "level": { "enum": ["core", "advanced"] },
+                            "description": { "type": "string" }
+                        },
+                        "additionalProperties": false
+                    }
                 }
             }
         }
@@ -149,6 +170,13 @@
                 },
                 "pattern": {
                     "$ref": "#/$defs/nullable_string"
+                },
+                "params": {
+                    "type": "array",
+                    "description": "Names from $defs.params this type accepts. Not inherited: list them on every type that takes them.",
+                    "minItems": 1,
+                    "uniqueItems": true,
+                    "items": { "type": "string" }
                 },
                 "minLength": {
                     "type": ["integer", "null"],

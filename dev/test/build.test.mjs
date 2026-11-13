@@ -29,12 +29,6 @@ test("dist is self-contained", () => {
         assert.ok(!keys(out.scalars.types).has(k), `found source-only key ${k}`);
     }
     assert.ok(!Object.keys(out.scalars.types).some((n) => n.startsWith("_")), "no abstract types");
-    for (const t of Object.values(out.scalars.types)) {
-        for (const [a, v] of Object.entries(t.postgres.attr ?? {})) {
-            assert.equal(typeof v, "object", `${t.name}.postgres.attr.${a} is inlined, not a reference`);
-        }
-    }
-    assert.equal(out.scalars.types.slug.postgres.attr.collation.sql, 'COLLATE "und-x-icu"');
     assert.match(out.scalars.types.date.postgres.docs_link, /^https:\/\/www\.postgresql\.org\//);
 });
 

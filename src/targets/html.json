@@ -71,10 +71,7 @@
             "type": null
         },
         "element": "select",
-        "options": {
-            "source": "postgres.attr.labels"
-        },
-        "note": "Options come from the declared labels; use radio buttons when there are few."
+        "note": "Options are the type's values; use radio buttons when there are few."
     },
     "date": {
         "attrs": {

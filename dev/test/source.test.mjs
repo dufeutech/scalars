@@ -23,7 +23,7 @@ test("dry", async (t) => {
     for (const [name, def] of Object.entries(s.core)) {
         if (reserved.has(name)) continue;
         assert.ok(!("docs_link" in def), `${name} has docs_link in source`);
-        for (const k of ["type", "format", "pattern", "minimum", "maximum", "contentEncoding", "normalize", "alternative"]) {
+        for (const k of ["type", "format", "pattern", "minLength", "maxLength", "minimum", "maximum", "contentEncoding", "normalize", "alternative", "params"]) {
             if (!(k in def)) continue;
             const r = resolveWithout((x) => { delete x.core[name][k]; });
             if (r && canonical(r) === canonical(resolved)) coreRedundant.push(`${name}.${k}`);

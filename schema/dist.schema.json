@@ -10,13 +10,23 @@
         "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
         "$meta": {
             "type": "object",
-            "required": ["lookup", "normalize_steps", "templates"],
+            "required": ["lookup", "normalize_steps", "params", "postgres_attrs", "templates"],
             "properties": {
                 "lookup": { "type": "string", "description": "How to find a type from a word a person typed." },
                 "normalize_steps": {
                     "type": "object",
                     "description": "Every cleanup step a type's normalize list may name, with its exact meaning.",
                     "additionalProperties": { "type": "string" }
+                },
+                "params": {
+                    "type": "object",
+                    "description": "Every setting a field can take (length, precision, values, ...), defined once. A type's params lists the ones it accepts; nullable applies to every type.",
+                    "additionalProperties": { "type": "object", "required": ["type", "description"] }
+                },
+                "postgres_attrs": {
+                    "type": "object",
+                    "description": "Settings only Postgres has, defined once. A type's postgres.attr lists the ones it accepts; collation applies to every text and varchar column.",
+                    "additionalProperties": { "type": "object", "required": ["description", "sql"] }
                 },
                 "templates": { "type": "object", "description": "Placeholders used in generated text, like {column} in postgres.check." }
             },
@@ -52,6 +62,7 @@
                 "maximum": { "type": "number" },
                 "contentEncoding": { "type": "string" },
                 "normalize": { "type": "array", "items": { "type": "string" } },
+                "params": { "type": "array", "items": { "type": "string" }, "description": "Names from $meta.params that a field of this type can set." },
                 "examples": {
                     "type": "object",
                     "required": ["valid"],
@@ -80,7 +91,7 @@
                     "type": "object",
                     "properties": {
                         "type": { "type": "string" },
-                        "attr": { "type": "object", "additionalProperties": { "type": "object" } },
+                        "attr": { "type": "array", "items": { "type": "string" }, "description": "Names from $meta.postgres_attrs." },
                         "note": { "type": "string" },
                         "check": { "type": "string" },
                         "docs_link": { "type": "string" }

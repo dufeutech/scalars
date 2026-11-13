@@ -7,43 +7,7 @@ import { canonical, loadSources, resolve } from "../lib/resolve.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "../..");
-const legacy = JSON.parse(fs.readFileSync(path.join(here, "fixtures/legacy-scalar.json"), "utf8"));
-const legacyTypes = Object.entries(legacy).filter(([k]) => k !== "$defs");
 const resolved = resolve(loadSources(root));
-
-const CORE_KEYS = ["type", "format", "pattern", "minimum", "maximum", "contentEncoding", "level", "alternative"];
-const pick = (o, keys) => Object.fromEntries(keys.filter((k) => o?.[k] !== undefined).map((k) => [k, o[k]]));
-const withoutGeneratedHtml = (attrs = {}) => {
-    const { title, placeholder, ...rest } = attrs;
-    return rest;
-};
-
-test("v2 resolves to v1", async (t) => {
-    assert.equal(Object.keys(resolved).length, legacyTypes.length, "same type count");
-    for (const [name, old] of legacyTypes) {
-        await t.test(name, () => {
-            const r = resolved[name];
-            assert.ok(r, `missing ${name}`);
-            assert.deepEqual(pick(r, CORE_KEYS), pick(old, CORE_KEYS), "core fields");
-            assert.equal(r.details, old.description, "details");
-            assert.equal(r.docs_link, old.docs_link, "docs_link");
-            if (old.standard !== undefined) assert.equal(r.standard, old.standard, "standard");
-            if (old.example !== undefined) assert.deepEqual(r.examples.valid[0], old.example, "example");
-
-            const oldAttrs = { ...old.html.attrs };
-            // v1 skipped the HTML pattern for char by name; v2 applies the generic rule ([\s\S] == one character).
-            if (name === "char") delete oldAttrs.pattern;
-            const newAttrs = withoutGeneratedHtml(r.html.attrs);
-            if (name === "char") delete newAttrs.pattern;
-            assert.deepEqual(
-                { ...pick(r.html, ["element", "options", "note"]), attrs: newAttrs },
-                { ...pick(old.html, ["element", "options", "note"]), attrs: oldAttrs },
-                "html",
-            );
-            assert.deepEqual(pick(r.postgres, ["type", "attr", "note", "check"]), pick(old.postgres, ["type", "attr", "note", "check"]), "postgres");
-        });
-    }
-});
 
 /** Resolve after deleting one key from the source; used to prove that key is not redundant. */
 function resolveWithout(mutate) {

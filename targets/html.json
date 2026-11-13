@@ -1,0 +1,388 @@
+{
+    "$schema": "../schema/html.schema.json",
+    "_token": {
+        "attrs": {
+            "autocapitalize": "none",
+            "spellcheck": "false"
+        },
+        "note": null
+    },
+    "_json": {
+        "element": "textarea",
+        "attrs": {
+            "autocapitalize": "none",
+            "spellcheck": "false"
+        },
+        "note": "No native JSON input; parse with JSON.parse before submit or use a structured editor."
+    },
+    "_bytes": {
+        "attrs": {
+            "type": "file"
+        }
+    },
+    "string": {
+        "attrs": {
+            "type": "text"
+        },
+        "element": "input",
+        "note": "Set maxlength from the length attribute."
+    },
+    "text": {
+        "attrs": null,
+        "element": "textarea"
+    },
+    "boolean": {
+        "attrs": {
+            "type": "checkbox"
+        },
+        "element": "input",
+        "note": "An unchecked box submits nothing; map absence to false."
+    },
+    "int32": {
+        "attrs": {
+            "type": "number",
+            "step": "1",
+            "min": "-2147483648",
+            "max": "2147483647"
+        },
+        "element": "input"
+    },
+    "int64": {
+        "attrs": {
+            "inputmode": "numeric"
+        },
+        "note": "Not type=\"number\": browsers parse it as a double and lose digits past 2^53. Keep it a string in JS (BigInt for math)."
+    },
+    "float64": {
+        "attrs": {
+            "type": "number",
+            "step": "any"
+        },
+        "element": "input"
+    },
+    "decimal": {
+        "attrs": {
+            "inputmode": "decimal"
+        },
+        "note": "Not type=\"number\": that converts through a binary float. Keep it a string in JS; use a decimal library for math."
+    },
+    "enum": {
+        "attrs": {
+            "type": null
+        },
+        "element": "select",
+        "options": {
+            "source": "postgres.attr.labels"
+        },
+        "note": "Options come from the declared labels; use radio buttons when there are few."
+    },
+    "date": {
+        "attrs": {
+            "type": "date"
+        },
+        "element": "input"
+    },
+    "time_local": {
+        "attrs": {
+            "type": "time",
+            "step": "1"
+        },
+        "element": "input",
+        "note": "step=\"1\" shows seconds; without it browsers submit HH:MM, which the pattern rejects - append \":00\"."
+    },
+    "date_time": {
+        "attrs": {
+            "type": "datetime-local",
+            "step": "1"
+        },
+        "element": "input",
+        "note": "No native input for an instant. datetime-local yields a wall-clock time; combine it with the user's zone (Intl.DateTimeFormat().resolvedOptions().timeZone) and convert to an offset or Z before sending."
+    },
+    "date_time_local": {
+        "attrs": {
+            "type": "datetime-local",
+            "step": "1"
+        },
+        "element": "input",
+        "note": "Exact match; browsers submit HH:MM without seconds unless step is set - append \":00\" if absent."
+    },
+    "duration": {
+        "note": "No native duration input; usually rendered as separate number fields and assembled into ISO 8601."
+    },
+    "timezone": {
+        "attrs": {
+            "type": null,
+            "autocapitalize": null,
+            "spellcheck": null
+        },
+        "element": "select",
+        "options": {
+            "source": "IANA tz database",
+            "js": "Intl.supportedValuesOf('timeZone')"
+        }
+    },
+    "email": {
+        "attrs": {
+            "type": "email",
+            "autocomplete": "email",
+            "inputmode": "email",
+            "autocapitalize": null,
+            "spellcheck": null
+        }
+    },
+    "hostname": {
+        "attrs": {
+            "inputmode": "url"
+        }
+    },
+    "ipv4": {
+        "attrs": {
+            "inputmode": "decimal"
+        }
+    },
+    "uri": {
+        "attrs": {
+            "type": "url",
+            "autocomplete": "url",
+            "inputmode": "url",
+            "autocapitalize": null,
+            "spellcheck": null
+        }
+    },
+    "uuid": {
+        "note": "Usually generated (crypto.randomUUID()) and shown read-only rather than typed."
+    },
+    "phone": {
+        "attrs": {
+            "type": "tel",
+            "autocomplete": "tel",
+            "inputmode": "tel",
+            "maxlength": "16",
+            "autocapitalize": null,
+            "spellcheck": null
+        },
+        "note": "Users type local formats; normalize to E.164 before submit (e.g. libphonenumber-js)."
+    },
+    "binary": {
+        "note": "Encode the file's bytes to base64 for JSON, or send multipart/form-data and skip the encoding."
+    },
+    "secret": {
+        "attrs": {
+            "type": "password",
+            "autocomplete": "off"
+        },
+        "note": "Use autocomplete=\"new-password\" or \"current-password\" for user passwords so password managers engage; \"off\" for API keys and tokens."
+    },
+    "slug": {
+        "note": "Usually derived from a title: lowercase, NFKD-strip accents, replace runs of non [a-z0-9] with '-', trim '-'."
+    },
+    "country": {
+        "attrs": {
+            "autocomplete": "country",
+            "type": null,
+            "autocapitalize": null,
+            "spellcheck": null
+        },
+        "element": "select",
+        "options": {
+            "source": "ISO 3166-1 alpha-2",
+            "js": "new Intl.DisplayNames([locale], { type: 'region' })"
+        }
+    },
+    "currency": {
+        "attrs": {
+            "type": null,
+            "autocapitalize": null,
+            "spellcheck": null
+        },
+        "element": "select",
+        "options": {
+            "source": "ISO 4217",
+            "js": "Intl.supportedValuesOf('currency')"
+        }
+    },
+    "locale": {
+        "attrs": {
+            "autocomplete": "language",
+            "type": null,
+            "autocapitalize": null,
+            "spellcheck": null
+        },
+        "element": "select",
+        "options": {
+            "source": "BCP 47 / CLDR locales",
+            "js": "new Intl.DisplayNames([locale], { type: 'language' })"
+        }
+    },
+    "color": {
+        "attrs": {
+            "type": "color",
+            "autocapitalize": null,
+            "spellcheck": null
+        },
+        "note": "The picker returns lowercase #rrggbb; #rrggbbaa needs the newer alpha attribute where supported, else a separate opacity input."
+    },
+    "char": {
+        "attrs": {
+            "maxlength": "1"
+        },
+        "note": null
+    },
+    "int8": {
+        "attrs": {
+            "min": "-128",
+            "max": "127"
+        }
+    },
+    "int16": {
+        "attrs": {
+            "min": "-32768",
+            "max": "32767"
+        }
+    },
+    "uint8": {
+        "attrs": {
+            "min": "0",
+            "max": "255"
+        }
+    },
+    "uint16": {
+        "attrs": {
+            "min": "0",
+            "max": "65535"
+        }
+    },
+    "uint32": {
+        "attrs": {
+            "min": "0",
+            "max": "4294967295"
+        }
+    },
+    "double_int": {
+        "attrs": {
+            "min": "-9007199254740991",
+            "max": "9007199254740991"
+        }
+    },
+    "time": {
+        "note": "The time input has no offset; append the user's current UTC offset before sending."
+    },
+    "unix_time": {
+        "attrs": {
+            "type": "datetime-local",
+            "min": null,
+            "max": null
+        },
+        "note": "Show as a local date-time and convert: Math.floor(new Date(value).getTime() / 1000)."
+    },
+    "idn_email": {
+        "attrs": {
+            "autocomplete": "email",
+            "inputmode": "email"
+        },
+        "note": "Not type=\"email\": browsers reject non-ASCII local parts there."
+    },
+    "iri": {
+        "note": "Not type=\"url\": it normalizes non-ASCII to punycode/percent-encoding."
+    },
+    "uuid_v7": {
+        "note": "Generated server-side, shown read-only."
+    },
+    "ulid": {
+        "note": "Generated, shown read-only."
+    },
+    "base64": {
+        "note": "Read the file and encode it (FileReader.readAsDataURL, then strip the data: prefix)."
+    },
+    "base64url": {
+        "note": "Encode as base64, then replace + with -, / with _ and drop padding."
+    },
+    "css_color": {
+        "note": "Validate with CSS.supports('color', value); pair with <input type=\"color\"> only when the value is sRGB hex."
+    },
+    "commonmark": {
+        "attrs": null,
+        "note": "Pair with a rendered preview; sanitize the rendered HTML."
+    },
+    "html": {
+        "attrs": {
+            "autocapitalize": "none",
+            "spellcheck": "false"
+        },
+        "note": "Sanitize (e.g. DOMPurify) before rendering; never assign untrusted input to innerHTML."
+    },
+    "jwt": {
+        "note": null
+    },
+    "sha256": {
+        "note": "Computed (crypto.subtle.digest('SHA-256', bytes)), shown read-only."
+    },
+    "port": {
+        "attrs": {
+            "min": "0",
+            "max": "65535"
+        }
+    },
+    "country_alpha3": {
+        "attrs": {
+            "autocomplete": null
+        },
+        "options": {
+            "source": "ISO 3166-1 alpha-3"
+        },
+        "note": "Intl has no alpha-3 list; map from alpha-2 with a lookup table."
+    },
+    "language": {
+        "options": {
+            "source": "ISO 639-1 / 639-2",
+            "js": "new Intl.DisplayNames([locale], { type: 'language' })"
+        }
+    },
+    "http_date": {
+        "note": "Not entered by people; format with new Date(value).toUTCString()."
+    },
+    "sf_integer": {
+        "attrs": {
+            "min": "-999999999999999",
+            "max": "999999999999999"
+        }
+    },
+    "sf_decimal": {
+        "attrs": {
+            "step": "0.001",
+            "min": "-999999999999.999",
+            "max": "999999999999.999"
+        }
+    },
+    "sf_binary": {
+        "note": null
+    },
+    "sf_boolean": {
+        "note": null
+    },
+    "iban": {
+        "attrs": {
+            "autocapitalize": "characters"
+        },
+        "note": "Users type it in groups of four; strip spaces and uppercase before submit, then verify the mod-97 checksum."
+    },
+    "bic": {
+        "attrs": {
+            "autocapitalize": "characters"
+        }
+    },
+    "isbn": {
+        "attrs": {
+            "inputmode": "numeric",
+            "autocapitalize": null
+        },
+        "note": "Strip hyphens and spaces before submit; the check digit needs code, not a pattern."
+    },
+    "gtin": {
+        "attrs": {
+            "inputmode": "numeric",
+            "autocapitalize": null
+        },
+        "note": "Usually scanned; the check digit needs code, not a pattern."
+    }
+}

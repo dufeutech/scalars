@@ -1,0 +1,372 @@
+{
+    "$schema": "../schema/postgres.schema.json",
+    "$defs": {
+        "attr": {
+            "length": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10485760,
+                "sql": "varchar(255)",
+                "level": "core",
+                "description": "Maximum characters. Omitted means unlimited, which behaves exactly like text."
+            },
+            "numeric_precision": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 1000,
+                "sql": "numeric(12, 2)",
+                "description": "Total significant digits. Omitted means an unconstrained numeric.",
+                "level": "core"
+            },
+            "numeric_scale": {
+                "type": "integer",
+                "minimum": -1000,
+                "maximum": 1000,
+                "default": 0,
+                "sql": "numeric(12, 2)",
+                "description": "Digits kept right of the decimal point; requires precision. Negative rounds left of the point.",
+                "level": "core"
+            },
+            "nullable": {
+                "type": "boolean",
+                "default": false,
+                "sql": "NOT NULL",
+                "level": "core",
+                "description": "Whether the field accepts null. A constraint on a field of any type, never a type itself; false emits NOT NULL."
+            },
+            "collation": {
+                "type": "string",
+                "sql": "COLLATE \"und-x-icu\"",
+                "description": "Collation driving comparison and ordering; defaults to the database collation.",
+                "level": "advanced"
+            },
+            "fractional_seconds": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 6,
+                "default": 6,
+                "sql": "timestamptz(3)",
+                "level": "advanced",
+                "description": "Fractional-second digits retained by time, timetz, timestamp, timestamptz and interval; values beyond it are rounded."
+            }
+        },
+        "postgres_docs": {
+            "bigint": "https://www.postgresql.org/docs/current/datatype-numeric.html",
+            "boolean": "https://www.postgresql.org/docs/current/datatype-boolean.html",
+            "bytea": "https://www.postgresql.org/docs/current/datatype-binary.html",
+            "char": "https://www.postgresql.org/docs/current/datatype-character.html",
+            "cidr": "https://www.postgresql.org/docs/current/datatype-net-types.html",
+            "date": "https://www.postgresql.org/docs/current/datatype-datetime.html",
+            "double precision": "https://www.postgresql.org/docs/current/datatype-numeric.html",
+            "enum": "https://www.postgresql.org/docs/current/datatype-enum.html",
+            "inet": "https://www.postgresql.org/docs/current/datatype-net-types.html",
+            "integer": "https://www.postgresql.org/docs/current/datatype-numeric.html",
+            "interval": "https://www.postgresql.org/docs/current/datatype-datetime.html",
+            "jsonb": "https://www.postgresql.org/docs/current/datatype-json.html",
+            "macaddr": "https://www.postgresql.org/docs/current/datatype-net-types.html",
+            "numeric": "https://www.postgresql.org/docs/current/datatype-numeric.html",
+            "real": "https://www.postgresql.org/docs/current/datatype-numeric.html",
+            "smallint": "https://www.postgresql.org/docs/current/datatype-numeric.html",
+            "text": "https://www.postgresql.org/docs/current/datatype-character.html",
+            "time": "https://www.postgresql.org/docs/current/datatype-datetime.html",
+            "timestamp": "https://www.postgresql.org/docs/current/datatype-datetime.html",
+            "timestamptz": "https://www.postgresql.org/docs/current/datatype-datetime.html",
+            "timetz": "https://www.postgresql.org/docs/current/datatype-datetime.html",
+            "uuid": "https://www.postgresql.org/docs/current/datatype-uuid.html",
+            "varchar": "https://www.postgresql.org/docs/current/datatype-character.html"
+        },
+        "templates": {
+            "column": {
+                "description": "Placeholder in postgres.check, replaced with the quoted column name when the constraint is emitted.",
+                "example": "CHECK (\"slug\" ~ '^[a-z0-9]+(-[a-z0-9]+)*$')"
+            }
+        }
+    },
+    "_token": {
+        "type": "text",
+        "attr": {
+            "collation": "collation"
+        },
+        "note": null
+    },
+    "_json": {
+        "type": "jsonb"
+    },
+    "_bytes": {
+        "type": "bytea",
+        "attr": null
+    },
+    "string": {
+        "type": "varchar",
+        "attr": {
+            "length": "length",
+            "collation": "collation"
+        },
+        "note": "varchar and text are the same storage; the length is a constraint, not an optimization."
+    },
+    "text": {
+        "type": "text",
+        "attr": {
+            "collation": "collation"
+        }
+    },
+    "boolean": {
+        "type": "boolean"
+    },
+    "int32": {
+        "type": "integer"
+    },
+    "int64": {
+        "type": "bigint",
+        "attr": null
+    },
+    "float64": {
+        "type": "double precision",
+        "note": "float(p) with p in 25-53 is a spelling of double precision."
+    },
+    "decimal": {
+        "type": "numeric",
+        "attr": {
+            "precision": "numeric_precision",
+            "scale": "numeric_scale"
+        },
+        "note": "Exact arithmetic. Without precision and scale it stores any value as given."
+    },
+    "object": {
+        "note": "json keeps the input text and key order verbatim; jsonb normalizes it and is the indexable one."
+    },
+    "array": {
+        "note": "A native array (text[]) is the alternative when every element shares one scalar type."
+    },
+    "enum": {
+        "type": "enum",
+        "attr": {
+            "name": {
+                "type": "string",
+                "sql": "CREATE TYPE order_status AS ENUM ('draft', 'sent')",
+                "description": "Name of the generated enum type, unique per schema."
+            },
+            "labels": {
+                "type": "array",
+                "sql": "AS ENUM ('draft', 'sent')",
+                "description": "Ordered labels; declaration order is the sort order. Labels can be added later, never removed.",
+                "minItems": 1
+            }
+        },
+        "note": "Requires a named type created up front; Postgres rejects an inline unnamed enum."
+    },
+    "date": {
+        "type": "date"
+    },
+    "time_local": {
+        "type": "time",
+        "attr": {
+            "fractional_seconds": "fractional_seconds"
+        },
+        "note": "Plain time drops the offset, which is exactly what makes it the local variant."
+    },
+    "date_time": {
+        "type": "timestamptz",
+        "attr": {
+            "fractional_seconds": "fractional_seconds"
+        },
+        "note": "Stored as UTC and rendered in the session TimeZone; timestamp keeps no offset at all."
+    },
+    "date_time_local": {
+        "type": "timestamp",
+        "attr": {
+            "fractional_seconds": "fractional_seconds"
+        },
+        "note": "timestamp keeps no offset at all; it names a wall clock, not an instant."
+    },
+    "duration": {
+        "type": "interval",
+        "attr": {
+            "fields": {
+                "type": "string",
+                "sql": "interval DAY TO SECOND(3)",
+                "description": "Restricts which units are stored; omitted keeps every field.",
+                "enum": [
+                    "YEAR",
+                    "MONTH",
+                    "DAY",
+                    "HOUR",
+                    "MINUTE",
+                    "SECOND",
+                    "YEAR TO MONTH",
+                    "DAY TO HOUR",
+                    "DAY TO MINUTE",
+                    "DAY TO SECOND",
+                    "HOUR TO MINUTE",
+                    "HOUR TO SECOND",
+                    "MINUTE TO SECOND"
+                ]
+            },
+            "fractional_seconds": "fractional_seconds"
+        },
+        "note": "Three independent components (months, days, microseconds) that never normalize into each other."
+    },
+    "timezone": {
+        "note": "No native zone type; store the IANA name and validate against pg_timezone_names."
+    },
+    "email": {
+        "note": "The citext extension gives case-insensitive comparison without a lower() index."
+    },
+    "ipv4": {
+        "type": "inet",
+        "attr": null,
+        "note": "inet holds a host with an optional netmask; use cidr when the value is a network."
+    },
+    "ipv6": {
+        "type": "inet",
+        "attr": null,
+        "note": "One inet column stores both families; the address itself carries the version."
+    },
+    "cidr": {
+        "type": "cidr",
+        "attr": null,
+        "note": "Rejects any bit set to the right of the netmask, which inet accepts."
+    },
+    "uuid": {
+        "type": "uuid",
+        "attr": null,
+        "note": "Stored as 16 bytes regardless of the input spelling."
+    },
+    "binary": {
+        "note": "Variable length with no fixed-size form; large payloads can move to a large object instead."
+    },
+    "secret": {
+        "note": "The type offers no protection; encrypt with pgcrypto or keep the value out of the database."
+    },
+    "country": {
+        "note": "char(2) fits but blank-pads and compares by the padded value; text avoids that."
+    },
+    "char": {
+        "type": "char",
+        "attr": null,
+        "note": "Bare char is char(1); the blank-padding that makes char awkward needs a length above 1."
+    },
+    "int8": {
+        "type": "smallint",
+        "note": "Postgres has no 1-byte integer; smallint is the narrowest signed type."
+    },
+    "int16": {
+        "type": "smallint"
+    },
+    "uint8": {
+        "type": "smallint",
+        "note": "Postgres has no unsigned integers; smallint covers the whole uint8 range."
+    },
+    "uint16": {
+        "note": "No unsigned integers; integer covers the whole uint16 range."
+    },
+    "uint32": {
+        "type": "bigint",
+        "note": "Postgres has no unsigned integers; bigint covers the whole uint32 range."
+    },
+    "uint64": {
+        "type": "numeric",
+        "attr": {
+            "precision": "numeric_precision",
+            "scale": "numeric_scale"
+        },
+        "note": "No unsigned 64-bit type; numeric(20, 0) covers the whole uint64 range.",
+        "check_extra": "CHECK ({column} >= 0 AND {column} <= 18446744073709551615 AND {column} = trunc({column}))"
+    },
+    "double_int": {
+        "type": "bigint",
+        "note": "Bounded by 2^53, so it always survives a round trip through a double."
+    },
+    "float32": {
+        "type": "real",
+        "note": "float(p) with p in 1-24 is a spelling of real; it is not a stored precision."
+    },
+    "decimal128": {
+        "note": "34 significant decimal digits, which numeric holds exactly and a float does not."
+    },
+    "time": {
+        "type": "timetz",
+        "note": "timetz stores a fixed UTC offset, not a zone; plain time drops the offset."
+    },
+    "unix_time": {
+        "type": "bigint"
+    },
+    "ipv6_cidr": {
+        "note": "One cidr column stores both families; the prefix itself carries the version."
+    },
+    "mac_address": {
+        "type": "macaddr",
+        "attr": null,
+        "note": "macaddr is EUI-48; macaddr8 is the EUI-64 variant."
+    },
+    "uuid_v7": {
+        "note": "Same storage as any UUID; the time ordering is a property of the value, not the type."
+    },
+    "ulid": {
+        "note": "128-bit like a UUID; storable as uuid if the Crockford base32 form is converted on the way in."
+    },
+    "base64": {
+        "note": "Stored decoded, not as the base64 text; bytea_output picks hex or escape on the way out."
+    },
+    "base64url": {
+        "note": "Same bytes as base64; only the transport alphabet differs."
+    },
+    "commonmark": {
+        "note": "Markdown source; Postgres stores the text and never parses it."
+    },
+    "html": {
+        "note": "Markup source; escape it on output, not on the way in."
+    },
+    "relative_json_pointer": {
+        "note": "Resolved against a base pointer; the leading integer counts levels up."
+    },
+    "semver": {
+        "note": "Ordering is lexical unless the parts are split out or an extension type is used."
+    },
+    "jwt": {
+        "note": null
+    },
+    "sha256": {
+        "type": "bytea",
+        "attr": null,
+        "note": "32 decoded bytes; bytea has no fixed-length form, so length is enforced by a check.",
+        "check_extra": "CHECK (octet_length({column}) = 32)"
+    },
+    "port": {
+        "note": "No unsigned 16-bit type; integer plus a range check covers 0-65535."
+    },
+    "country_alpha3": {
+        "note": null
+    },
+    "http_date": {
+        "note": "A header wire format, parsed to an instant on the way in. The OpenAPI registry still sources it to RFC 7231, which RFC 9110 obsoletes."
+    },
+    "media_range": {
+        "note": "A range admits wildcards and parameters; media_type admits neither."
+    },
+    "sf_integer": {
+        "type": "bigint",
+        "note": "Structured Fields caps integers at fifteen digits, well inside bigint."
+    },
+    "sf_decimal": {
+        "type": "numeric",
+        "attr": {
+            "precision": "numeric_precision",
+            "scale": "numeric_scale"
+        },
+        "note": "At most twelve integer and three fractional digits, which numeric keeps exactly.",
+        "check_extra": "CHECK (abs({column}) < 1000000000000 AND {column} = round({column}, 3))"
+    },
+    "sf_string": {
+        "note": "Printable ASCII only; DQUOTE and backslash are escaped in transport."
+    },
+    "sf_token": {
+        "note": "A bare token, never quoted; that is what distinguishes it from sf_string."
+    },
+    "sf_binary": {
+        "note": "Stored decoded; the surrounding colons are Structured Fields syntax, not data."
+    },
+    "sf_boolean": {
+        "note": "Serialized as ?1 and ?0 on the wire, which is syntax rather than a distinct type."
+    }
+}

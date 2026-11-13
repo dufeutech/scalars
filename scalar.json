@@ -1,2459 +1,1393 @@
 {
+    "$schema": "./schema/scalar.schema.json",
+    "version": "0.2.0",
     "$defs": {
-        "attr": {
-            "length": {
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 10485760,
-                "sql": "varchar(255)",
-                "level": "core",
-                "description": "Maximum characters. Omitted means unlimited, which behaves exactly like text."
-            },
-            "numeric_precision": {
-                "type": "integer",
-                "minimum": 1,
-                "maximum": 1000,
-                "sql": "numeric(12, 2)",
-                "description": "Total significant digits. Omitted means an unconstrained numeric.",
-                "level": "core"
-            },
-            "numeric_scale": {
-                "type": "integer",
-                "minimum": -1000,
-                "maximum": 1000,
-                "default": 0,
-                "sql": "numeric(12, 2)",
-                "description": "Digits kept right of the decimal point; requires precision. Negative rounds left of the point.",
-                "level": "core"
-            },
-            "nullable": {
-                "type": "boolean",
-                "default": false,
-                "sql": "NOT NULL",
-                "level": "core",
-                "description": "Whether the field accepts null. A constraint on a field of any type, never a type itself; false emits NOT NULL."
-            },
-            "collation": {
-                "type": "string",
-                "sql": "COLLATE \"und-x-icu\"",
-                "description": "Collation driving comparison and ordering; defaults to the database collation.",
-                "level": "advanced"
-            },
-            "fractional_seconds": {
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 6,
-                "default": 6,
-                "sql": "timestamptz(3)",
-                "level": "advanced",
-                "description": "Fractional-second digits retained by time, timetz, timestamp, timestamptz and interval; values beyond it are rounded."
-            }
-        },
-        "postgres_docs": {
-            "bigint": "https://www.postgresql.org/docs/current/datatype-numeric.html",
-            "boolean": "https://www.postgresql.org/docs/current/datatype-boolean.html",
-            "bytea": "https://www.postgresql.org/docs/current/datatype-binary.html",
-            "char": "https://www.postgresql.org/docs/current/datatype-character.html",
-            "cidr": "https://www.postgresql.org/docs/current/datatype-net-types.html",
-            "date": "https://www.postgresql.org/docs/current/datatype-datetime.html",
-            "double precision": "https://www.postgresql.org/docs/current/datatype-numeric.html",
-            "enum": "https://www.postgresql.org/docs/current/datatype-enum.html",
-            "inet": "https://www.postgresql.org/docs/current/datatype-net-types.html",
-            "integer": "https://www.postgresql.org/docs/current/datatype-numeric.html",
-            "interval": "https://www.postgresql.org/docs/current/datatype-datetime.html",
-            "jsonb": "https://www.postgresql.org/docs/current/datatype-json.html",
-            "macaddr": "https://www.postgresql.org/docs/current/datatype-net-types.html",
-            "numeric": "https://www.postgresql.org/docs/current/datatype-numeric.html",
-            "real": "https://www.postgresql.org/docs/current/datatype-numeric.html",
-            "smallint": "https://www.postgresql.org/docs/current/datatype-numeric.html",
-            "text": "https://www.postgresql.org/docs/current/datatype-character.html",
-            "time": "https://www.postgresql.org/docs/current/datatype-datetime.html",
-            "timestamp": "https://www.postgresql.org/docs/current/datatype-datetime.html",
-            "timestamptz": "https://www.postgresql.org/docs/current/datatype-datetime.html",
-            "timetz": "https://www.postgresql.org/docs/current/datatype-datetime.html",
-            "uuid": "https://www.postgresql.org/docs/current/datatype-uuid.html",
-            "varchar": "https://www.postgresql.org/docs/current/datatype-character.html"
-        },
-        "templates": {
-            "column": {
-                "description": "Placeholder in postgres.check, replaced with the quoted column name when the constraint is emitted.",
-                "example": "CHECK (\"slug\" ~ '^[a-z0-9]+(-[a-z0-9]+)*$')"
-            }
+        "docs": {
+            "json_schema_validation": "https://json-schema.org/draft/2020-12/json-schema-validation",
+            "openapi_formats": "https://spec.openapis.org/registry/format/",
+            "ieee754": "https://standards.ieee.org/ieee/754/6210/",
+            "ecma404": "https://ecma-international.org/publications-and-standards/standards/ecma-404/",
+            "json_schema_core": "https://json-schema.org/draft/2020-12/json-schema-core",
+            "rfc3339": "https://datatracker.ietf.org/doc/html/rfc3339",
+            "iana_tz": "https://www.iana.org/time-zones",
+            "rfc5321": "https://datatracker.ietf.org/doc/html/rfc5321",
+            "rfc1123": "https://datatracker.ietf.org/doc/html/rfc1123",
+            "rfc791": "https://datatracker.ietf.org/doc/html/rfc791",
+            "rfc4291": "https://datatracker.ietf.org/doc/html/rfc4291",
+            "rfc4632": "https://datatracker.ietf.org/doc/html/rfc4632",
+            "rfc3986": "https://datatracker.ietf.org/doc/html/rfc3986",
+            "rfc9562": "https://datatracker.ietf.org/doc/html/rfc9562",
+            "itu_e164": "https://www.itu.int/rec/T-REC-E.164",
+            "openapi_3_2": "https://spec.openapis.org/oas/v3.2.0.html",
+            "iana_media_types": "https://www.iana.org/assignments/media-types/media-types.xhtml",
+            "iso3166": "https://www.iso.org/iso-3166-country-codes.html",
+            "iso4217": "https://www.iso.org/iso-4217-currency-codes.html",
+            "rfc5646": "https://datatracker.ietf.org/doc/html/rfc5646",
+            "css_color_4": "https://www.w3.org/TR/css-color-4/",
+            "posix_epoch": "https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/V1_chap04.html",
+            "rfc6531": "https://datatracker.ietf.org/doc/html/rfc6531",
+            "rfc5890": "https://datatracker.ietf.org/doc/html/rfc5890",
+            "ieee802": "https://standards.ieee.org/ieee/802/",
+            "rfc3987": "https://datatracker.ietf.org/doc/html/rfc3987",
+            "ulid": "https://github.com/ulid/spec",
+            "rfc4648": "https://datatracker.ietf.org/doc/html/rfc4648",
+            "commonmark": "https://spec.commonmark.org/0.31.2/",
+            "whatwg_html": "https://html.spec.whatwg.org/multipage/",
+            "rfc6901": "https://datatracker.ietf.org/doc/html/rfc6901",
+            "rfc6570": "https://datatracker.ietf.org/doc/html/rfc6570",
+            "ecma262": "https://tc39.es/ecma262/",
+            "semver": "https://semver.org/spec/v2.0.0.html",
+            "rfc7519": "https://datatracker.ietf.org/doc/html/rfc7519",
+            "fips180_4": "https://csrc.nist.gov/pubs/fips/180-4/upd1/final",
+            "rfc6335": "https://datatracker.ietf.org/doc/html/rfc6335",
+            "posix_crontab": "https://pubs.opengroup.org/onlinepubs/9799919799/utilities/crontab.html",
+            "iso3166_2": "https://www.iso.org/standard/72483.html",
+            "iso639": "https://www.iso.org/iso-639-language-code",
+            "rfc9110": "https://datatracker.ietf.org/doc/html/rfc9110",
+            "wikidata": "https://www.wikidata.org/wiki/Wikidata:Identifiers",
+            "doi": "https://www.doi.org/the-identifier/what-is-a-doi/",
+            "orcid": "https://info.orcid.org/documentation/",
+            "iso17442": "https://www.gleif.org/en/about-lei/iso-17442-the-lei-code-structure",
+            "rfc9651": "https://datatracker.ietf.org/doc/html/rfc9651",
+            "iso13616": "https://www.iso.org/standard/81090.html",
+            "iso9362": "https://www.iso.org/standard/60390.html",
+            "isbn": "https://www.isbn-international.org/",
+            "gs1_gtin": "https://www.gs1.org/standards/id-keys/gtin"
         }
+    },
+    "_token": {
+        "base": "string",
+        "abstract": true
+    },
+    "_json": {
+        "abstract": true
+    },
+    "_bytes": {
+        "base": "string",
+        "abstract": true,
+        "contentEncoding": "base64"
     },
     "string": {
-        "type": "string",
-        "standard": "JSON Schema 2020-12",
-        "docs_link": "https://json-schema.org/draft/2020-12/json-schema-validation",
-        "category": "primitive",
         "level": "core",
-        "is_number": false,
-        "description": "Single-line text where a length bound is meaningful: names, titles, labels. Prefer text when there is no maximum, and enum when the values form a closed set.",
-        "example": "hello",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text"
-            },
-            "note": "Set maxlength from the length attribute."
+        "category": "primitive",
+        "type": "string",
+        "examples": {
+            "valid": [
+                "hello"
+            ]
         },
-        "postgres": {
-            "type": "varchar",
-            "note": "varchar and text are the same storage; the length is a constraint, not an optimization.",
-            "attr": {
-                "length": "length",
-                "collation": "collation"
-            }
-        }
+        "standard": "JSON Schema 2020-12",
+        "docs": "json_schema_validation",
+        "details": "Single-line text where a length bound is meaningful: names, titles, labels. Prefer text when there is no maximum, and enum when the values form a closed set."
     },
     "text": {
-        "type": "string",
-        "standard": "JSON Schema 2020-12",
-        "docs_link": "https://json-schema.org/draft/2020-12/json-schema-validation",
-        "category": "primitive",
         "level": "core",
-        "is_number": false,
-        "description": "Unbounded prose: article bodies, comments, logs. Prefer string when a length limit is part of the contract.",
-        "example": "unbounded multi-line body",
-        "html": {
-            "element": "textarea",
-            "attrs": {}
+        "category": "primitive",
+        "type": "string",
+        "examples": {
+            "valid": [
+                "unbounded multi-line body"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "attr": {
-                "collation": "collation"
-            }
-        }
+        "standard": "JSON Schema 2020-12",
+        "docs": "json_schema_validation",
+        "details": "Unbounded prose: article bodies, comments, logs. Prefer string when a length limit is part of the contract."
     },
     "boolean": {
-        "type": "boolean",
-        "standard": "JSON Schema 2020-12",
-        "docs_link": "https://json-schema.org/draft/2020-12/json-schema-validation",
-        "category": "primitive",
         "level": "core",
-        "is_number": false,
-        "description": "A true/false fact: flags, toggles, switches. Prefer enum if a third state could ever appear, rather than a nullable boolean.",
-        "example": true,
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "checkbox"
-            },
-            "note": "An unchecked box submits nothing; map absence to false."
+        "category": "primitive",
+        "type": "boolean",
+        "examples": {
+            "valid": [
+                true
+            ]
         },
-        "postgres": {
-            "type": "boolean"
-        }
+        "standard": "JSON Schema 2020-12",
+        "docs": "json_schema_validation",
+        "details": "A true/false fact: flags, toggles, switches. Prefer enum if a third state could ever appear, rather than a nullable boolean."
     },
     "int32": {
+        "level": "core",
+        "category": "primitive",
         "type": "integer",
         "format": "int32",
         "minimum": -2147483648,
         "maximum": 2147483647,
-        "standard": "OpenAPI Format Registry",
-        "docs_link": "https://spec.openapis.org/registry/format/",
-        "category": "primitive",
-        "level": "core",
-        "is_number": true,
-        "description": "The general-purpose signed integer: counts, quantities, offsets. Prefer int64 for identifiers or anything that can outgrow two billion.",
-        "example": 42,
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "number",
-                "step": "1",
-                "min": "-2147483648",
-                "max": "2147483647"
-            }
+        "examples": {
+            "valid": [
+                42
+            ]
         },
-        "postgres": {
-            "type": "integer"
-        }
+        "standard": "OpenAPI Format Registry",
+        "docs": "openapi_formats",
+        "details": "The general-purpose signed integer: counts, quantities, offsets. Prefer int64 for identifiers or anything that can outgrow two billion."
     },
     "int64": {
-        "type": "string",
+        "base": "_token",
+        "level": "core",
+        "category": "primitive",
         "format": "int64",
         "pattern": "^-?\\d+$",
-        "standard": "OpenAPI Format Registry",
-        "docs_link": "https://spec.openapis.org/registry/format/",
-        "category": "primitive",
-        "level": "core",
-        "is_number": true,
-        "description": "Signed 64-bit integers: database keys, byte sizes, high-resolution counters. Values beyond 2^53 lose precision as JSON numbers, so they travel as strings; storage is still a native 64-bit integer.",
-        "example": "9007199254740993",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "inputmode": "numeric",
-                "autocapitalize": "none",
-                "spellcheck": "false",
-                "pattern": "-?\\d+"
-            },
-            "note": "Not type=\"number\": browsers parse it as a double and lose digits past 2^53. Keep it a string in JS (BigInt for math)."
+        "examples": {
+            "valid": [
+                "9007199254740993"
+            ]
         },
-        "postgres": {
-            "type": "bigint"
-        }
+        "standard": "OpenAPI Format Registry",
+        "docs": "openapi_formats",
+        "details": "Signed 64-bit integers: database keys, byte sizes, high-resolution counters. Values beyond 2^53 lose precision as JSON numbers, so they travel as strings; storage is still a native 64-bit integer."
     },
     "float64": {
+        "level": "core",
+        "category": "primitive",
         "type": "number",
         "format": "double",
-        "standard": "IEEE 754 (binary64) / OpenAPI Format Registry",
-        "docs_link": "https://standards.ieee.org/ieee/754/6210/",
-        "category": "primitive",
-        "level": "core",
-        "is_number": true,
-        "description": "The default floating-point number: measurements, ratios, scores. Never money or exact quantities - use decimal for anything where digits must be exact.",
-        "example": 3.141592653589793,
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "number",
-                "step": "any"
-            }
+        "examples": {
+            "valid": [
+                3.141592653589793
+            ]
         },
-        "postgres": {
-            "type": "double precision",
-            "note": "float(p) with p in 25-53 is a spelling of double precision."
-        }
+        "standard": "IEEE 754 (binary64) / OpenAPI Format Registry",
+        "docs": "ieee754",
+        "details": "The default floating-point number: measurements, ratios, scores. Never money or exact quantities - use decimal for anything where digits must be exact."
     },
     "decimal": {
-        "type": "string",
+        "base": "_token",
+        "level": "core",
+        "category": "primitive",
         "format": "decimal",
         "pattern": "^-?\\d+(\\.\\d+)?$",
-        "standard": "ISO 80000-1 / OpenAPI Format Registry",
-        "docs_link": "https://spec.openapis.org/registry/format/",
-        "category": "primitive",
-        "level": "core",
-        "is_number": true,
-        "description": "Exact decimal value represented as text. Use for money, rates, quantities, and other values where decimal precision must be preserved. Precision and scale are determined by the target system.",
-        "example": "1234.56",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "inputmode": "decimal",
-                "autocapitalize": "none",
-                "spellcheck": "false",
-                "pattern": "-?\\d+(\\.\\d+)?"
-            },
-            "note": "Not type=\"number\": that converts through a binary float. Keep it a string in JS; use a decimal library for math."
+        "examples": {
+            "valid": [
+                "1234.56"
+            ]
         },
-        "postgres": {
-            "type": "numeric",
-            "note": "Exact arithmetic. Without precision and scale it stores any value as given.",
-            "attr": {
-                "precision": "numeric_precision",
-                "scale": "numeric_scale"
-            }
-        }
+        "standard": "ISO 80000-1 / OpenAPI Format Registry",
+        "docs": "openapi_formats",
+        "details": "Exact decimal value represented as text. Use for money, rates, quantities, and other values where decimal precision must be preserved. Precision and scale are determined by the target system."
     },
     "object": {
-        "type": "object",
-        "standard": "ECMA-404 / JSON Schema 2020-12",
-        "docs_link": "https://ecma-international.org/publications-and-standards/standards/ecma-404/",
-        "category": "structure",
+        "base": "_json",
         "level": "core",
-        "is_number": false,
-        "description": "A nested JSON object: structured payloads, settings blobs, documents. Prefer dedicated fields or columns once the shape is stable enough to query.",
-        "example": {
-            "key": "value"
+        "category": "structure",
+        "type": "object",
+        "examples": {
+            "valid": [
+                {
+                    "key": "value"
+                }
+            ]
         },
-        "html": {
-            "element": "textarea",
-            "attrs": {
-                "autocapitalize": "none",
-                "spellcheck": "false"
-            },
-            "note": "No native JSON input; parse with JSON.parse before submit or use a structured editor."
-        },
-        "postgres": {
-            "type": "jsonb",
-            "note": "json keeps the input text and key order verbatim; jsonb normalizes it and is the indexable one."
-        }
+        "standard": "ECMA-404 / JSON Schema 2020-12",
+        "docs": "ecma404",
+        "details": "A nested JSON object: structured payloads, settings blobs, documents. Prefer dedicated fields or columns once the shape is stable enough to query."
     },
     "array": {
-        "type": "array",
-        "standard": "ECMA-404 / JSON Schema 2020-12",
-        "docs_link": "https://ecma-international.org/publications-and-standards/standards/ecma-404/",
-        "category": "structure",
+        "base": "_json",
         "level": "core",
-        "is_number": false,
-        "description": "An ordered JSON list: tags, attachments, embedded collections. Prefer a separate table or repeated field when elements need identity or independent querying.",
-        "example": [
-            1,
-            2,
-            3
-        ],
-        "html": {
-            "element": "textarea",
-            "attrs": {
-                "autocapitalize": "none",
-                "spellcheck": "false"
-            },
-            "note": "No native JSON input; parse with JSON.parse before submit or use a structured editor."
+        "category": "structure",
+        "type": "array",
+        "examples": {
+            "valid": [
+                [
+                    1,
+                    2,
+                    3
+                ]
+            ]
         },
-        "postgres": {
-            "type": "jsonb",
-            "note": "A native array (text[]) is the alternative when every element shares one scalar type."
-        }
+        "standard": "ECMA-404 / JSON Schema 2020-12",
+        "docs": "ecma404",
+        "details": "An ordered JSON list: tags, attachments, embedded collections. Prefer a separate table or repeated field when elements need identity or independent querying."
     },
     "enum": {
-        "type": "string",
-        "standard": "JSON Schema 2020-12 (enum keyword)",
-        "docs_link": "https://json-schema.org/draft/2020-12/json-schema-validation#name-enum",
-        "category": "structure",
+        "base": "string",
         "level": "core",
-        "is_number": false,
-        "description": "One value from a closed, named set: statuses, roles, kinds. Prefer string for open-ended sets and boolean for exactly two states.",
-        "example": "active",
-        "html": {
-            "element": "select",
-            "attrs": {},
-            "options": {
-                "source": "postgres.attr.labels"
-            },
-            "note": "Options come from the declared labels; use radio buttons when there are few."
+        "category": "structure",
+        "examples": {
+            "valid": [
+                "active"
+            ]
         },
-        "postgres": {
-            "type": "enum",
-            "note": "Requires a named type created up front; Postgres rejects an inline unnamed enum.",
-            "attr": {
-                "name": {
-                    "type": "string",
-                    "sql": "CREATE TYPE order_status AS ENUM ('draft', 'sent')",
-                    "description": "Name of the generated enum type, unique per schema."
-                },
-                "labels": {
-                    "type": "array",
-                    "sql": "AS ENUM ('draft', 'sent')",
-                    "description": "Ordered labels; declaration order is the sort order. Labels can be added later, never removed.",
-                    "minItems": 1
-                }
-            }
-        }
+        "standard": "JSON Schema 2020-12 (enum keyword)",
+        "docs": "json_schema_validation",
+        "anchor": "#name-enum",
+        "details": "One value from a closed, named set: statuses, roles, kinds. Prefer string for open-ended sets and boolean for exactly two states."
     },
     "any": {
-        "standard": "JSON Schema 2020-12 (unconstrained schema)",
-        "docs_link": "https://json-schema.org/draft/2020-12/json-schema-core",
-        "category": "structure",
+        "base": "_json",
         "level": "core",
-        "is_number": false,
-        "description": "Deliberately unconstrained: passthrough payloads and escape hatches. Reach for it last - every consumer inherits the validation burden.",
-        "html": {
-            "element": "textarea",
-            "attrs": {
-                "autocapitalize": "none",
-                "spellcheck": "false"
-            },
-            "note": "No native JSON input; parse with JSON.parse before submit or use a structured editor."
+        "category": "structure",
+        "examples": {
+            "valid": [
+                {
+                    "anything": [
+                        1,
+                        "two",
+                        true
+                    ]
+                }
+            ]
         },
-        "postgres": {
-            "type": "jsonb"
-        }
+        "standard": "JSON Schema 2020-12 (unconstrained schema)",
+        "docs": "json_schema_core",
+        "details": "Deliberately unconstrained: passthrough payloads and escape hatches. Reach for it last - every consumer inherits the validation burden."
     },
     "date": {
+        "level": "core",
+        "category": "temporal",
         "type": "string",
         "format": "date",
         "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
-        "standard": "ISO 8601 / RFC 3339 full-date",
-        "docs_link": "https://datatracker.ietf.org/doc/html/rfc3339#section-5.6",
-        "category": "temporal",
-        "level": "core",
-        "is_number": false,
-        "description": "A calendar date with no time or zone: birthdays, due dates, effective dates. Prefer date_time for an actual instant.",
-        "example": "2026-08-16",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "date"
-            }
+        "examples": {
+            "valid": [
+                "2026-08-16"
+            ]
         },
-        "postgres": {
-            "type": "date"
-        }
+        "standard": "ISO 8601 / RFC 3339 full-date",
+        "docs": "rfc3339",
+        "anchor": "#section-5.6",
+        "details": "A calendar date with no time or zone: birthdays, due dates, effective dates. Prefer date_time for an actual instant."
     },
     "time_local": {
+        "level": "core",
+        "category": "temporal",
         "type": "string",
         "format": "time-local",
         "pattern": "^\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?$",
-        "standard": "OpenAPI Format Registry (RFC 3339 partial-time, no offset)",
-        "docs_link": "https://spec.openapis.org/registry/format/",
-        "category": "temporal",
-        "level": "core",
-        "is_number": false,
-        "description": "A wall-clock time with no offset: daily schedules like 'every day at 14:30' that follow whatever zone applies. Pair with timezone when the zone is fixed.",
-        "example": "14:30:00",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "time",
-                "step": "1"
-            },
-            "note": "step=\"1\" shows seconds; without it browsers submit HH:MM, which the pattern rejects - append \":00\"."
+        "examples": {
+            "valid": [
+                "14:30:00"
+            ]
         },
-        "postgres": {
-            "type": "time",
-            "note": "Plain time drops the offset, which is exactly what makes it the local variant.",
-            "attr": {
-                "fractional_seconds": "fractional_seconds"
-            }
-        }
+        "standard": "OpenAPI Format Registry (RFC 3339 partial-time, no offset)",
+        "docs": "openapi_formats",
+        "details": "A wall-clock time with no offset: daily schedules like 'every day at 14:30' that follow whatever zone applies. Pair with timezone when the zone is fixed."
     },
     "date_time": {
+        "level": "core",
+        "category": "temporal",
         "type": "string",
         "format": "date-time",
         "pattern": "^\\d{4}-\\d{2}-\\d{2}[Tt]\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?([Zz]|[+-]\\d{2}:\\d{2})$",
-        "standard": "ISO 8601 / RFC 3339 date-time",
-        "docs_link": "https://datatracker.ietf.org/doc/html/rfc3339#section-5.6",
-        "category": "temporal",
-        "level": "core",
-        "is_number": false,
-        "description": "An absolute instant with offset - the default for created/updated timestamps and anything that really happened. Prefer date_time_local only for deliberately floating times.",
-        "example": "2026-08-16T14:30:00Z",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "datetime-local",
-                "step": "1"
-            },
-            "note": "No native input for an instant. datetime-local yields a wall-clock time; combine it with the user's zone (Intl.DateTimeFormat().resolvedOptions().timeZone) and convert to an offset or Z before sending."
+        "examples": {
+            "valid": [
+                "2026-08-16T14:30:00Z"
+            ]
         },
-        "postgres": {
-            "type": "timestamptz",
-            "note": "Stored as UTC and rendered in the session TimeZone; timestamp keeps no offset at all.",
-            "attr": {
-                "fractional_seconds": "fractional_seconds"
-            }
-        }
+        "standard": "ISO 8601 / RFC 3339 date-time",
+        "docs": "rfc3339",
+        "anchor": "#section-5.6",
+        "details": "An absolute instant with offset - the default for created/updated timestamps and anything that really happened. Prefer date_time_local only for deliberately floating times."
     },
     "date_time_local": {
+        "level": "core",
+        "category": "temporal",
         "type": "string",
         "format": "date-time-local",
         "pattern": "^\\d{4}-\\d{2}-\\d{2}[Tt]\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?$",
-        "standard": "OpenAPI Format Registry (RFC 3339 date-time with no offset)",
-        "docs_link": "https://spec.openapis.org/registry/format/",
-        "category": "temporal",
-        "level": "core",
-        "is_number": false,
-        "description": "A date and time with no offset: floating events like 'Jan 1 at midnight, wherever the user is'. Prefer date_time for real instants; pair with timezone to reconstruct one.",
-        "example": "2026-08-16T14:30:00",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "datetime-local",
-                "step": "1"
-            },
-            "note": "Exact match; browsers submit HH:MM without seconds unless step is set - append \":00\" if absent."
+        "examples": {
+            "valid": [
+                "2026-08-16T14:30:00"
+            ]
         },
-        "postgres": {
-            "type": "timestamp",
-            "note": "timestamp keeps no offset at all; it names a wall clock, not an instant.",
-            "attr": {
-                "fractional_seconds": "fractional_seconds"
-            }
-        }
+        "standard": "OpenAPI Format Registry (RFC 3339 date-time with no offset)",
+        "docs": "openapi_formats",
+        "details": "A date and time with no offset: floating events like 'Jan 1 at midnight, wherever the user is'. Prefer date_time for real instants; pair with timezone to reconstruct one."
     },
     "duration": {
-        "type": "string",
+        "base": "_token",
+        "level": "core",
+        "category": "temporal",
         "format": "duration",
         "pattern": "^P(?!$)(\\d+Y)?(\\d+M)?(\\d+W)?(\\d+D)?(T(?=\\d)(\\d+H)?(\\d+M)?(\\d+(\\.\\d+)?S)?)?$",
-        "standard": "ISO 8601-1 duration / RFC 3339 Appendix A",
-        "docs_link": "https://datatracker.ietf.org/doc/html/rfc3339#appendix-A",
-        "category": "temporal",
-        "level": "core",
-        "is_number": false,
-        "description": "A span of time (ISO 8601): timeouts, retention windows, billing periods. A length, not a position - prefer date_time for points in time.",
-        "example": "P3DT4H30M",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "autocapitalize": "none",
-                "spellcheck": "false",
-                "pattern": "P(?!$)(\\d+Y)?(\\d+M)?(\\d+W)?(\\d+D)?(T(?=\\d)(\\d+H)?(\\d+M)?(\\d+(\\.\\d+)?S)?)?"
-            },
-            "note": "No native duration input; usually rendered as separate number fields and assembled into ISO 8601."
+        "examples": {
+            "valid": [
+                "P3DT4H30M"
+            ]
         },
-        "postgres": {
-            "type": "interval",
-            "note": "Three independent components (months, days, microseconds) that never normalize into each other.",
-            "attr": {
-                "fields": {
-                    "type": "string",
-                    "sql": "interval DAY TO SECOND(3)",
-                    "description": "Restricts which units are stored; omitted keeps every field.",
-                    "enum": [
-                        "YEAR",
-                        "MONTH",
-                        "DAY",
-                        "HOUR",
-                        "MINUTE",
-                        "SECOND",
-                        "YEAR TO MONTH",
-                        "DAY TO HOUR",
-                        "DAY TO MINUTE",
-                        "DAY TO SECOND",
-                        "HOUR TO MINUTE",
-                        "HOUR TO SECOND",
-                        "MINUTE TO SECOND"
-                    ]
-                },
-                "fractional_seconds": "fractional_seconds"
-            }
-        }
+        "standard": "ISO 8601-1 duration / RFC 3339 Appendix A",
+        "docs": "rfc3339",
+        "anchor": "#appendix-A",
+        "details": "A span of time (ISO 8601): timeouts, retention windows, billing periods. A length, not a position - prefer date_time for points in time."
     },
     "timezone": {
-        "type": "string",
-        "pattern": "^(UTC|[A-Za-z_]+/[A-Za-z0-9_+-]+(/[A-Za-z0-9_+-]+)?)$",
-        "standard": "IANA Time Zone Database",
-        "docs_link": "https://www.iana.org/time-zones",
-        "category": "temporal",
+        "base": "_token",
         "level": "core",
-        "is_number": false,
-        "description": "An IANA zone name like America/New_York: user preferences and scheduling context. Store the name, never a raw offset - offsets change with DST and law.",
-        "example": "America/New_York",
-        "html": {
-            "element": "select",
-            "attrs": {},
-            "options": {
-                "source": "IANA tz database",
-                "js": "Intl.supportedValuesOf('timeZone')"
-            }
+        "category": "temporal",
+        "pattern": "^(UTC|[A-Za-z_]+/[A-Za-z0-9_+-]+(/[A-Za-z0-9_+-]+)?)$",
+        "examples": {
+            "valid": [
+                "America/New_York"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "note": "No native zone type; store the IANA name and validate against pg_timezone_names.",
-            "attr": {
-                "collation": "collation"
-            },
-            "check": "CHECK ({column} ~ '^(UTC|[A-Za-z_]+/[A-Za-z0-9_+-]+(/[A-Za-z0-9_+-]+)?)$')"
-        }
+        "standard": "IANA Time Zone Database",
+        "docs": "iana_tz",
+        "details": "An IANA zone name like America/New_York: user preferences and scheduling context. Store the name, never a raw offset - offsets change with DST and law."
     },
     "email": {
-        "type": "string",
+        "base": "_token",
+        "level": "core",
+        "category": "identity",
         "format": "email",
         "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
-        "standard": "RFC 5321 / RFC 5322",
-        "docs_link": "https://datatracker.ietf.org/doc/html/rfc5321",
-        "category": "identity",
-        "level": "core",
-        "is_number": false,
-        "description": "An email address: login and contact fields. Accepting internationalized mailboxes is a validation choice, not a separate type.",
-        "example": "user@example.com",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "email",
-                "autocomplete": "email",
-                "inputmode": "email"
-            }
+        "examples": {
+            "valid": [
+                "user@example.com"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "note": "The citext extension gives case-insensitive comparison without a lower() index.",
-            "attr": {
-                "collation": "collation"
-            },
-            "check": "CHECK ({column} ~ '^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$')"
-        }
+        "standard": "RFC 5321 / RFC 5322",
+        "docs": "rfc5321",
+        "details": "An email address: login and contact fields. Accepting internationalized mailboxes is a validation choice, not a separate type."
     },
     "hostname": {
-        "type": "string",
+        "base": "_token",
+        "level": "core",
+        "category": "identity",
         "format": "hostname",
         "pattern": "^(?=.{1,253}$)[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$",
-        "standard": "RFC 1123 / RFC 952",
-        "docs_link": "https://datatracker.ietf.org/doc/html/rfc1123#section-2",
-        "category": "identity",
-        "level": "core",
-        "is_number": false,
-        "description": "A DNS hostname: servers and endpoints without scheme or path. Prefer uri when a full locator travels; internationalized names are a validation choice.",
-        "example": "api.example.com",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "inputmode": "url",
-                "autocapitalize": "none",
-                "spellcheck": "false",
-                "pattern": "(?=.{1,253}$)[a-zA-Z0-9]([a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])?(\\.[a-zA-Z0-9]([a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])?)*"
-            }
+        "examples": {
+            "valid": [
+                "api.example.com"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "attr": {
-                "collation": "collation"
-            },
-            "check": "CHECK ({column} ~ '^(?=.{1,253}$)[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$')"
-        }
+        "standard": "RFC 1123 / RFC 952",
+        "docs": "rfc1123",
+        "anchor": "#section-2",
+        "details": "A DNS hostname: servers and endpoints without scheme or path. Prefer uri when a full locator travels; internationalized names are a validation choice."
     },
     "ipv4": {
-        "type": "string",
+        "base": "_token",
+        "level": "core",
+        "category": "identity",
         "format": "ipv4",
         "pattern": "^((25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]?\\d)\\.){3}(25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]?\\d)$",
-        "standard": "RFC 791",
-        "docs_link": "https://datatracker.ietf.org/doc/html/rfc791",
-        "category": "identity",
-        "level": "core",
-        "is_number": false,
-        "description": "A dotted-quad IPv4 host address. Prefer cidr for networks rather than hosts.",
-        "example": "192.0.2.1",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "inputmode": "decimal",
-                "autocapitalize": "none",
-                "spellcheck": "false",
-                "pattern": "((25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]?\\d)\\.){3}(25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]?\\d)"
-            }
+        "examples": {
+            "valid": [
+                "192.0.2.1"
+            ]
         },
-        "postgres": {
-            "type": "inet",
-            "note": "inet holds a host with an optional netmask; use cidr when the value is a network."
-        }
+        "standard": "RFC 791",
+        "docs": "rfc791",
+        "details": "A dotted-quad IPv4 host address. Prefer cidr for networks rather than hosts."
     },
     "ipv6": {
-        "type": "string",
-        "format": "ipv6",
-        "standard": "RFC 4291 addressing / RFC 8200",
-        "docs_link": "https://datatracker.ietf.org/doc/html/rfc4291#section-2.2",
-        "category": "identity",
+        "base": "_token",
         "level": "core",
-        "is_number": false,
-        "description": "An IPv6 host address. Prefer cidr for prefixes rather than hosts.",
-        "example": "2001:db8::1",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "autocapitalize": "none",
-                "spellcheck": "false"
-            }
+        "category": "identity",
+        "format": "ipv6",
+        "examples": {
+            "valid": [
+                "2001:db8::1"
+            ]
         },
-        "postgres": {
-            "type": "inet",
-            "note": "One inet column stores both families; the address itself carries the version."
-        }
+        "standard": "RFC 4291 addressing / RFC 8200",
+        "docs": "rfc4291",
+        "anchor": "#section-2.2",
+        "details": "An IPv6 host address. Prefer cidr for prefixes rather than hosts."
     },
     "cidr": {
-        "type": "string",
-        "standard": "RFC 4632 (IPv4) / RFC 4291 (IPv6 prefix)",
-        "docs_link": "https://datatracker.ietf.org/doc/html/rfc4632",
-        "category": "identity",
+        "base": "_token",
         "level": "core",
-        "is_number": false,
-        "description": "A network prefix of either IP family: allowlists, routing rules. Prefer ipv4 or ipv6 for a single host.",
-        "example": "192.0.2.0/24",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "autocapitalize": "none",
-                "spellcheck": "false"
-            }
+        "category": "identity",
+        "examples": {
+            "valid": [
+                "192.0.2.0/24"
+            ]
         },
-        "postgres": {
-            "type": "cidr",
-            "note": "Rejects any bit set to the right of the netmask, which inet accepts."
-        }
+        "standard": "RFC 4632 (IPv4) / RFC 4291 (IPv6 prefix)",
+        "docs": "rfc4632",
+        "details": "A network prefix of either IP family: allowlists, routing rules. Prefer ipv4 or ipv6 for a single host."
     },
     "uri": {
-        "type": "string",
-        "format": "uri",
-        "standard": "RFC 3986",
-        "docs_link": "https://datatracker.ietf.org/doc/html/rfc3986",
-        "category": "identity",
+        "base": "_token",
         "level": "core",
-        "is_number": false,
-        "description": "An absolute URI with scheme: links, webhooks, resource locators. Use string for relative paths.",
-        "example": "https://example.com/a/b?c=1",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "url",
-                "autocomplete": "url",
-                "inputmode": "url"
-            }
+        "category": "identity",
+        "format": "uri",
+        "examples": {
+            "valid": [
+                "https://example.com/a/b?c=1"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "attr": {
-                "collation": "collation"
-            }
-        }
+        "standard": "RFC 3986",
+        "docs": "rfc3986",
+        "details": "An absolute URI with scheme: links, webhooks, resource locators. Use string for relative paths."
     },
     "uuid": {
-        "type": "string",
+        "base": "_token",
+        "level": "core",
+        "category": "identity",
         "format": "uuid",
         "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
-        "standard": "RFC 9562 (obsoletes RFC 4122)",
-        "docs_link": "https://datatracker.ietf.org/doc/html/rfc9562",
-        "category": "identity",
-        "level": "core",
-        "is_number": false,
-        "description": "A 128-bit universal identifier, any version: primary keys and references. Which version to mint (such as time-ordered v7) is a generation option, not a separate type.",
-        "example": "f81d4fae-7dec-11d0-a765-00a0c91e6bf6",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "autocapitalize": "none",
-                "spellcheck": "false",
-                "pattern": "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
-            },
-            "note": "Usually generated (crypto.randomUUID()) and shown read-only rather than typed."
+        "examples": {
+            "valid": [
+                "f81d4fae-7dec-11d0-a765-00a0c91e6bf6"
+            ]
         },
-        "postgres": {
-            "type": "uuid",
-            "note": "Stored as 16 bytes regardless of the input spelling."
-        }
+        "standard": "RFC 9562 (obsoletes RFC 4122)",
+        "docs": "rfc9562",
+        "details": "A 128-bit universal identifier, any version: primary keys and references. Which version to mint (such as time-ordered v7) is a generation option, not a separate type."
     },
     "phone": {
-        "type": "string",
-        "pattern": "^\\+[1-9]\\d{1,14}$",
-        "standard": "ITU-T E.164",
-        "docs_link": "https://www.itu.int/rec/T-REC-E.164",
-        "category": "identity",
+        "base": "_token",
         "level": "core",
-        "is_number": false,
-        "description": "An E.164 phone number (+country code, digits only): dialing and SMS. Store normalized; display formatting is presentation, not data.",
-        "example": "+14155552671",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "tel",
-                "autocomplete": "tel",
-                "inputmode": "tel",
-                "maxlength": "16",
-                "pattern": "\\+[1-9]\\d{1,14}"
-            },
-            "note": "Users type local formats; normalize to E.164 before submit (e.g. libphonenumber-js)."
+        "category": "identity",
+        "pattern": "^\\+[1-9]\\d{1,14}$",
+        "examples": {
+            "valid": [
+                "+14155552671"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "attr": {
-                "collation": "collation"
-            },
-            "check": "CHECK ({column} ~ '^\\+[1-9]\\d{1,14}$')"
-        }
+        "standard": "ITU-T E.164",
+        "docs": "itu_e164",
+        "details": "An E.164 phone number (+country code, digits only): dialing and SMS. Store normalized; display formatting is presentation, not data."
     },
     "binary": {
-        "type": "string",
-        "contentEncoding": "base64",
-        "standard": "OpenAPI 3.2 binary data / RFC 4648 Section 4 (base64 in JSON)",
-        "docs_link": "https://spec.openapis.org/oas/v3.2.0.html#working-with-binary-data",
-        "category": "technical",
+        "base": "_bytes",
         "level": "core",
-        "is_number": false,
-        "description": "Raw bytes: file uploads, blobs, digests. Inside JSON they travel as standard base64 (RFC 4648); storage keeps the decoded bytes.",
-        "example": "SGVsbG8gd29ybGQ=",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "file"
-            },
-            "note": "Encode the file's bytes to base64 for JSON, or send multipart/form-data and skip the encoding."
+        "category": "technical",
+        "examples": {
+            "valid": [
+                "SGVsbG8gd29ybGQ="
+            ]
         },
-        "postgres": {
-            "type": "bytea",
-            "note": "Variable length with no fixed-size form; large payloads can move to a large object instead."
-        }
+        "standard": "OpenAPI 3.2 binary data / RFC 4648 Section 4 (base64 in JSON)",
+        "docs": "openapi_3_2",
+        "anchor": "#working-with-binary-data",
+        "details": "Raw bytes: file uploads, blobs, digests. Inside JSON they travel as standard base64 (RFC 4648); storage keeps the decoded bytes."
     },
     "secret": {
-        "type": "string",
-        "format": "password",
-        "standard": "OpenAPI Format Registry (display hint only, not a guarantee)",
-        "docs_link": "https://spec.openapis.org/registry/format/",
-        "category": "technical",
+        "base": "_token",
         "level": "core",
-        "is_number": false,
-        "description": "Sensitive text that must never be displayed or logged: passwords, API keys. The format is a masking hint, not protection - hash or encrypt at rest.",
-        "example": "••••••••",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "password",
-                "autocomplete": "off",
-                "autocapitalize": "none",
-                "spellcheck": "false"
-            },
-            "note": "Use autocomplete=\"new-password\" or \"current-password\" for user passwords so password managers engage; \"off\" for API keys and tokens."
+        "category": "technical",
+        "format": "password",
+        "examples": {
+            "valid": [
+                "••••••••"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "note": "The type offers no protection; encrypt with pgcrypto or keep the value out of the database.",
-            "attr": {
-                "collation": "collation"
-            }
-        }
+        "standard": "OpenAPI Format Registry (display hint only, not a guarantee)",
+        "docs": "openapi_formats",
+        "details": "Sensitive text that must never be displayed or logged: passwords, API keys. The format is a masking hint, not protection - hash or encrypt at rest."
     },
     "media_type": {
-        "type": "string",
-        "pattern": "^[A-Za-z0-9!#$&^_.+-]+/[A-Za-z0-9!#$&^_.+-]+(;.*)?$",
-        "standard": "RFC 6838 / IANA Media Types",
-        "docs_link": "https://www.iana.org/assignments/media-types/media-types.xhtml",
-        "category": "technical",
+        "base": "_token",
         "level": "core",
-        "is_number": false,
-        "description": "A concrete media type like application/json: labeling stored content.",
-        "example": "application/json",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "autocapitalize": "none",
-                "spellcheck": "false",
-                "pattern": "[A-Za-z0-9\\!\\#\\$\\&\\^_\\.\\+\\-]+/[A-Za-z0-9\\!\\#\\$\\&\\^_\\.\\+\\-]+(;.*)?"
-            }
+        "category": "technical",
+        "pattern": "^[A-Za-z0-9!#$&^_.+-]+/[A-Za-z0-9!#$&^_.+-]+(;.*)?$",
+        "examples": {
+            "valid": [
+                "application/json"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "attr": {
-                "collation": "collation"
-            },
-            "check": "CHECK ({column} ~ '^[A-Za-z0-9!#$&^_.+-]+/[A-Za-z0-9!#$&^_.+-]+(;.*)?$')"
-        }
+        "standard": "RFC 6838 / IANA Media Types",
+        "docs": "iana_media_types",
+        "details": "A concrete media type like application/json: labeling stored content."
     },
     "slug": {
-        "type": "string",
-        "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
-        "docs_link": "https://datatracker.ietf.org/doc/html/rfc3986#section-3.3",
-        "category": "technical",
+        "base": "_token",
         "level": "core",
-        "is_number": false,
-        "description": "A lowercase-hyphen URL token (getting-started): readable path segments derived from a title. Presentation identity only - prefer uuid as the real key.",
-        "example": "getting-started",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "autocapitalize": "none",
-                "spellcheck": "false",
-                "pattern": "[a-z0-9]+(-[a-z0-9]+)*"
-            },
-            "note": "Usually derived from a title: lowercase, NFKD-strip accents, replace runs of non [a-z0-9] with '-', trim '-'."
+        "category": "technical",
+        "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+        "examples": {
+            "valid": [
+                "getting-started"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "attr": {
-                "collation": "collation"
-            },
-            "check": "CHECK ({column} ~ '^[a-z0-9]+(-[a-z0-9]+)*$')"
-        }
+        "standard": "RFC 3986 (path segment)",
+        "docs": "rfc3986",
+        "anchor": "#section-3.3",
+        "details": "A lowercase-hyphen URL token (getting-started): readable path segments derived from a title. Presentation identity only - prefer uuid as the real key."
     },
     "country": {
-        "type": "string",
-        "pattern": "^[A-Z]{2}$",
-        "standard": "ISO 3166-1 alpha-2",
-        "docs_link": "https://www.iso.org/iso-3166-country-codes.html",
-        "category": "business",
+        "base": "_token",
         "level": "core",
-        "is_number": false,
-        "description": "An ISO 3166-1 alpha-2 country code (US): the interchange default for countries.",
-        "example": "US",
-        "html": {
-            "element": "select",
-            "attrs": {
-                "autocomplete": "country"
-            },
-            "options": {
-                "source": "ISO 3166-1 alpha-2",
-                "js": "new Intl.DisplayNames([locale], { type: 'region' })"
-            }
+        "category": "business",
+        "pattern": "^[A-Z]{2}$",
+        "examples": {
+            "valid": [
+                "US"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "note": "char(2) fits but blank-pads and compares by the padded value; text avoids that.",
-            "attr": {
-                "collation": "collation"
-            },
-            "check": "CHECK ({column} ~ '^[A-Z]{2}$')"
-        }
+        "standard": "ISO 3166-1 alpha-2",
+        "docs": "iso3166",
+        "details": "An ISO 3166-1 alpha-2 country code (US): the interchange default for countries."
     },
     "currency": {
-        "type": "string",
-        "pattern": "^[A-Z]{3}$",
-        "standard": "ISO 4217 alpha-3",
-        "docs_link": "https://www.iso.org/iso-4217-currency-codes.html",
-        "category": "business",
+        "base": "_token",
         "level": "core",
-        "is_number": false,
-        "description": "An ISO 4217 currency code (USD): pair it with a decimal amount to represent money. Never derive it from country or locale - people transact across borders.",
-        "example": "USD",
-        "html": {
-            "element": "select",
-            "attrs": {},
-            "options": {
-                "source": "ISO 4217",
-                "js": "Intl.supportedValuesOf('currency')"
-            }
+        "category": "business",
+        "pattern": "^[A-Z]{3}$",
+        "examples": {
+            "valid": [
+                "USD"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "attr": {
-                "collation": "collation"
-            },
-            "check": "CHECK ({column} ~ '^[A-Z]{3}$')"
-        }
+        "standard": "ISO 4217 alpha-3",
+        "docs": "iso4217",
+        "details": "An ISO 4217 currency code (USD): pair it with a decimal amount to represent money. Never derive it from country or locale - people transact across borders."
     },
     "locale": {
-        "type": "string",
+        "base": "_token",
+        "level": "core",
+        "category": "business",
         "format": "language",
         "pattern": "^[a-zA-Z]{2,3}(-[a-zA-Z]{4})?(-([a-zA-Z]{2}|\\d{3}))?$",
-        "standard": "BCP 47 / RFC 5646",
-        "docs_link": "https://datatracker.ietf.org/doc/html/rfc5646",
-        "category": "business",
-        "level": "core",
-        "is_number": false,
-        "description": "A BCP 47 language tag (en, en-US): a language with optional script and region, for formatting, translations, and user preferences.",
-        "example": "en-US",
-        "html": {
-            "element": "select",
-            "attrs": {
-                "autocomplete": "language"
-            },
-            "options": {
-                "source": "BCP 47 / CLDR locales",
-                "js": "new Intl.DisplayNames([locale], { type: 'language' })"
-            }
+        "examples": {
+            "valid": [
+                "en-US"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "attr": {
-                "collation": "collation"
-            },
-            "check": "CHECK ({column} ~ '^[a-zA-Z]{2,3}(-[a-zA-Z]{4})?(-([a-zA-Z]{2}|\\d{3}))?$')"
-        }
+        "standard": "BCP 47 / RFC 5646",
+        "docs": "rfc5646",
+        "details": "A BCP 47 language tag (en, en-US): a language with optional script and region, for formatting, translations, and user preferences."
     },
     "color": {
-        "type": "string",
-        "pattern": "^#[0-9a-f]{6}([0-9a-f]{2})?$",
-        "standard": "CSS Color Module Level 4 (hex notation), canonical lowercase",
-        "docs_link": "https://www.w3.org/TR/css-color-4/#hex-notation",
-        "category": "technical",
+        "base": "_token",
         "level": "core",
-        "is_number": false,
-        "description": "An sRGB color as lowercase #rrggbb or #rrggbbaa - the exact form <input type=\"color\"> produces, so it round-trips through forms, JSON, JS/TS and SQL unchanged. Prefer css_color only for wide-gamut or design-token values.",
-        "example": "#1a2b3c",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "color"
-            },
-            "note": "The picker returns lowercase #rrggbb; #rrggbbaa needs the newer alpha attribute where supported, else a separate opacity input."
+        "category": "technical",
+        "pattern": "^#[0-9a-f]{6}([0-9a-f]{2})?$",
+        "examples": {
+            "valid": [
+                "#1a2b3c"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "attr": {
-                "collation": "collation"
-            },
-            "check": "CHECK ({column} ~ '^#[0-9a-f]{6}([0-9a-f]{2})?$')"
-        }
+        "standard": "CSS Color Module Level 4 (hex notation), canonical lowercase",
+        "docs": "css_color_4",
+        "anchor": "#hex-notation",
+        "details": "An sRGB color as lowercase #rrggbb or #rrggbbaa - the exact form <input type=\"color\"> produces, so it round-trips through forms, JSON, JS/TS and SQL unchanged. Prefer css_color only for wide-gamut or design-token values."
     },
     "char": {
-        "type": "string",
+        "base": "string",
+        "level": "advanced",
+        "category": "primitive",
         "format": "char",
         "pattern": "^[\\s\\S]$",
-        "standard": "OpenAPI Format Registry",
-        "docs_link": "https://spec.openapis.org/registry/format/",
-        "category": "primitive",
-        "level": "advanced",
-        "alternative": "string",
-        "is_number": false,
-        "description": "Exactly one character: a grade, flag, or single-letter code. Prefer string for anything that can grow, and enum when the values form a closed set.",
-        "example": "A",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "maxlength": "1"
-            }
+        "examples": {
+            "valid": [
+                "A"
+            ]
         },
-        "postgres": {
-            "type": "char",
-            "note": "Bare char is char(1); the blank-padding that makes char awkward needs a length above 1."
-        }
+        "standard": "OpenAPI Format Registry",
+        "docs": "openapi_formats",
+        "details": "Exactly one character: a grade, flag, or single-letter code. Prefer string for anything that can grow, and enum when the values form a closed set."
     },
     "int8": {
-        "type": "integer",
+        "base": "int32",
+        "level": "advanced",
+        "category": "primitive",
         "format": "int8",
         "minimum": -128,
         "maximum": 127,
-        "standard": "OpenAPI Format Registry",
-        "docs_link": "https://spec.openapis.org/registry/format/",
-        "category": "primitive",
-        "level": "advanced",
-        "alternative": "int32",
-        "is_number": true,
-        "description": "Tiny signed integers (-128..127) where the bound is part of the contract. Prefer int32 as the general-purpose default.",
-        "example": -7,
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "number",
-                "step": "1",
-                "min": "-128",
-                "max": "127"
-            }
+        "examples": {
+            "valid": [
+                -7
+            ]
         },
-        "postgres": {
-            "type": "smallint",
-            "note": "Postgres has no 1-byte integer; smallint is the narrowest signed type.",
-            "check": "CHECK ({column} BETWEEN -128 AND 127)"
-        }
+        "standard": "OpenAPI Format Registry",
+        "docs": "openapi_formats",
+        "details": "Tiny signed integers (-128..127) where the bound is part of the contract. Prefer int32 as the general-purpose default."
     },
     "int16": {
-        "type": "integer",
+        "base": "int32",
+        "level": "advanced",
+        "category": "primitive",
         "format": "int16",
         "minimum": -32768,
         "maximum": 32767,
-        "standard": "OpenAPI Format Registry",
-        "docs_link": "https://spec.openapis.org/registry/format/",
-        "category": "primitive",
-        "level": "advanced",
-        "alternative": "int32",
-        "is_number": true,
-        "description": "Signed 16-bit integers: compact numeric codes and small bounded quantities. Prefer int32 as the general-purpose default.",
-        "example": 1024,
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "number",
-                "step": "1",
-                "min": "-32768",
-                "max": "32767"
-            }
+        "examples": {
+            "valid": [
+                1024
+            ]
         },
-        "postgres": {
-            "type": "smallint"
-        }
+        "standard": "OpenAPI Format Registry",
+        "docs": "openapi_formats",
+        "details": "Signed 16-bit integers: compact numeric codes and small bounded quantities. Prefer int32 as the general-purpose default."
     },
     "uint8": {
-        "type": "integer",
+        "base": "int32",
+        "level": "advanced",
+        "category": "primitive",
         "format": "uint8",
         "minimum": 0,
         "maximum": 255,
-        "standard": "OpenAPI Format Registry",
-        "docs_link": "https://spec.openapis.org/registry/format/",
-        "category": "primitive",
-        "level": "advanced",
-        "alternative": "int32",
-        "is_number": true,
-        "description": "Unsigned bytes (0..255): color channels, small numeric codes. Prefer int32 unless the byte range is intrinsic to the data.",
-        "example": 200,
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "number",
-                "step": "1",
-                "min": "0",
-                "max": "255"
-            }
+        "examples": {
+            "valid": [
+                200
+            ]
         },
-        "postgres": {
-            "type": "smallint",
-            "note": "Postgres has no unsigned integers; smallint covers the whole uint8 range.",
-            "check": "CHECK ({column} BETWEEN 0 AND 255)"
-        }
+        "standard": "OpenAPI Format Registry",
+        "docs": "openapi_formats",
+        "details": "Unsigned bytes (0..255): color channels, small numeric codes. Prefer int32 unless the byte range is intrinsic to the data."
     },
     "uint16": {
-        "type": "integer",
+        "base": "int32",
+        "level": "advanced",
+        "category": "primitive",
         "format": "uint16",
         "minimum": 0,
         "maximum": 65535,
-        "standard": "OpenAPI Format Registry",
-        "docs_link": "https://spec.openapis.org/registry/format/",
-        "category": "primitive",
-        "level": "advanced",
-        "alternative": "int32",
-        "is_number": true,
-        "description": "Unsigned 16-bit integers (0..65535). Prefer port for network ports specifically, and int32 when a negative value could ever appear.",
-        "example": 8080,
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "number",
-                "step": "1",
-                "min": "0",
-                "max": "65535"
-            }
+        "examples": {
+            "valid": [
+                8080
+            ]
         },
-        "postgres": {
-            "type": "integer",
-            "note": "No unsigned integers; integer covers the whole uint16 range.",
-            "check": "CHECK ({column} BETWEEN 0 AND 65535)"
-        }
+        "standard": "OpenAPI Format Registry",
+        "docs": "openapi_formats",
+        "details": "Unsigned 16-bit integers (0..65535). Prefer port for network ports specifically, and int32 when a negative value could ever appear."
     },
     "uint32": {
-        "type": "integer",
+        "base": "int32",
+        "level": "advanced",
+        "category": "primitive",
+        "alternative": "int64",
         "format": "uint32",
         "minimum": 0,
         "maximum": 4294967295,
-        "standard": "OpenAPI Format Registry",
-        "docs_link": "https://spec.openapis.org/registry/format/",
-        "category": "primitive",
-        "level": "advanced",
-        "alternative": "int64",
-        "is_number": true,
-        "description": "Unsigned 32-bit integers: large counters and IDs from systems that use them. Prefer int64 in new designs; signed types survive arithmetic and language boundaries better.",
-        "example": 3000000000,
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "number",
-                "step": "1",
-                "min": "0",
-                "max": "4294967295"
-            }
+        "examples": {
+            "valid": [
+                3000000000
+            ]
         },
-        "postgres": {
-            "type": "bigint",
-            "note": "Postgres has no unsigned integers; bigint covers the whole uint32 range.",
-            "check": "CHECK ({column} BETWEEN 0 AND 4294967295)"
-        }
+        "standard": "OpenAPI Format Registry",
+        "docs": "openapi_formats",
+        "details": "Unsigned 32-bit integers: large counters and IDs from systems that use them. Prefer int64 in new designs; signed types survive arithmetic and language boundaries better."
     },
     "uint64": {
-        "type": "string",
+        "base": "int64",
+        "level": "advanced",
+        "category": "primitive",
         "format": "uint64",
         "pattern": "^\\d+$",
-        "standard": "OpenAPI Format Registry",
-        "docs_link": "https://spec.openapis.org/registry/format/",
-        "category": "primitive",
-        "level": "advanced",
-        "alternative": "int64",
-        "is_number": true,
-        "description": "The full unsigned 64-bit range: hashes and foreign systems' identifiers. Most languages and JSON cannot represent the upper half natively, so values travel as strings; prefer int64 unless the source really uses all 64 bits.",
-        "example": "18446744073709551615",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "inputmode": "numeric",
-                "autocapitalize": "none",
-                "spellcheck": "false",
-                "pattern": "\\d+"
-            },
-            "note": "Not type=\"number\": browsers parse it as a double and lose digits past 2^53. Keep it a string in JS (BigInt for math)."
+        "examples": {
+            "valid": [
+                "18446744073709551615"
+            ]
         },
-        "postgres": {
-            "type": "numeric",
-            "note": "No unsigned 64-bit type; numeric(20, 0) covers the whole uint64 range.",
-            "attr": {
-                "precision": "numeric_precision",
-                "scale": "numeric_scale"
-            },
-            "check": "CHECK ({column} >= 0 AND {column} <= 18446744073709551615 AND {column} = trunc({column}))"
-        }
+        "standard": "OpenAPI Format Registry",
+        "docs": "openapi_formats",
+        "details": "The full unsigned 64-bit range: hashes and foreign systems' identifiers. Most languages and JSON cannot represent the upper half natively, so values travel as strings; prefer int64 unless the source really uses all 64 bits."
     },
     "double_int": {
-        "type": "integer",
+        "base": "int32",
+        "level": "advanced",
+        "category": "primitive",
+        "alternative": "int64",
         "format": "double-int",
         "minimum": -9007199254740991,
         "maximum": 9007199254740991,
-        "standard": "OpenAPI Format Registry (integer exactly representable as a double)",
-        "docs_link": "https://spec.openapis.org/registry/format/",
-        "category": "primitive",
-        "level": "advanced",
-        "alternative": "int64",
-        "is_number": true,
-        "description": "Integers exactly representable in an IEEE double (up to 2^53-1): safe as a plain number for every JSON consumer, including JavaScript. Prefer int64 when the full 64-bit range matters and consumers accept strings.",
-        "example": 9007199254740991,
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "number",
-                "step": "1",
-                "min": "-9007199254740991",
-                "max": "9007199254740991"
-            }
+        "examples": {
+            "valid": [
+                9007199254740991
+            ]
         },
-        "postgres": {
-            "type": "bigint",
-            "note": "Bounded by 2^53, so it always survives a round trip through a double.",
-            "check": "CHECK ({column} BETWEEN -9007199254740991 AND 9007199254740991)"
-        }
+        "standard": "OpenAPI Format Registry (integer exactly representable as a double)",
+        "docs": "openapi_formats",
+        "details": "Integers exactly representable in an IEEE double (up to 2^53-1): safe as a plain number for every JSON consumer, including JavaScript. Prefer int64 when the full 64-bit range matters and consumers accept strings."
     },
     "float32": {
-        "type": "number",
-        "format": "float",
-        "standard": "IEEE 754 (binary32) / OpenAPI Format Registry",
-        "docs_link": "https://standards.ieee.org/ieee/754/6210/",
-        "category": "primitive",
+        "base": "float64",
         "level": "advanced",
-        "alternative": "float64",
-        "is_number": true,
-        "description": "Single-precision floats: bulk sensor readings or ML weights where memory beats precision. Prefer float64 as the default floating-point type.",
-        "example": 3.14,
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "number",
-                "step": "any"
-            }
+        "category": "primitive",
+        "format": "float",
+        "examples": {
+            "valid": [
+                3.14
+            ]
         },
-        "postgres": {
-            "type": "real",
-            "note": "float(p) with p in 1-24 is a spelling of real; it is not a stored precision."
-        }
+        "standard": "IEEE 754 (binary32) / OpenAPI Format Registry",
+        "docs": "ieee754",
+        "details": "Single-precision floats: bulk sensor readings or ML weights where memory beats precision. Prefer float64 as the default floating-point type."
     },
     "decimal128": {
-        "type": "string",
-        "format": "decimal128",
-        "pattern": "^-?\\d+(\\.\\d+)?$",
-        "standard": "IEEE 754-2019 (decimal128) / OpenAPI Format Registry",
-        "docs_link": "https://standards.ieee.org/ieee/754/6210/",
-        "category": "primitive",
+        "base": "decimal",
         "level": "advanced",
-        "alternative": "decimal",
-        "is_number": true,
-        "description": "IEEE 754 decimal128: exact decimals with a defined 34-significant-digit width, for interchange with fixed-width financial systems. Prefer decimal when arbitrary precision is acceptable.",
-        "example": "1234.567890123456789012345678901234",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "inputmode": "decimal",
-                "autocapitalize": "none",
-                "spellcheck": "false",
-                "pattern": "-?\\d+(\\.\\d+)?"
-            },
-            "note": "Not type=\"number\": that converts through a binary float. Keep it a string in JS; use a decimal library for math."
+        "category": "primitive",
+        "format": "decimal128",
+        "examples": {
+            "valid": [
+                "1234.567890123456789012345678901234"
+            ]
         },
-        "postgres": {
-            "type": "numeric",
-            "note": "34 significant decimal digits, which numeric holds exactly and a float does not.",
-            "attr": {
-                "precision": "numeric_precision",
-                "scale": "numeric_scale"
-            }
-        }
+        "standard": "IEEE 754-2019 (decimal128) / OpenAPI Format Registry",
+        "docs": "ieee754",
+        "details": "IEEE 754 decimal128: exact decimals with a defined 34-significant-digit width, for interchange with fixed-width financial systems. Prefer decimal when arbitrary precision is acceptable."
     },
     "time": {
-        "type": "string",
+        "base": "time_local",
+        "level": "advanced",
+        "category": "temporal",
         "format": "time",
         "pattern": "^\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?([Zz]|[+-]\\d{2}:\\d{2})$",
-        "standard": "ISO 8601 / RFC 3339 full-time",
-        "docs_link": "https://datatracker.ietf.org/doc/html/rfc3339#section-5.6",
-        "category": "temporal",
-        "level": "advanced",
-        "alternative": "time_local",
-        "is_number": false,
-        "description": "A wall-clock time with an explicit UTC offset. Prefer time_local for schedules that float with the local zone.",
-        "example": "14:30:00Z",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "time",
-                "step": "1"
-            },
-            "note": "The time input has no offset; append the user's current UTC offset before sending."
+        "examples": {
+            "valid": [
+                "14:30:00Z"
+            ]
         },
-        "postgres": {
-            "type": "timetz",
-            "note": "timetz stores a fixed UTC offset, not a zone; plain time drops the offset.",
-            "attr": {
-                "fractional_seconds": "fractional_seconds"
-            }
-        }
+        "standard": "ISO 8601 / RFC 3339 full-time",
+        "docs": "rfc3339",
+        "anchor": "#section-5.6",
+        "details": "A wall-clock time with an explicit UTC offset. Prefer time_local for schedules that float with the local zone."
     },
     "unix_time": {
-        "type": "integer",
-        "format": "unixtime",
-        "standard": "POSIX.1-2024 (IEEE Std 1003.1-2024) seconds since the Epoch",
-        "docs_link": "https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/V1_chap04.html#tag_04_19",
-        "category": "temporal",
+        "base": "int32",
         "level": "advanced",
+        "category": "temporal",
         "alternative": "date_time",
-        "is_number": true,
-        "description": "Seconds since the Unix epoch as an integer: compact machine timestamps and TTLs. Prefer date_time for anything humans or APIs read directly.",
-        "example": 1786000000,
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "datetime-local",
-                "step": "1"
-            },
-            "note": "Show as a local date-time and convert: Math.floor(new Date(value).getTime() / 1000)."
+        "format": "unixtime",
+        "minimum": null,
+        "maximum": null,
+        "examples": {
+            "valid": [
+                1786000000
+            ]
         },
-        "postgres": {
-            "type": "bigint"
-        }
+        "standard": "POSIX.1-2024 (IEEE Std 1003.1-2024) seconds since the Epoch",
+        "docs": "posix_epoch",
+        "anchor": "#tag_04_19",
+        "details": "Seconds since the Unix epoch as an integer: compact machine timestamps and TTLs. Prefer date_time for anything humans or APIs read directly."
     },
     "idn_email": {
-        "type": "string",
-        "format": "idn-email",
-        "standard": "RFC 6531 (internationalized email)",
-        "docs_link": "https://datatracker.ietf.org/doc/html/rfc6531",
-        "category": "identity",
+        "base": "_token",
         "level": "advanced",
+        "category": "identity",
         "alternative": "email",
-        "is_number": false,
-        "description": "An internationalized email address: non-ASCII local parts and domains. Prefer email when every consumer requires ASCII.",
-        "example": "用户@例子.广告",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "autocomplete": "email",
-                "inputmode": "email",
-                "autocapitalize": "none",
-                "spellcheck": "false"
-            },
-            "note": "Not type=\"email\": browsers reject non-ASCII local parts there."
+        "format": "idn-email",
+        "examples": {
+            "valid": [
+                "用户@例子.广告"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "attr": {
-                "collation": "collation"
-            }
-        }
+        "standard": "RFC 6531 (internationalized email)",
+        "docs": "rfc6531",
+        "details": "An internationalized email address: non-ASCII local parts and domains. Prefer email when every consumer requires ASCII."
     },
     "idn_hostname": {
-        "type": "string",
-        "format": "idn-hostname",
-        "standard": "RFC 5890 (IDNA2008)",
-        "docs_link": "https://datatracker.ietf.org/doc/html/rfc5890",
-        "category": "identity",
+        "base": "_token",
         "level": "advanced",
+        "category": "identity",
         "alternative": "hostname",
-        "is_number": false,
-        "description": "An internationalized (IDNA2008) hostname. Prefer hostname when values are guaranteed ASCII or already punycode-encoded.",
-        "example": "例子.广告",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "autocapitalize": "none",
-                "spellcheck": "false"
-            }
+        "format": "idn-hostname",
+        "examples": {
+            "valid": [
+                "例子.广告"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "attr": {
-                "collation": "collation"
-            }
-        }
+        "standard": "RFC 5890 (IDNA2008)",
+        "docs": "rfc5890",
+        "details": "An internationalized (IDNA2008) hostname. Prefer hostname when values are guaranteed ASCII or already punycode-encoded."
     },
     "ipv4_cidr": {
-        "type": "string",
+        "base": "cidr",
+        "level": "advanced",
+        "category": "identity",
         "format": "ipv4-cidr",
         "pattern": "^((25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]?\\d)\\.){3}(25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]?\\d)/(3[0-2]|[12]?\\d)$",
-        "standard": "RFC 4632 (CIDR)",
-        "docs_link": "https://datatracker.ietf.org/doc/html/rfc4632",
-        "category": "identity",
-        "level": "advanced",
-        "alternative": "cidr",
-        "is_number": false,
-        "description": "An IPv4 network prefix like 192.0.2.0/24. Prefer cidr when either family may appear, and ipv4 for a single host.",
-        "example": "192.0.2.0/24",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "autocapitalize": "none",
-                "spellcheck": "false",
-                "pattern": "((25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]?\\d)\\.){3}(25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]?\\d)/(3[0-2]|[12]?\\d)"
-            }
+        "examples": {
+            "valid": [
+                "192.0.2.0/24"
+            ]
         },
-        "postgres": {
-            "type": "cidr",
-            "note": "Rejects any bit set to the right of the netmask, which inet accepts."
-        }
+        "standard": "RFC 4632 (CIDR)",
+        "docs": "rfc4632",
+        "details": "An IPv4 network prefix like 192.0.2.0/24. Prefer cidr when either family may appear, and ipv4 for a single host."
     },
     "ipv6_cidr": {
-        "type": "string",
-        "format": "ipv6-cidr",
-        "standard": "RFC 4291 Section 2.3 (IPv6 address prefix)",
-        "docs_link": "https://datatracker.ietf.org/doc/html/rfc4291#section-2.3",
-        "category": "identity",
+        "base": "cidr",
         "level": "advanced",
-        "alternative": "cidr",
-        "is_number": false,
-        "description": "An IPv6 network prefix like 2001:db8::/32. Prefer cidr when either family may appear, and ipv6 for a single host.",
-        "example": "2001:db8::/32",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "autocapitalize": "none",
-                "spellcheck": "false"
-            }
+        "category": "identity",
+        "format": "ipv6-cidr",
+        "examples": {
+            "valid": [
+                "2001:db8::/32"
+            ]
         },
-        "postgres": {
-            "type": "cidr",
-            "note": "One cidr column stores both families; the prefix itself carries the version."
-        }
+        "standard": "RFC 4291 Section 2.3 (IPv6 address prefix)",
+        "docs": "rfc4291",
+        "anchor": "#section-2.3",
+        "details": "An IPv6 network prefix like 2001:db8::/32. Prefer cidr when either family may appear, and ipv6 for a single host."
     },
     "mac_address": {
-        "type": "string",
-        "pattern": "^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$",
-        "standard": "IEEE 802 (EUI-48)",
-        "docs_link": "https://standards.ieee.org/ieee/802/",
-        "category": "identity",
+        "base": "_token",
         "level": "advanced",
-        "alternative": "string",
-        "is_number": false,
-        "description": "An EUI-48 hardware address: device inventory, DHCP leases. Never an identity for people or accounts - MACs are spoofable and privacy-sensitive.",
-        "example": "00:1b:44:11:3a:b7",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "autocapitalize": "none",
-                "spellcheck": "false",
-                "pattern": "([0-9A-Fa-f]{2}[\\:\\-]){5}[0-9A-Fa-f]{2}"
-            }
+        "category": "identity",
+        "pattern": "^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$",
+        "examples": {
+            "valid": [
+                "00:1b:44:11:3a:b7"
+            ]
         },
-        "postgres": {
-            "type": "macaddr",
-            "note": "macaddr is EUI-48; macaddr8 is the EUI-64 variant."
-        }
+        "standard": "IEEE 802 (EUI-48)",
+        "docs": "ieee802",
+        "details": "An EUI-48 hardware address: device inventory, DHCP leases. Never an identity for people or accounts - MACs are spoofable and privacy-sensitive."
     },
     "uri_reference": {
-        "type": "string",
-        "format": "uri-reference",
-        "standard": "RFC 3986 Section 4.1",
-        "docs_link": "https://datatracker.ietf.org/doc/html/rfc3986#section-4.1",
-        "category": "identity",
+        "base": "_token",
         "level": "advanced",
+        "category": "identity",
         "alternative": "uri",
-        "is_number": false,
-        "description": "A URI reference, absolute or relative: redirect targets, in-site paths. Prefer uri when an absolute, scheme-carrying value is required.",
-        "example": "/a/b?c=1",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "autocapitalize": "none",
-                "spellcheck": "false"
-            }
+        "format": "uri-reference",
+        "examples": {
+            "valid": [
+                "/a/b?c=1"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "attr": {
-                "collation": "collation"
-            }
-        }
+        "standard": "RFC 3986 Section 4.1",
+        "docs": "rfc3986",
+        "anchor": "#section-4.1",
+        "details": "A URI reference, absolute or relative: redirect targets, in-site paths. Prefer uri when an absolute, scheme-carrying value is required."
     },
     "iri": {
-        "type": "string",
-        "format": "iri",
-        "standard": "RFC 3987 (internationalized URI)",
-        "docs_link": "https://datatracker.ietf.org/doc/html/rfc3987",
-        "category": "identity",
+        "base": "_token",
         "level": "advanced",
+        "category": "identity",
         "alternative": "uri",
-        "is_number": false,
-        "description": "An internationalized absolute URI: user-facing links in any script, unencoded. Prefer uri when consumers require ASCII with percent-encoding.",
-        "example": "https://例子.广告/路径",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "autocapitalize": "none",
-                "spellcheck": "false"
-            },
-            "note": "Not type=\"url\": it normalizes non-ASCII to punycode/percent-encoding."
+        "format": "iri",
+        "examples": {
+            "valid": [
+                "https://例子.广告/路径"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "attr": {
-                "collation": "collation"
-            }
-        }
+        "standard": "RFC 3987 (internationalized URI)",
+        "docs": "rfc3987",
+        "details": "An internationalized absolute URI: user-facing links in any script, unencoded. Prefer uri when consumers require ASCII with percent-encoding."
     },
     "iri_reference": {
-        "type": "string",
-        "format": "iri-reference",
-        "standard": "RFC 3987 Section 2.2 (internationalized URI reference)",
-        "docs_link": "https://datatracker.ietf.org/doc/html/rfc3987#section-2.2",
-        "category": "identity",
+        "base": "_token",
         "level": "advanced",
+        "category": "identity",
         "alternative": "uri",
-        "is_number": false,
-        "description": "An internationalized URI reference, absolute or relative. Prefer iri for absolute-only values and uri_reference for ASCII-only ones.",
-        "example": "/路径?c=1",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "autocapitalize": "none",
-                "spellcheck": "false"
-            }
+        "format": "iri-reference",
+        "examples": {
+            "valid": [
+                "/路径?c=1"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "attr": {
-                "collation": "collation"
-            }
-        }
+        "standard": "RFC 3987 Section 2.2 (internationalized URI reference)",
+        "docs": "rfc3987",
+        "anchor": "#section-2.2",
+        "details": "An internationalized URI reference, absolute or relative. Prefer iri for absolute-only values and uri_reference for ASCII-only ones."
     },
     "uuid_v7": {
-        "type": "string",
-        "format": "uuid",
-        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
-        "standard": "RFC 9562 Section 5.7 (time-ordered)",
-        "docs_link": "https://datatracker.ietf.org/doc/html/rfc9562#section-5.7",
-        "category": "identity",
+        "base": "uuid",
         "level": "advanced",
-        "alternative": "uuid",
-        "is_number": false,
-        "description": "A time-ordered UUID: new primary keys that index and sort by creation time. Prefer uuid when accepting identifiers you did not mint.",
-        "example": "018f4b2c-9c1e-7a3b-8f2d-1a2b3c4d5e6f",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "autocapitalize": "none",
-                "spellcheck": "false",
-                "pattern": "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}"
-            },
-            "note": "Generated server-side, shown read-only."
+        "category": "identity",
+        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
+        "examples": {
+            "valid": [
+                "018f4b2c-9c1e-7a3b-8f2d-1a2b3c4d5e6f"
+            ]
         },
-        "postgres": {
-            "type": "uuid",
-            "note": "Same storage as any UUID; the time ordering is a property of the value, not the type."
-        }
+        "standard": "RFC 9562 Section 5.7 (time-ordered)",
+        "docs": "rfc9562",
+        "anchor": "#section-5.7",
+        "details": "A time-ordered UUID: new primary keys that index and sort by creation time. Prefer uuid when accepting identifiers you did not mint."
     },
     "ulid": {
-        "type": "string",
-        "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
-        "standard": "ULID specification (Crockford Base32)",
-        "docs_link": "https://github.com/ulid/spec",
-        "category": "identity",
+        "base": "_token",
         "level": "advanced",
+        "category": "identity",
         "alternative": "uuid",
-        "is_number": false,
-        "description": "A lexically sortable 128-bit ID in Crockford Base32: time-ordered keys that stay readable as text. Prefer uuid_v7 where native UUID column types and tooling matter.",
-        "example": "01ARZ3NDEKTSV4RRFFQ69G5FAV",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "autocapitalize": "none",
-                "spellcheck": "false",
-                "pattern": "[0-7][0-9A-HJKMNP-TV-Z]{25}"
-            },
-            "note": "Generated, shown read-only."
+        "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
+        "examples": {
+            "valid": [
+                "01ARZ3NDEKTSV4RRFFQ69G5FAV"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "note": "128-bit like a UUID; storable as uuid if the Crockford base32 form is converted on the way in.",
-            "attr": {
-                "collation": "collation"
-            },
-            "check": "CHECK ({column} ~ '^[0-7][0-9A-HJKMNP-TV-Z]{25}$')"
-        }
+        "standard": "ULID specification (Crockford Base32)",
+        "docs": "ulid",
+        "details": "A lexically sortable 128-bit ID in Crockford Base32: time-ordered keys that stay readable as text. Prefer uuid_v7 where native UUID column types and tooling matter."
     },
     "base64": {
-        "type": "string",
-        "pattern": "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$",
-        "standard": "RFC 4648 Section 4 (OpenAPI 3.2: contentEncoding base64)",
-        "docs_link": "https://datatracker.ietf.org/doc/html/rfc4648#section-4",
-        "category": "technical",
+        "base": "binary",
         "level": "advanced",
-        "alternative": "binary",
-        "is_number": false,
-        "description": "Binary content as standard base64 text: payloads embedded in JSON. Prefer binary for raw transport and base64url when the value travels in URLs or filenames.",
-        "example": "SGVsbG8gd29ybGQ=",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "file"
-            },
-            "note": "Read the file and encode it (FileReader.readAsDataURL, then strip the data: prefix)."
+        "category": "technical",
+        "pattern": "^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$",
+        "contentEncoding": null,
+        "examples": {
+            "valid": [
+                "SGVsbG8gd29ybGQ="
+            ]
         },
-        "postgres": {
-            "type": "bytea",
-            "note": "Stored decoded, not as the base64 text; bytea_output picks hex or escape on the way out."
-        }
+        "standard": "RFC 4648 Section 4 (OpenAPI 3.2: contentEncoding base64)",
+        "docs": "rfc4648",
+        "anchor": "#section-4",
+        "details": "Binary content as standard base64 text: payloads embedded in JSON. Prefer binary for raw transport and base64url when the value travels in URLs or filenames."
     },
     "base64url": {
-        "type": "string",
-        "pattern": "^[A-Za-z0-9_-]*={0,2}$",
-        "standard": "RFC 4648 Section 5 (OpenAPI 3.2: contentEncoding base64url)",
-        "docs_link": "https://datatracker.ietf.org/doc/html/rfc4648#section-5",
-        "category": "technical",
+        "base": "binary",
         "level": "advanced",
-        "alternative": "binary",
-        "is_number": false,
-        "description": "URL-safe base64 (no + or /): tokens and digests placed in URLs. Prefer base64 for ordinary embedded payloads.",
-        "example": "SGVsbG8gd29ybGQ",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "file"
-            },
-            "note": "Encode as base64, then replace + with -, / with _ and drop padding."
+        "category": "technical",
+        "pattern": "^[A-Za-z0-9_-]*={0,2}$",
+        "contentEncoding": null,
+        "examples": {
+            "valid": [
+                "SGVsbG8gd29ybGQ"
+            ]
         },
-        "postgres": {
-            "type": "bytea",
-            "note": "Same bytes as base64; only the transport alphabet differs."
-        }
+        "standard": "RFC 4648 Section 5 (OpenAPI 3.2: contentEncoding base64url)",
+        "docs": "rfc4648",
+        "anchor": "#section-5",
+        "details": "URL-safe base64 (no + or /): tokens and digests placed in URLs. Prefer base64 for ordinary embedded payloads."
     },
     "css_color": {
-        "type": "string",
-        "pattern": "^(#[0-9a-fA-F]{3,4}|#[0-9a-fA-F]{6}|#[0-9a-fA-F]{8}|[a-zA-Z]+|(rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\\([^()]*\\))$",
-        "standard": "CSS Color Module Level 4",
-        "docs_link": "https://www.w3.org/TR/css-color-4/",
-        "category": "technical",
+        "base": "_token",
         "level": "advanced",
+        "category": "technical",
         "alternative": "color",
-        "is_number": false,
-        "description": "Any single CSS Color 4 value: hex, named, rgb(), hsl(), hwb(), lab(), lch(), oklab(), oklch() or color(display-p3 ...). The pattern only checks the shape; validate for real with CSS.supports('color', value). Level 5 expressions (color-mix(), relative colors, light-dark(), var()) are computed in context and are deliberately not data.",
-        "example": "oklch(70% 0.15 250)",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "autocapitalize": "none",
-                "spellcheck": "false",
-                "pattern": "(#[0-9a-fA-F]{3,4}|#[0-9a-fA-F]{6}|#[0-9a-fA-F]{8}|[a-zA-Z]+|(rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\\([^\\(\\)]*\\))"
-            },
-            "note": "Validate with CSS.supports('color', value); pair with <input type=\"color\"> only when the value is sRGB hex."
+        "pattern": "^(#[0-9a-fA-F]{3,4}|#[0-9a-fA-F]{6}|#[0-9a-fA-F]{8}|[a-zA-Z]+|(rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\\([^()]*\\))$",
+        "examples": {
+            "valid": [
+                "oklch(70% 0.15 250)"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "attr": {
-                "collation": "collation"
-            },
-            "check": "CHECK ({column} ~ '^(#[0-9a-fA-F]{3,4}|#[0-9a-fA-F]{6}|#[0-9a-fA-F]{8}|[a-zA-Z]+|(rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\\([^()]*\\))$')"
-        }
+        "standard": "CSS Color Module Level 4",
+        "docs": "css_color_4",
+        "details": "Any single CSS Color 4 value: hex, named, rgb(), hsl(), hwb(), lab(), lch(), oklab(), oklch() or color(display-p3 ...). The pattern only checks the shape; validate for real with CSS.supports('color', value). Level 5 expressions (color-mix(), relative colors, light-dark(), var()) are computed in context and are deliberately not data."
     },
     "commonmark": {
-        "type": "string",
-        "format": "commonmark",
-        "standard": "CommonMark 0.31.2",
-        "docs_link": "https://spec.commonmark.org/0.31.2/",
-        "category": "technical",
+        "base": "text",
         "level": "advanced",
-        "alternative": "text",
-        "is_number": false,
-        "description": "Markdown (CommonMark) source: user-authored rich content stored as written. Prefer html for already-rendered markup and text for plain prose.",
-        "example": "# Title\n\nSome **bold** text.",
-        "html": {
-            "element": "textarea",
-            "attrs": {},
-            "note": "Pair with a rendered preview; sanitize the rendered HTML."
+        "category": "technical",
+        "format": "commonmark",
+        "examples": {
+            "valid": [
+                "# Title\n\nSome **bold** text."
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "note": "Markdown source; Postgres stores the text and never parses it.",
-            "attr": {
-                "collation": "collation"
-            }
-        }
+        "standard": "CommonMark 0.31.2",
+        "docs": "commonmark",
+        "details": "Markdown (CommonMark) source: user-authored rich content stored as written. Prefer html for already-rendered markup and text for plain prose."
     },
     "html": {
-        "type": "string",
-        "format": "html",
-        "standard": "WHATWG HTML Living Standard",
-        "docs_link": "https://html.spec.whatwg.org/multipage/",
-        "category": "technical",
+        "base": "text",
         "level": "advanced",
-        "alternative": "text",
-        "is_number": false,
-        "description": "HTML markup stored as-is: rendered output, email bodies. Sanitize on the way in; prefer commonmark when users author the content.",
-        "example": "<p>Hello</p>",
-        "html": {
-            "element": "textarea",
-            "attrs": {
-                "autocapitalize": "none",
-                "spellcheck": "false"
-            },
-            "note": "Sanitize (e.g. DOMPurify) before rendering; never assign untrusted input to innerHTML."
+        "category": "technical",
+        "format": "html",
+        "examples": {
+            "valid": [
+                "<p>Hello</p>"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "note": "Markup source; escape it on output, not on the way in.",
-            "attr": {
-                "collation": "collation"
-            }
-        }
+        "standard": "WHATWG HTML Living Standard",
+        "docs": "whatwg_html",
+        "details": "HTML markup stored as-is: rendered output, email bodies. Sanitize on the way in; prefer commonmark when users author the content."
     },
     "json_pointer": {
-        "type": "string",
+        "base": "_token",
+        "level": "advanced",
+        "category": "technical",
         "format": "json-pointer",
         "pattern": "^(/([^~/]|~[01])*)*$",
+        "examples": {
+            "valid": [
+                "/users/0/email"
+            ]
+        },
         "standard": "RFC 6901",
-        "docs_link": "https://datatracker.ietf.org/doc/html/rfc6901",
-        "category": "technical",
-        "level": "advanced",
-        "is_number": false,
-        "description": "An absolute JSON Pointer (/users/0/email): addressing a location inside a document from its root.",
-        "example": "/users/0/email",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "autocapitalize": "none",
-                "spellcheck": "false",
-                "pattern": "(/([^\\~\\/]|~[01])*)*"
-            }
-        },
-        "postgres": {
-            "type": "text",
-            "attr": {
-                "collation": "collation"
-            },
-            "check": "CHECK ({column} ~ '^(/([^~/]|~[01])*)*$')"
-        },
-        "alternative": "string"
+        "docs": "rfc6901",
+        "details": "An absolute JSON Pointer (/users/0/email): addressing a location inside a document from its root."
     },
     "relative_json_pointer": {
-        "type": "string",
+        "base": "_token",
+        "level": "advanced",
+        "category": "technical",
         "format": "relative-json-pointer",
         "pattern": "^(0|[1-9]\\d*)(#|(/([^~/]|~[01])*)*)$",
-        "standard": "JSON Schema 2020-12 (relative-json-pointer)",
-        "docs_link": "https://json-schema.org/draft/2020-12/json-schema-validation#name-relative-json-pointer",
-        "category": "technical",
-        "level": "advanced",
-        "alternative": "string",
-        "is_number": false,
-        "description": "A JSON Pointer relative to a known position (1/name). Prefer json_pointer when addressing from the document root.",
-        "example": "1/name",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "autocapitalize": "none",
-                "spellcheck": "false",
-                "pattern": "(0|[1-9]\\d*)(#|(/([^\\~\\/]|~[01])*)*)"
-            }
+        "examples": {
+            "valid": [
+                "1/name"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "note": "Resolved against a base pointer; the leading integer counts levels up.",
-            "attr": {
-                "collation": "collation"
-            },
-            "check": "CHECK ({column} ~ '^(0|[1-9]\\d*)(#|(/([^~/]|~[01])*)*)$')"
-        }
+        "standard": "JSON Schema 2020-12 (relative-json-pointer)",
+        "docs": "json_schema_validation",
+        "anchor": "#name-relative-json-pointer",
+        "details": "A JSON Pointer relative to a known position (1/name). Prefer json_pointer when addressing from the document root."
     },
     "uri_template": {
-        "type": "string",
-        "format": "uri-template",
-        "standard": "RFC 6570",
-        "docs_link": "https://datatracker.ietf.org/doc/html/rfc6570",
-        "category": "technical",
+        "base": "_token",
         "level": "advanced",
+        "category": "technical",
         "alternative": "uri",
-        "is_number": false,
-        "description": "An RFC 6570 URL pattern with {variables}: route and link templates. Prefer uri for concrete, already-expanded links.",
-        "example": "/users/{id}{?fields}",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "autocapitalize": "none",
-                "spellcheck": "false"
-            }
+        "format": "uri-template",
+        "examples": {
+            "valid": [
+                "/users/{id}{?fields}"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "attr": {
-                "collation": "collation"
-            }
-        }
+        "standard": "RFC 6570",
+        "docs": "rfc6570",
+        "details": "An RFC 6570 URL pattern with {variables}: route and link templates. Prefer uri for concrete, already-expanded links."
     },
     "regex": {
-        "type": "string",
-        "format": "regex",
-        "standard": "ECMA-262 regular expressions",
-        "docs_link": "https://tc39.es/ecma262/#sec-regexp-regular-expression-objects",
-        "category": "technical",
+        "base": "_token",
         "level": "advanced",
-        "alternative": "string",
-        "is_number": false,
-        "description": "An ECMA-262 regular expression source: validation rules and matchers stored as data. Prefer enum when the acceptable values are simply a closed set.",
-        "example": "^[a-z][a-z0-9_]*$",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "autocapitalize": "none",
-                "spellcheck": "false"
-            }
+        "category": "technical",
+        "format": "regex",
+        "examples": {
+            "valid": [
+                "^[a-z][a-z0-9_]*$"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "attr": {
-                "collation": "collation"
-            }
-        }
+        "standard": "ECMA-262 regular expressions",
+        "docs": "ecma262",
+        "anchor": "#sec-regexp-regular-expression-objects",
+        "details": "An ECMA-262 regular expression source: validation rules and matchers stored as data. Prefer enum when the acceptable values are simply a closed set."
     },
     "semver": {
-        "type": "string",
-        "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
-        "standard": "Semantic Versioning 2.0.0",
-        "docs_link": "https://semver.org/spec/v2.0.0.html",
-        "category": "technical",
+        "base": "_token",
         "level": "advanced",
-        "alternative": "string",
-        "is_number": false,
-        "description": "A Semantic Version (1.4.2-rc.1): package and API versions with defined precedence. Prefer string for version-ish labels that do not follow SemVer.",
-        "example": "1.4.2-rc.1",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "autocapitalize": "none",
-                "spellcheck": "false",
-                "pattern": "(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z\\-][0-9a-zA-Z\\-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z\\-][0-9a-zA-Z\\-]*))*))?(?:\\+([0-9a-zA-Z\\-]+(?:\\.[0-9a-zA-Z\\-]+)*))?"
-            }
+        "category": "technical",
+        "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+        "examples": {
+            "valid": [
+                "1.4.2-rc.1"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "note": "Ordering is lexical unless the parts are split out or an extension type is used.",
-            "attr": {
-                "collation": "collation"
-            },
-            "check": "CHECK ({column} ~ '^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$')"
-        }
+        "standard": "Semantic Versioning 2.0.0",
+        "docs": "semver",
+        "details": "A Semantic Version (1.4.2-rc.1): package and API versions with defined precedence. Prefer string for version-ish labels that do not follow SemVer."
     },
     "jwt": {
-        "type": "string",
-        "pattern": "^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]*$",
-        "standard": "RFC 7519 (JSON Web Token)",
-        "docs_link": "https://datatracker.ietf.org/doc/html/rfc7519",
-        "category": "technical",
+        "base": "secret",
         "level": "advanced",
-        "alternative": "secret",
-        "is_number": false,
-        "description": "A compact JSON Web Token: signed claims passed between parties. Handle like secret in storage and logs; prefer secret for opaque credentials.",
-        "example": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.sig",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "password",
-                "autocomplete": "off",
-                "autocapitalize": "none",
-                "spellcheck": "false",
-                "pattern": "[A-Za-z0-9_\\-]+\\.[A-Za-z0-9_\\-]+\\.[A-Za-z0-9_\\-]*"
-            }
+        "category": "technical",
+        "format": null,
+        "pattern": "^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]*$",
+        "examples": {
+            "valid": [
+                "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.sig"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "attr": {
-                "collation": "collation"
-            },
-            "check": "CHECK ({column} ~ '^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]*$')"
-        }
+        "standard": "RFC 7519 (JSON Web Token)",
+        "docs": "rfc7519",
+        "details": "A compact JSON Web Token: signed claims passed between parties. Handle like secret in storage and logs; prefer secret for opaque credentials."
     },
     "sha256": {
-        "type": "string",
-        "pattern": "^[A-Fa-f0-9]{64}$",
-        "standard": "FIPS 180-4 (SHA-256), hex-encoded",
-        "docs_link": "https://csrc.nist.gov/pubs/fips/180-4/upd1/final",
-        "category": "technical",
+        "base": "_token",
         "level": "advanced",
-        "alternative": "string",
-        "is_number": false,
-        "description": "A SHA-256 digest: content addressing, integrity checks, dedup keys. Never for passwords - those take a dedicated password hash stored as secret.",
-        "example": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "autocapitalize": "none",
-                "spellcheck": "false",
-                "pattern": "[A-Fa-f0-9]{64}"
-            },
-            "note": "Computed (crypto.subtle.digest('SHA-256', bytes)), shown read-only."
+        "category": "technical",
+        "pattern": "^[A-Fa-f0-9]{64}$",
+        "examples": {
+            "valid": [
+                "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            ]
         },
-        "postgres": {
-            "type": "bytea",
-            "note": "32 decoded bytes; bytea has no fixed-length form, so length is enforced by a check.",
-            "check": "CHECK (octet_length({column}) = 32)"
-        }
+        "standard": "FIPS 180-4 (SHA-256), hex-encoded",
+        "docs": "fips180_4",
+        "details": "A SHA-256 digest: content addressing, integrity checks, dedup keys. Never for passwords - those take a dedicated password hash stored as secret."
     },
     "port": {
-        "type": "integer",
+        "base": "int32",
+        "level": "advanced",
+        "category": "technical",
         "format": "uint16",
         "minimum": 0,
         "maximum": 65535,
-        "standard": "RFC 6335 (IANA port numbers)",
-        "docs_link": "https://datatracker.ietf.org/doc/html/rfc6335",
-        "category": "technical",
-        "level": "advanced",
-        "alternative": "int32",
-        "is_number": true,
-        "description": "A TCP/UDP port number (0..65535): service endpoints and configuration. Prefer uint16 for 16-bit values that are not ports.",
-        "example": 5432,
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "number",
-                "step": "1",
-                "min": "0",
-                "max": "65535"
-            }
+        "examples": {
+            "valid": [
+                5432
+            ]
         },
-        "postgres": {
-            "type": "integer",
-            "note": "No unsigned 16-bit type; integer plus a range check covers 0-65535.",
-            "check": "CHECK ({column} BETWEEN 0 AND 65535)"
-        }
+        "standard": "RFC 6335 (IANA port numbers)",
+        "docs": "rfc6335",
+        "details": "A TCP/UDP port number (0..65535): service endpoints and configuration. Prefer uint16 for 16-bit values that are not ports."
     },
     "cron": {
-        "type": "string",
-        "standard": "POSIX.1-2024 crontab (IEEE Std 1003.1-2024)",
-        "docs_link": "https://pubs.opengroup.org/onlinepubs/9799919799/utilities/crontab.html",
-        "category": "technical",
+        "base": "_token",
         "level": "advanced",
-        "alternative": "string",
-        "is_number": false,
-        "description": "A POSIX crontab expression (0 3 * * *): recurring schedules. Prefer duration for simple intervals and date_time for one-shot schedules.",
-        "example": "0 3 * * *",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "autocapitalize": "none",
-                "spellcheck": "false"
-            }
+        "category": "technical",
+        "examples": {
+            "valid": [
+                "0 3 * * *"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "attr": {
-                "collation": "collation"
-            }
-        }
+        "standard": "POSIX.1-2024 crontab (IEEE Std 1003.1-2024)",
+        "docs": "posix_crontab",
+        "details": "A POSIX crontab expression (0 3 * * *): recurring schedules. Prefer duration for simple intervals and date_time for one-shot schedules."
     },
     "country_alpha3": {
-        "type": "string",
-        "pattern": "^[A-Z]{3}$",
-        "standard": "ISO 3166-1 alpha-3",
-        "docs_link": "https://www.iso.org/iso-3166-country-codes.html",
-        "category": "business",
+        "base": "country",
         "level": "advanced",
-        "alternative": "country",
-        "is_number": false,
-        "description": "An ISO 3166-1 alpha-3 country code (USA): feeds and standards that require three letters. Prefer country (alpha-2) as the default.",
-        "example": "USA",
-        "html": {
-            "element": "select",
-            "attrs": {},
-            "options": {
-                "source": "ISO 3166-1 alpha-3"
-            },
-            "note": "Intl has no alpha-3 list; map from alpha-2 with a lookup table."
+        "category": "business",
+        "pattern": "^[A-Z]{3}$",
+        "examples": {
+            "valid": [
+                "USA"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "attr": {
-                "collation": "collation"
-            },
-            "check": "CHECK ({column} ~ '^[A-Z]{3}$')"
-        }
+        "standard": "ISO 3166-1 alpha-3",
+        "docs": "iso3166",
+        "details": "An ISO 3166-1 alpha-3 country code (USA): feeds and standards that require three letters. Prefer country (alpha-2) as the default."
     },
     "subdivision": {
-        "type": "string",
-        "pattern": "^[A-Z]{2}-[A-Z0-9]{1,3}$",
-        "standard": "ISO 3166-2 (country subdivision)",
-        "docs_link": "https://www.iso.org/standard/72483.html",
-        "category": "business",
+        "base": "_token",
         "level": "advanced",
-        "alternative": "string",
-        "is_number": false,
-        "description": "An ISO 3166-2 subdivision code (US-CA): states, provinces, regions. Carries its country prefix, so no separate country field is needed to interpret it.",
-        "example": "US-CA",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "autocapitalize": "none",
-                "spellcheck": "false",
-                "pattern": "[A-Z]{2}-[A-Z0-9]{1,3}"
-            }
+        "category": "business",
+        "pattern": "^[A-Z]{2}-[A-Z0-9]{1,3}$",
+        "examples": {
+            "valid": [
+                "US-CA"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "attr": {
-                "collation": "collation"
-            },
-            "check": "CHECK ({column} ~ '^[A-Z]{2}-[A-Z0-9]{1,3}$')"
-        }
+        "standard": "ISO 3166-2 (country subdivision)",
+        "docs": "iso3166_2",
+        "details": "An ISO 3166-2 subdivision code (US-CA): states, provinces, regions. Carries its country prefix, so no separate country field is needed to interpret it."
     },
     "language": {
-        "type": "string",
-        "format": "language",
-        "pattern": "^[a-z]{2,3}$",
-        "standard": "ISO 639-1 / ISO 639-3",
-        "docs_link": "https://www.iso.org/iso-639-language-code",
-        "category": "business",
+        "base": "locale",
         "level": "advanced",
-        "alternative": "locale",
-        "is_number": false,
-        "description": "An ISO 639 language code (en): tagging what language content is in. Prefer locale when region or script variants matter.",
-        "example": "en",
-        "html": {
-            "element": "select",
-            "attrs": {
-                "autocomplete": "language"
-            },
-            "options": {
-                "source": "ISO 639-1 / 639-2",
-                "js": "new Intl.DisplayNames([locale], { type: 'language' })"
-            }
+        "category": "business",
+        "pattern": "^[a-z]{2,3}$",
+        "examples": {
+            "valid": [
+                "en"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "attr": {
-                "collation": "collation"
-            },
-            "check": "CHECK ({column} ~ '^[a-z]{2,3}$')"
-        }
+        "standard": "ISO 639-1 / ISO 639-3",
+        "docs": "iso639",
+        "details": "An ISO 639 language code (en): tagging what language content is in. Prefer locale when region or script variants matter."
     },
     "http_date": {
-        "type": "string",
+        "base": "date_time",
+        "level": "domain",
+        "category": "temporal",
         "format": "http-date",
         "pattern": "^(Mon|Tue|Wed|Thu|Fri|Sat|Sun), \\d{2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \\d{4} \\d{2}:\\d{2}:\\d{2} GMT$",
-        "standard": "RFC 9110 Section 5.6.7 (IMF-fixdate)",
-        "docs_link": "https://datatracker.ietf.org/doc/html/rfc9110#section-5.6.7",
-        "category": "temporal",
-        "level": "domain",
-        "alternative": "date_time",
-        "is_number": false,
-        "description": "The HTTP header date format (IMF-fixdate): Last-Modified, Expires, and friends. HTTP interchange only - prefer date_time everywhere else.",
-        "example": "Sun, 16 Aug 2026 14:30:00 GMT",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "datetime-local",
-                "step": "1"
-            },
-            "note": "Not entered by people; format with new Date(value).toUTCString()."
+        "examples": {
+            "valid": [
+                "Sun, 16 Aug 2026 14:30:00 GMT"
+            ]
         },
-        "postgres": {
-            "type": "timestamptz",
-            "note": "A header wire format, parsed to an instant on the way in. The OpenAPI registry still sources it to RFC 7231, which RFC 9110 obsoletes.",
-            "attr": {
-                "fractional_seconds": "fractional_seconds"
-            }
-        }
+        "standard": "RFC 9110 Section 5.6.7 (IMF-fixdate)",
+        "docs": "rfc9110",
+        "anchor": "#section-5.6.7",
+        "details": "The HTTP header date format (IMF-fixdate): Last-Modified, Expires, and friends. HTTP interchange only - prefer date_time everywhere else."
     },
     "wikidata_qid": {
-        "type": "string",
-        "pattern": "^Q[1-9]\\d*$",
-        "standard": "Wikidata entity identifier",
-        "docs_link": "https://www.wikidata.org/wiki/Wikidata:Identifiers",
-        "category": "identity",
+        "base": "_token",
         "level": "domain",
-        "alternative": "string",
-        "is_number": false,
-        "description": "A Wikidata entity ID (Q42): linking records to globally known entities. Prefer the domain registry when one exists - doi, orcid, lei, isbn.",
-        "example": "Q42",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "autocapitalize": "none",
-                "spellcheck": "false",
-                "pattern": "Q[1-9]\\d*"
-            }
+        "category": "identity",
+        "pattern": "^Q[1-9]\\d*$",
+        "examples": {
+            "valid": [
+                "Q42"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "attr": {
-                "collation": "collation"
-            },
-            "check": "CHECK ({column} ~ '^Q[1-9]\\d*$')"
-        }
+        "standard": "Wikidata entity identifier",
+        "docs": "wikidata",
+        "details": "A Wikidata entity ID (Q42): linking records to globally known entities. Prefer the domain registry when one exists - doi, orcid, lei, isbn."
     },
     "doi": {
-        "type": "string",
-        "pattern": "^10\\.\\d{4,9}/[-._;()/:A-Za-z0-9]+$",
-        "standard": "ISO 26324 (Digital Object Identifier)",
-        "docs_link": "https://www.doi.org/the-identifier/what-is-a-doi/",
-        "category": "identity",
+        "base": "_token",
         "level": "domain",
-        "alternative": "string",
-        "is_number": false,
-        "description": "A Digital Object Identifier: citations to papers, datasets, publications. Prefer uri only for links that are not registered DOIs.",
-        "example": "10.1000/182",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "autocapitalize": "none",
-                "spellcheck": "false",
-                "pattern": "10\\.\\d{4,9}/[\\-\\._\\;\\(\\)\\/\\:A-Za-z0-9]+"
-            }
+        "category": "identity",
+        "pattern": "^10\\.\\d{4,9}/[-._;()/:A-Za-z0-9]+$",
+        "examples": {
+            "valid": [
+                "10.1000/182"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "attr": {
-                "collation": "collation"
-            },
-            "check": "CHECK ({column} ~ '^10\\.\\d{4,9}/[-._;()/:A-Za-z0-9]+$')"
-        }
+        "standard": "ISO 26324 (Digital Object Identifier)",
+        "docs": "doi",
+        "details": "A Digital Object Identifier: citations to papers, datasets, publications. Prefer uri only for links that are not registered DOIs."
     },
     "orcid": {
-        "type": "string",
-        "pattern": "^\\d{4}-\\d{4}-\\d{4}-\\d{3}[\\dX]$",
-        "standard": "ORCID iD (ISO 27729 ISNI block)",
-        "docs_link": "https://info.orcid.org/documentation/",
-        "category": "identity",
+        "base": "_token",
         "level": "domain",
-        "alternative": "string",
-        "is_number": false,
-        "description": "An ORCID iD identifying a researcher. Prefer lei for organizations and wikidata_qid for entities outside scholarly identity.",
-        "example": "0000-0002-1825-0097",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "autocapitalize": "none",
-                "spellcheck": "false",
-                "pattern": "\\d{4}-\\d{4}-\\d{4}-\\d{3}[\\dX]"
-            }
+        "category": "identity",
+        "pattern": "^\\d{4}-\\d{4}-\\d{4}-\\d{3}[\\dX]$",
+        "examples": {
+            "valid": [
+                "0000-0002-1825-0097"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "attr": {
-                "collation": "collation"
-            },
-            "check": "CHECK ({column} ~ '^\\d{4}-\\d{4}-\\d{4}-\\d{3}[\\dX]$')"
-        }
+        "standard": "ORCID iD (ISO 27729 ISNI block)",
+        "docs": "orcid",
+        "details": "An ORCID iD identifying a researcher. Prefer lei for organizations and wikidata_qid for entities outside scholarly identity."
     },
     "lei": {
-        "type": "string",
-        "pattern": "^[A-Z0-9]{18}\\d{2}$",
-        "standard": "ISO 17442 (Legal Entity Identifier)",
-        "docs_link": "https://www.gleif.org/en/about-lei/iso-17442-the-lei-code-structure",
-        "category": "identity",
+        "base": "_token",
         "level": "domain",
-        "alternative": "string",
-        "is_number": false,
-        "description": "A Legal Entity Identifier: organizations in financial and regulatory contexts. Identity, not routing - prefer bic for payment routing.",
-        "example": "5493001KJTIIGC8Y1R12",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "autocapitalize": "none",
-                "spellcheck": "false",
-                "pattern": "[A-Z0-9]{18}\\d{2}"
-            }
+        "category": "identity",
+        "pattern": "^[A-Z0-9]{18}\\d{2}$",
+        "examples": {
+            "valid": [
+                "5493001KJTIIGC8Y1R12"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "attr": {
-                "collation": "collation"
-            },
-            "check": "CHECK ({column} ~ '^[A-Z0-9]{18}\\d{2}$')"
-        }
+        "standard": "ISO 17442 (Legal Entity Identifier)",
+        "docs": "iso17442",
+        "details": "A Legal Entity Identifier: organizations in financial and regulatory contexts. Identity, not routing - prefer bic for payment routing."
     },
     "media_range": {
-        "type": "string",
+        "base": "media_type",
+        "level": "domain",
+        "category": "technical",
         "format": "media-range",
         "pattern": "^(\\*/\\*|[A-Za-z0-9!#$&^_.+-]+/\\*|[A-Za-z0-9!#$&^_.+-]+/[A-Za-z0-9!#$&^_.+-]+)(\\s*;.*)?$",
-        "standard": "RFC 9110 Section 12.5.1 (media-range)",
-        "docs_link": "https://datatracker.ietf.org/doc/html/rfc9110#section-12.5.1",
-        "category": "technical",
-        "level": "domain",
-        "alternative": "media_type",
-        "is_number": false,
-        "description": "An HTTP media range with wildcards and parameters: Accept-style negotiation. Prefer media_type for one concrete type.",
-        "example": "text/html;q=0.9",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "autocapitalize": "none",
-                "spellcheck": "false",
-                "pattern": "(\\*/\\*|[A-Za-z0-9\\!\\#\\$\\&\\^_\\.\\+\\-]+/\\*|[A-Za-z0-9\\!\\#\\$\\&\\^_\\.\\+\\-]+/[A-Za-z0-9\\!\\#\\$\\&\\^_\\.\\+\\-]+)(\\s*;.*)?"
-            }
+        "examples": {
+            "valid": [
+                "text/html;q=0.9"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "note": "A range admits wildcards and parameters; media_type admits neither.",
-            "attr": {
-                "collation": "collation"
-            },
-            "check": "CHECK ({column} ~ '^(\\*/\\*|[A-Za-z0-9!#$&^_.+-]+/\\*|[A-Za-z0-9!#$&^_.+-]+/[A-Za-z0-9!#$&^_.+-]+)(\\s*;.*)?$')"
-        }
+        "standard": "RFC 9110 Section 12.5.1 (media-range)",
+        "docs": "rfc9110",
+        "anchor": "#section-12.5.1",
+        "details": "An HTTP media range with wildcards and parameters: Accept-style negotiation. Prefer media_type for one concrete type."
     },
     "sf_integer": {
-        "type": "integer",
+        "base": "int32",
+        "level": "domain",
+        "category": "technical",
+        "alternative": "int64",
         "format": "sf-integer",
         "minimum": -999999999999999,
         "maximum": 999999999999999,
-        "standard": "RFC 9651 Section 3.3.1 (Structured Fields integer)",
-        "docs_link": "https://datatracker.ietf.org/doc/html/rfc9651#section-3.3.1",
-        "category": "technical",
-        "level": "domain",
-        "alternative": "int64",
-        "is_number": true,
-        "description": "An HTTP Structured Fields integer (15 digits max): numeric members of structured headers. Prefer int64 outside header serialization.",
-        "example": 42,
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "number",
-                "step": "1",
-                "min": "-999999999999999",
-                "max": "999999999999999"
-            }
+        "examples": {
+            "valid": [
+                42
+            ]
         },
-        "postgres": {
-            "type": "bigint",
-            "note": "Structured Fields caps integers at fifteen digits, well inside bigint.",
-            "check": "CHECK ({column} BETWEEN -999999999999999 AND 999999999999999)"
-        }
+        "standard": "RFC 9651 Section 3.3.1 (Structured Fields integer)",
+        "docs": "rfc9651",
+        "anchor": "#section-3.3.1",
+        "details": "An HTTP Structured Fields integer (15 digits max): numeric members of structured headers. Prefer int64 outside header serialization."
     },
     "sf_decimal": {
-        "type": "number",
-        "format": "sf-decimal",
-        "standard": "RFC 9651 Section 3.3.2 (Structured Fields decimal)",
-        "docs_link": "https://datatracker.ietf.org/doc/html/rfc9651#section-3.3.2",
-        "category": "technical",
+        "base": "float64",
         "level": "domain",
+        "category": "technical",
         "alternative": "decimal",
-        "is_number": true,
-        "description": "An HTTP Structured Fields decimal (three fractional digits): weights and q-values in headers. Prefer decimal outside header serialization.",
-        "example": 4.5,
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "number",
-                "step": "0.001",
-                "min": "-999999999999.999",
-                "max": "999999999999.999"
-            }
+        "format": "sf-decimal",
+        "examples": {
+            "valid": [
+                4.5
+            ]
         },
-        "postgres": {
-            "type": "numeric",
-            "note": "At most twelve integer and three fractional digits, which numeric keeps exactly.",
-            "attr": {
-                "precision": "numeric_precision",
-                "scale": "numeric_scale"
-            },
-            "check": "CHECK (abs({column}) < 1000000000000 AND {column} = round({column}, 3))"
-        }
+        "standard": "RFC 9651 Section 3.3.2 (Structured Fields decimal)",
+        "docs": "rfc9651",
+        "anchor": "#section-3.3.2",
+        "details": "An HTTP Structured Fields decimal (three fractional digits): weights and q-values in headers. Prefer decimal outside header serialization."
     },
     "sf_string": {
-        "type": "string",
+        "base": "_token",
+        "level": "domain",
+        "category": "technical",
         "format": "sf-string",
         "pattern": "^[\\x20-\\x7E]*$",
-        "standard": "RFC 9651 Section 3.3.3 (Structured Fields string)",
-        "docs_link": "https://datatracker.ietf.org/doc/html/rfc9651#section-3.3.3",
-        "category": "technical",
-        "level": "domain",
-        "alternative": "string",
-        "is_number": false,
-        "description": "An HTTP Structured Fields quoted string (printable ASCII): textual members of structured headers. Prefer string outside header serialization.",
-        "example": "hello world",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "autocapitalize": "none",
-                "spellcheck": "false",
-                "pattern": "[\\x20-\\x7E]*"
-            }
+        "examples": {
+            "valid": [
+                "hello world"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "note": "Printable ASCII only; DQUOTE and backslash are escaped in transport.",
-            "attr": {
-                "collation": "collation"
-            },
-            "check": "CHECK ({column} ~ '^[\\x20-\\x7E]*$')"
-        }
+        "standard": "RFC 9651 Section 3.3.3 (Structured Fields string)",
+        "docs": "rfc9651",
+        "anchor": "#section-3.3.3",
+        "details": "An HTTP Structured Fields quoted string (printable ASCII): textual members of structured headers. Prefer string outside header serialization."
     },
     "sf_token": {
-        "type": "string",
+        "base": "_token",
+        "level": "domain",
+        "category": "technical",
         "format": "sf-token",
         "pattern": "^[A-Za-z*][A-Za-z0-9:/!#$%&'*+\\-.^_`|~]*$",
-        "standard": "RFC 9651 Section 3.3.4 (Structured Fields token)",
-        "docs_link": "https://datatracker.ietf.org/doc/html/rfc9651#section-3.3.4",
-        "category": "technical",
-        "level": "domain",
-        "alternative": "string",
-        "is_number": false,
-        "description": "An HTTP Structured Fields token like gzip: short symbolic header values. Prefer enum for closed sets outside HTTP.",
-        "example": "gzip",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "autocapitalize": "none",
-                "spellcheck": "false",
-                "pattern": "[A-Za-z\\*][A-Za-z0-9\\:\\/\\!\\#\\$\\%\\&'\\*\\+\\-\\.\\^_\\`\\|\\~]*"
-            }
+        "examples": {
+            "valid": [
+                "gzip"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "note": "A bare token, never quoted; that is what distinguishes it from sf_string.",
-            "attr": {
-                "collation": "collation"
-            },
-            "check": "CHECK ({column} ~ '^[A-Za-z*][A-Za-z0-9:/!#$%&''*+\\-.^_`|~]*$')"
-        }
+        "standard": "RFC 9651 Section 3.3.4 (Structured Fields token)",
+        "docs": "rfc9651",
+        "anchor": "#section-3.3.4",
+        "details": "An HTTP Structured Fields token like gzip: short symbolic header values. Prefer enum for closed sets outside HTTP."
     },
     "sf_binary": {
-        "type": "string",
+        "base": "binary",
+        "level": "domain",
+        "category": "technical",
         "format": "sf-binary",
         "pattern": "^:[A-Za-z0-9+/]*={0,2}:$",
-        "standard": "RFC 9651 Section 3.3.5 (Structured Fields byte sequence)",
-        "docs_link": "https://datatracker.ietf.org/doc/html/rfc9651#section-3.3.5",
-        "category": "technical",
-        "level": "domain",
-        "alternative": "binary",
-        "is_number": false,
-        "description": "An HTTP Structured Fields byte sequence (colon-delimited base64): binary members of structured headers. Prefer base64 outside header serialization.",
-        "example": ":aGVsbG8=:",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "file"
-            }
+        "contentEncoding": null,
+        "examples": {
+            "valid": [
+                ":aGVsbG8=:"
+            ]
         },
-        "postgres": {
-            "type": "bytea",
-            "note": "Stored decoded; the surrounding colons are Structured Fields syntax, not data."
-        }
+        "standard": "RFC 9651 Section 3.3.5 (Structured Fields byte sequence)",
+        "docs": "rfc9651",
+        "anchor": "#section-3.3.5",
+        "details": "An HTTP Structured Fields byte sequence (colon-delimited base64): binary members of structured headers. Prefer base64 outside header serialization."
     },
     "sf_boolean": {
-        "type": "boolean",
-        "format": "sf-boolean",
-        "standard": "RFC 9651 Section 3.3.6 (Structured Fields boolean)",
-        "docs_link": "https://datatracker.ietf.org/doc/html/rfc9651#section-3.3.6",
-        "category": "technical",
+        "base": "boolean",
         "level": "domain",
-        "alternative": "boolean",
-        "is_number": false,
-        "description": "An HTTP Structured Fields boolean (?1 / ?0): flags in structured headers. Prefer boolean outside header serialization.",
-        "example": true,
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "checkbox"
-            }
+        "category": "technical",
+        "format": "sf-boolean",
+        "examples": {
+            "valid": [
+                true
+            ]
         },
-        "postgres": {
-            "type": "boolean",
-            "note": "Serialized as ?1 and ?0 on the wire, which is syntax rather than a distinct type."
-        }
+        "standard": "RFC 9651 Section 3.3.6 (Structured Fields boolean)",
+        "docs": "rfc9651",
+        "anchor": "#section-3.3.6",
+        "details": "An HTTP Structured Fields boolean (?1 / ?0): flags in structured headers. Prefer boolean outside header serialization."
     },
     "iban": {
-        "type": "string",
-        "pattern": "^[A-Z]{2}\\d{2}[A-Z0-9]{11,30}$",
-        "standard": "ISO 13616 (IBAN)",
-        "docs_link": "https://www.iso.org/standard/81090.html",
-        "category": "business",
+        "base": "_token",
         "level": "domain",
-        "alternative": "string",
-        "is_number": false,
-        "description": "An International Bank Account Number: identifying accounts for payments. Pair with bic for cross-border routing and treat as sensitive data.",
-        "example": "DE89370400440532013000",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "autocapitalize": "characters",
-                "spellcheck": "false",
-                "pattern": "[A-Z]{2}\\d{2}[A-Z0-9]{11,30}"
-            },
-            "note": "Users type it in groups of four; strip spaces and uppercase before submit, then verify the mod-97 checksum."
+        "category": "business",
+        "pattern": "^[A-Z]{2}\\d{2}[A-Z0-9]{11,30}$",
+        "examples": {
+            "valid": [
+                "DE89370400440532013000"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "attr": {
-                "collation": "collation"
-            },
-            "check": "CHECK ({column} ~ '^[A-Z]{2}\\d{2}[A-Z0-9]{11,30}$')"
-        }
+        "standard": "ISO 13616 (IBAN)",
+        "docs": "iso13616",
+        "details": "An International Bank Account Number: identifying accounts for payments. Pair with bic for cross-border routing and treat as sensitive data."
     },
     "bic": {
-        "type": "string",
-        "pattern": "^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$",
-        "standard": "ISO 9362 (BIC / SWIFT code)",
-        "docs_link": "https://www.iso.org/standard/60390.html",
-        "category": "business",
+        "base": "_token",
         "level": "domain",
-        "alternative": "string",
-        "is_number": false,
-        "description": "A BIC/SWIFT code identifying a bank for payment routing. Routing, not identity - prefer lei to identify the legal entity itself.",
-        "example": "DEUTDEFF500",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "autocapitalize": "characters",
-                "spellcheck": "false",
-                "pattern": "[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?"
-            }
+        "category": "business",
+        "pattern": "^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$",
+        "examples": {
+            "valid": [
+                "DEUTDEFF500"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "attr": {
-                "collation": "collation"
-            },
-            "check": "CHECK ({column} ~ '^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$')"
-        }
+        "standard": "ISO 9362 (BIC / SWIFT code)",
+        "docs": "iso9362",
+        "details": "A BIC/SWIFT code identifying a bank for payment routing. Routing, not identity - prefer lei to identify the legal entity itself."
     },
     "isbn": {
-        "type": "string",
-        "pattern": "^(\\d{9}[\\dXx]|97[89]\\d{10})$",
-        "standard": "ISO 2108 (ISBN-10 / ISBN-13)",
-        "docs_link": "https://www.isbn-international.org/",
-        "category": "business",
+        "base": "_token",
         "level": "domain",
-        "alternative": "string",
-        "is_number": false,
-        "description": "An ISBN identifying a book edition. Prefer gtin for general retail products; every ISBN-13 is a GTIN, but not the reverse.",
-        "example": "9780306406157",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "inputmode": "numeric",
-                "spellcheck": "false",
-                "pattern": "(\\d{9}[\\dXx]|97[89]\\d{10})"
-            },
-            "note": "Strip hyphens and spaces before submit; the check digit needs code, not a pattern."
+        "category": "business",
+        "pattern": "^(\\d{9}[\\dXx]|97[89]\\d{10})$",
+        "examples": {
+            "valid": [
+                "9780306406157"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "attr": {
-                "collation": "collation"
-            },
-            "check": "CHECK ({column} ~ '^(\\d{9}[\\dXx]|97[89]\\d{10})$')"
-        }
+        "standard": "ISO 2108 (ISBN-10 / ISBN-13)",
+        "docs": "isbn",
+        "details": "An ISBN identifying a book edition. Prefer gtin for general retail products; every ISBN-13 is a GTIN, but not the reverse."
     },
     "gtin": {
-        "type": "string",
-        "pattern": "^(\\d{8}|\\d{12}|\\d{13}|\\d{14})$",
-        "standard": "GS1 GTIN (ISO/IEC 15459 family)",
-        "docs_link": "https://www.gs1.org/standards/id-keys/gtin",
-        "category": "business",
+        "base": "_token",
         "level": "domain",
-        "alternative": "string",
-        "is_number": false,
-        "description": "A GS1 GTIN (UPC/EAN family) identifying a retail product. Prefer isbn when the domain is specifically books.",
-        "example": "0614141000036",
-        "html": {
-            "element": "input",
-            "attrs": {
-                "type": "text",
-                "inputmode": "numeric",
-                "spellcheck": "false",
-                "pattern": "(\\d{8}|\\d{12}|\\d{13}|\\d{14})"
-            },
-            "note": "Usually scanned; the check digit needs code, not a pattern."
+        "category": "business",
+        "pattern": "^(\\d{8}|\\d{12}|\\d{13}|\\d{14})$",
+        "examples": {
+            "valid": [
+                "0614141000036"
+            ]
         },
-        "postgres": {
-            "type": "text",
-            "attr": {
-                "collation": "collation"
-            },
-            "check": "CHECK ({column} ~ '^(\\d{8}|\\d{12}|\\d{13}|\\d{14})$')"
-        }
+        "standard": "GS1 GTIN (ISO/IEC 15459 family)",
+        "docs": "gs1_gtin",
+        "details": "A GS1 GTIN (UPC/EAN family) identifying a retail product. Prefer isbn when the domain is specifically books."
     }
 }

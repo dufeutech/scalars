@@ -5,19 +5,48 @@
     "description": "How each type is stored as a Postgres column. Blocks inherit from the type's base; null deletes. Regex and range CHECKs are generated, never written here; check_extra holds the few that cannot be.",
     "type": "object",
     "properties": {
-        "$schema": { "type": "string" },
-        "$defs": { "type": "object" }
+        "$schema": {
+            "type": "string"
+        },
+        "$defs": {
+            "type": "object"
+        }
     },
     "additionalProperties": {
         "type": "object",
         "properties": {
-            "type": { "type": "string" },
-            "attr": {
-                "type": ["object", "null"],
-                "additionalProperties": { "type": ["string", "object"] }
+            "type": {
+                "type": "string"
             },
-            "note": { "type": ["string", "null"] },
-            "check_extra": { "type": ["string", "null"], "pattern": "^CHECK \\(.*\\{column\\}.*\\)$" }
+            "attr": {
+                "type": [
+                    "object",
+                    "null"
+                ],
+                "additionalProperties": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "object"
+                        }
+                    ]
+                }
+            },
+            "note": {
+                "type": [
+                    "string",
+                    "null"
+                ]
+            },
+            "check_extra": {
+                "type": [
+                    "string",
+                    "null"
+                ],
+                "pattern": "^CHECK \\(.*\\{column\\}.*\\)$"
+            }
         },
         "additionalProperties": false
     }

@@ -12,7 +12,7 @@ export const TARGETS = ["html", "postgres"];
 /** Core keys a child takes from its base unless it overrides them (null deletes). */
 const INHERITED = ["type", "format", "pattern", "minimum", "maximum", "contentEncoding", "normalize"];
 /** Source-only keys that never appear in resolved output. */
-const SOURCE_ONLY = new Set(["base", "abstract", "anchor"]);
+const SOURCE_ONLY = new Set(["base", "abstract", "anchor", "docs"]);
 const RESERVED = new Set(["$schema", "version", "$defs"]);
 
 const readJson = (p) => JSON.parse(fs.readFileSync(p, "utf8"));
@@ -39,7 +39,7 @@ function mergeBlock(parent, own) {
 
 export function resolve({ core, targets }) {
     const defs = Object.fromEntries(entries(core));
-    const standards = core.$defs?.standards ?? {};
+    const docs = core.$defs?.docs ?? {};
 
     for (const [tname, file] of Object.entries(targets)) {
         for (const [k] of entries(file)) {
@@ -94,11 +94,10 @@ export function resolve({ core, targets }) {
             if (!t.alternative) throw new Error(`Type "${name}" is ${def.level} but has no core ancestor or alternative`);
         }
 
-        if (def.standard !== undefined) {
-            const s = standards[def.standard];
-            if (!s) throw new Error(`Type "${name}" references unknown standard "${def.standard}"`);
-            t.standard = s.name;
-            t.docs_link = s.url + (def.anchor ?? "");
+        if (def.docs !== undefined) {
+            const url = docs[def.docs];
+            if (!url) throw new Error(`Type "${name}" references unknown docs id "${def.docs}"`);
+            t.docs_link = url + (def.anchor ?? "");
         }
 
         for (const k of SOURCE_ONLY) delete t[k];
@@ -106,4 +105,11 @@ export function resolve({ core, targets }) {
         out[name] = applyGenerated(t);
     }
     return out;
+}
+
+/** JSON with object keys sorted at every level: equality that ignores key order. */
+export function canonical(v) {
+    return JSON.stringify(v, (_, x) => (x && typeof x === "object" && !Array.isArray(x)
+        ? Object.fromEntries(Object.keys(x).sort().map((k) => [k, x[k]]))
+        : x));
 }

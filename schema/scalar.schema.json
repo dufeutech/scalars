@@ -5,84 +5,218 @@
     "description": "The editable source of every scalar type. Keys other than $schema, version and $defs are type names.",
     "type": "object",
     "properties": {
-        "$schema": { "type": "string" },
-        "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+        "$schema": {
+            "type": "string"
+        },
+        "version": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$"
+        },
         "$defs": {
             "type": "object",
             "properties": {
-                "standards": {
+                "docs": {
                     "type": "object",
-                    "propertyNames": { "pattern": "^[a-z][a-z0-9_]*$" },
+                    "description": "Documentation links by id. A type points at one with docs (+ optional anchor).",
+                    "propertyNames": {
+                        "pattern": "^[a-z][a-z0-9_]*$"
+                    },
                     "additionalProperties": {
-                        "type": "object",
-                        "required": ["name", "url"],
-                        "properties": {
-                            "name": { "type": "string" },
-                            "url": { "type": "string", "format": "uri" }
-                        },
-                        "additionalProperties": false
+                        "type": "string",
+                        "format": "uri",
+                        "pattern": "^https://[^#]*$"
                     }
                 }
             }
         }
     },
-    "required": ["version"],
-    "propertyNames": { "pattern": "^(\\$schema|\\$defs|version|_?[a-z][a-z0-9_]*)$" },
-    "additionalProperties": { "$ref": "#/$defs/type" },
+    "required": [
+        "version"
+    ],
+    "propertyNames": {
+        "pattern": "^(\\$schema|\\$defs|version|_?[a-z][a-z0-9_]*)$"
+    },
+    "additionalProperties": {
+        "$ref": "#/$defs/type"
+    },
     "$defs": {
         "normalize_step": {
             "description": "One cleanup step, applied to the raw input before validation, in the order listed.",
             "oneOf": [
-                { "const": "trim", "description": "Remove leading and trailing Unicode whitespace (White_Space property)." },
-                { "const": "lowercase", "description": "Unicode default lowercase mapping, locale-independent." },
-                { "const": "uppercase", "description": "Unicode default uppercase mapping, locale-independent." },
-                { "const": "remove_spaces", "description": "Remove every U+0020 SPACE." },
-                { "const": "remove_hyphens", "description": "Remove every U+002D HYPHEN-MINUS." }
+                {
+                    "const": "trim",
+                    "description": "Remove leading and trailing Unicode whitespace (White_Space property)."
+                },
+                {
+                    "const": "lowercase",
+                    "description": "Unicode default lowercase mapping, locale-independent."
+                },
+                {
+                    "const": "uppercase",
+                    "description": "Unicode default uppercase mapping, locale-independent."
+                },
+                {
+                    "const": "remove_spaces",
+                    "description": "Remove every U+0020 SPACE."
+                },
+                {
+                    "const": "remove_hyphens",
+                    "description": "Remove every U+002D HYPHEN-MINUS."
+                }
             ]
         },
-        "nullable_string": { "type": ["string", "null"] },
-        "nullable_number": { "type": ["number", "null"] },
+        "nullable_string": {
+            "type": [
+                "string",
+                "null"
+            ]
+        },
+        "nullable_number": {
+            "type": [
+                "number",
+                "null"
+            ]
+        },
         "examples": {
-            "type": "array",
-            "items": {}
+            "type": "array"
         },
         "type": {
             "type": "object",
             "properties": {
-                "base": { "type": "string", "description": "The type this one is built on. Inherits type, format, pattern, minimum, maximum, contentEncoding and normalize; null in a child deletes an inherited value." },
-                "abstract": { "const": true, "description": "A building block only; never appears in dist/." },
-                "level": { "enum": ["core", "advanced", "domain"] },
-                "category": { "enum": ["primitive", "structure", "temporal", "identity", "technical", "business"] },
-                "alternative": { "type": "string", "description": "The core type to use instead. Defaults to the nearest core ancestor; write it only when that is wrong." },
-                "label": { "type": "string", "maxLength": 32 },
-                "hint": { "type": "string", "maxLength": 60 },
-                "error": { "type": "string", "maxLength": 100, "pattern": "\\.$" },
-                "aliases": { "type": "array", "uniqueItems": true, "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" } },
-                "type": { "enum": ["string", "integer", "number", "boolean", "object", "array", null] },
-                "format": { "$ref": "#/$defs/nullable_string" },
-                "pattern": { "$ref": "#/$defs/nullable_string" },
-                "minimum": { "$ref": "#/$defs/nullable_number" },
-                "maximum": { "$ref": "#/$defs/nullable_number" },
-                "contentEncoding": { "$ref": "#/$defs/nullable_string" },
-                "normalize": { "type": ["array", "null"], "items": { "$ref": "#/$defs/normalize_step" } },
+                "base": {
+                    "type": "string",
+                    "description": "The type this one is built on. Inherits type, format, pattern, minimum, maximum, contentEncoding and normalize; null in a child deletes an inherited value."
+                },
+                "abstract": {
+                    "const": true,
+                    "description": "A building block only; never appears in dist/."
+                },
+                "level": {
+                    "enum": [
+                        "core",
+                        "advanced",
+                        "domain"
+                    ]
+                },
+                "category": {
+                    "enum": [
+                        "primitive",
+                        "structure",
+                        "temporal",
+                        "identity",
+                        "technical",
+                        "business"
+                    ]
+                },
+                "alternative": {
+                    "type": "string",
+                    "description": "The core type to use instead. Defaults to the nearest core ancestor; write it only when that is wrong."
+                },
+                "label": {
+                    "type": "string",
+                    "maxLength": 32
+                },
+                "hint": {
+                    "type": "string",
+                    "maxLength": 60
+                },
+                "error": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "pattern": "\\.$"
+                },
+                "aliases": {
+                    "type": "array",
+                    "uniqueItems": true,
+                    "items": {
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9_]*$"
+                    }
+                },
+                "type": {
+                    "enum": [
+                        "string",
+                        "integer",
+                        "number",
+                        "boolean",
+                        "object",
+                        "array",
+                        null
+                    ]
+                },
+                "format": {
+                    "$ref": "#/$defs/nullable_string"
+                },
+                "pattern": {
+                    "$ref": "#/$defs/nullable_string"
+                },
+                "minimum": {
+                    "$ref": "#/$defs/nullable_number"
+                },
+                "maximum": {
+                    "$ref": "#/$defs/nullable_number"
+                },
+                "contentEncoding": {
+                    "$ref": "#/$defs/nullable_string"
+                },
+                "normalize": {
+                    "type": [
+                        "array",
+                        "null"
+                    ],
+                    "items": {
+                        "$ref": "#/$defs/normalize_step"
+                    }
+                },
                 "examples": {
                     "type": "object",
                     "properties": {
-                        "valid": { "$ref": "#/$defs/examples", "minItems": 1 },
-                        "invalid": { "$ref": "#/$defs/examples" },
-                        "db_invalid": { "$ref": "#/$defs/examples" }
+                        "valid": {
+                            "type": "array",
+                            "minItems": 1
+                        },
+                        "invalid": {
+                            "$ref": "#/$defs/examples"
+                        },
+                        "db_invalid": {
+                            "$ref": "#/$defs/examples"
+                        }
                     },
-                    "required": ["valid"],
+                    "required": [
+                        "valid"
+                    ],
                     "additionalProperties": false
                 },
-                "standard": { "type": "string", "description": "An id in $defs.standards." },
-                "anchor": { "type": "string", "pattern": "^#" },
-                "details": { "type": "string", "description": "The expert explanation." }
+                "standard": {
+                    "type": "string",
+                    "description": "The standard this type follows, as plain text."
+                },
+                "docs": {
+                    "type": "string",
+                    "description": "An id in $defs.docs; the docs_link is that URL plus anchor."
+                },
+                "anchor": {
+                    "type": "string",
+                    "pattern": "^#"
+                },
+                "details": {
+                    "type": "string",
+                    "description": "The expert explanation."
+                }
             },
             "additionalProperties": false,
-            "if": { "required": ["abstract"] },
+            "if": {
+                "required": [
+                    "abstract"
+                ]
+            },
             "then": {},
-            "else": { "required": ["level", "category"] }
+            "else": {
+                "required": [
+                    "level",
+                    "category"
+                ]
+            }
         }
     }
 }

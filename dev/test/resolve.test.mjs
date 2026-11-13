@@ -40,6 +40,7 @@ test("no base in output", () => {
         assert.ok(!("base" in t), t.name);
         assert.ok(!("abstract" in t), t.name);
         assert.ok(!("anchor" in t), t.name);
+        assert.ok(!("docs" in t), t.name);
     }
 });
 
@@ -80,14 +81,16 @@ test("alternative default", () => {
     assert.ok(!("alternative" in r.slug));
 });
 
-test("standards expand", () => {
+test("docs links expand", () => {
     const r = mini();
-    assert.equal(r.slug.standard, "RFC 3986");
+    assert.equal(r.slug.standard, "RFC 3986 (path segment)", "standard is free text, kept as written");
     assert.equal(r.slug.docs_link, "https://datatracker.ietf.org/doc/html/rfc3986#section-3.3");
     assert.equal(r.uuid.docs_link, "https://datatracker.ietf.org/doc/html/rfc9562");
+    assert.ok(!("docs" in r.slug), "docs id is source-only");
     assert.equal(r.uuid_v7.standard, undefined, "standard is not inherited");
+    assert.equal(r.uuid_v7.docs_link, undefined, "docs is not inherited");
     assert.throws(
-        () => resolve(patched({ slug: { base: "string", level: "core", category: "technical", standard: "nope" } })),
+        () => resolve(patched({ slug: { base: "string", level: "core", category: "technical", docs: "nope" } })),
         (e) => e.message.includes("slug") && e.message.includes("nope"),
     );
 });

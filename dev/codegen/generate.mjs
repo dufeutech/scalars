@@ -1,9 +1,10 @@
 // Turns the built catalogue into generated source files, one emitter per language.
 import { toModel } from "./model.mjs";
 import { emitPython } from "./python.mjs";
+import { emitTypeScript } from "./ts.mjs";
 
 /** Each emitter is (models, version) => { "<path under dist/>": text }. Tasks add theirs here. */
-const EMITTERS = [emitPython];
+const EMITTERS = [emitPython, emitTypeScript];
 
 export function generate(scalars) {
     const models = toModel(scalars);

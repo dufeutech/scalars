@@ -561,6 +561,9 @@
         ],
         "format": "email",
         "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+        "normalize": [
+            "trim"
+        ],
         "examples": {
             "valid": [
                 "user@example.com",
@@ -589,6 +592,10 @@
         ],
         "format": "hostname",
         "pattern": "^(?=.{1,253}$)[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$",
+        "normalize": [
+            "trim",
+            "lowercase"
+        ],
         "examples": {
             "valid": [
                 "api.example.com",
@@ -722,6 +729,10 @@
         ],
         "format": "uuid",
         "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+        "normalize": [
+            "trim",
+            "lowercase"
+        ],
         "examples": {
             "valid": [
                 "f81d4fae-7dec-11d0-a765-00a0c91e6bf6",
@@ -750,6 +761,11 @@
             "phone_number"
         ],
         "pattern": "^\\+[1-9]\\d{1,14}$",
+        "normalize": [
+            "trim",
+            "remove_spaces",
+            "remove_hyphens"
+        ],
         "examples": {
             "valid": [
                 "+14155552671",
@@ -848,6 +864,10 @@
             "url_name"
         ],
         "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+        "normalize": [
+            "trim",
+            "lowercase"
+        ],
         "examples": {
             "valid": [
                 "getting-started",
@@ -875,6 +895,10 @@
             "country_code"
         ],
         "pattern": "^[A-Z]{2}$",
+        "normalize": [
+            "trim",
+            "uppercase"
+        ],
         "examples": {
             "valid": [
                 "US",
@@ -900,6 +924,10 @@
             "currency_code"
         ],
         "pattern": "^[A-Z]{3}$",
+        "normalize": [
+            "trim",
+            "uppercase"
+        ],
         "examples": {
             "valid": [
                 "USD",
@@ -956,6 +984,10 @@
             "hex_color"
         ],
         "pattern": "^#[0-9a-f]{6}([0-9a-f]{2})?$",
+        "normalize": [
+            "trim",
+            "lowercase"
+        ],
         "examples": {
             "valid": [
                 "#1a2b3c",
@@ -1952,6 +1984,10 @@
             "province"
         ],
         "pattern": "^[A-Z]{2}-[A-Z0-9]{1,3}$",
+        "normalize": [
+            "trim",
+            "uppercase"
+        ],
         "examples": {
             "valid": [
                 "US-CA",
@@ -2324,6 +2360,11 @@
             "bank_account"
         ],
         "pattern": "^[A-Z]{2}\\d{2}[A-Z0-9]{11,30}$",
+        "normalize": [
+            "trim",
+            "remove_spaces",
+            "uppercase"
+        ],
         "examples": {
             "valid": [
                 "DE89370400440532013000",
@@ -2350,6 +2391,10 @@
             "swift_code"
         ],
         "pattern": "^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$",
+        "normalize": [
+            "trim",
+            "uppercase"
+        ],
         "examples": {
             "valid": [
                 "DEUTDEFF500",
@@ -2376,6 +2421,10 @@
             "isbn10"
         ],
         "pattern": "^(\\d{9}[\\dXx]|97[89]\\d{10})$",
+        "normalize": [
+            "remove_spaces",
+            "remove_hyphens"
+        ],
         "examples": {
             "valid": [
                 "9780306406157",
@@ -2403,6 +2452,10 @@
             "upc"
         ],
         "pattern": "^(\\d{8}|\\d{12}|\\d{13}|\\d{14})$",
+        "normalize": [
+            "remove_spaces",
+            "remove_hyphens"
+        ],
         "examples": {
             "valid": [
                 "0614141000036",

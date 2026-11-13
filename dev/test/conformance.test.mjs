@@ -32,7 +32,13 @@ for (const t of Object.values(types)) {
         const ex = t.examples ?? {};
         assert.ok(ex.valid?.length >= 1, "has a valid example");
         const validate = ajv.compile(toJsonSchema(t));
-        const html = t.html?.attrs?.pattern ? new RegExp(`^(?:${t.html.attrs.pattern})$`, "v") : null;
+        const htmlRe = t.html?.attrs?.pattern ? new RegExp(`^(?:${t.html.attrs.pattern})$`, "v") : null;
+        const a = t.html?.attrs ?? {};
+        const [minlength, maxlength] = [Number(a.minlength ?? 0), Number(a.maxlength ?? Infinity)];
+        // The browser checks pattern, minlength and maxlength (UTF-16 units) together.
+        const html = htmlRe || a.minlength || a.maxlength
+            ? { test: (s) => (!htmlRe || htmlRe.test(s)) && s.length >= minlength && s.length <= maxlength }
+            : null;
 
         // Postgres table for this type, with the generated CHECK.
         const table = `t_${t.name}`;

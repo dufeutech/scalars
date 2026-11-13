@@ -10,7 +10,7 @@ export const PRIMITIVES = new Set([
 export const TARGETS = ["html", "postgres"];
 
 /** Core keys a child takes from its base unless it overrides them (null deletes). */
-const INHERITED = ["type", "format", "pattern", "minimum", "maximum", "contentEncoding", "normalize"];
+const INHERITED = ["type", "format", "pattern", "minLength", "maxLength", "minimum", "maximum", "contentEncoding", "normalize"];
 /** Source-only keys that never appear in resolved output. */
 const SOURCE_ONLY = new Set(["base", "abstract", "anchor", "docs"]);
 const RESERVED = new Set(["$schema", "version", "$defs"]);

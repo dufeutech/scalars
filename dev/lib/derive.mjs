@@ -1,4 +1,5 @@
 // Dev-only: values generated into dist/ from the core rule, never written in source.
+import { patternProblems } from "./portable.mjs";
 
 /** Characters the `v` flag requires (syntax) or allows (reserved punctuators) escaped inside [...]. */
 const CLASS_ESCAPE = new Set("()[]{}/|&!#$%*+,.:;<=>?@^`~");
@@ -59,7 +60,14 @@ const INT_RANGES = {
 export function pgCheck(t) {
     const pg = t.postgres ?? {};
     if (pg.check_extra) return pg.check_extra;
-    if (TEXT_COLUMNS.has(pg.type) && t.pattern) return `CHECK ({column} ~ ${sqlString(t.pattern)})`;
+    if (TEXT_COLUMNS.has(pg.type)) {
+        // char_length counts code points, as JSON Schema's maxLength does.
+        const rules = [];
+        if (t.minLength !== undefined) rules.push(`char_length({column}) >= ${t.minLength}`);
+        if (t.maxLength !== undefined) rules.push(`char_length({column}) <= ${t.maxLength}`);
+        if (t.pattern) rules.push(`{column} ~ ${sqlString(t.pattern)}`);
+        if (rules.length) return `CHECK (${rules.join(" AND ")})`;
+    }
     const native = INT_RANGES[pg.type];
     if (native && t.minimum !== undefined && t.maximum !== undefined) {
         const [lo, hi] = [BigInt(t.minimum), BigInt(t.maximum)];
@@ -68,7 +76,7 @@ export function pgCheck(t) {
     return null;
 }
 
-const SCHEMA_KEYS = ["type", "format", "pattern", "minimum", "maximum", "contentEncoding"];
+const SCHEMA_KEYS = ["type", "format", "pattern", "minLength", "maxLength", "minimum", "maximum", "contentEncoding"];
 
 /** A plain JSON Schema (OpenAPI 3.1 compatible) for one resolved type. */
 export function toJsonSchema(t) {
@@ -84,7 +92,15 @@ const PATTERN_INPUTS = new Set(["text", "tel", "search", "password"]);
 
 /** Adds generated keys to a resolved type's target blocks (mutates and returns t). */
 export function applyGenerated(t) {
+    if (t.pattern) {
+        const problems = patternProblems(t.pattern);
+        if (problems.length) throw new Error(`Type "${t.name}" pattern is not portable: ${problems.join("; ")}`);
+    }
     const h = t.html;
+    if (h?.element === "input" && h.attrs?.type !== "file") {
+        if (t.minLength !== undefined) h.attrs = { ...h.attrs, minlength: String(t.minLength) };
+        if (t.maxLength !== undefined) h.attrs = { ...h.attrs, maxlength: String(t.maxLength) };
+    }
     if (h?.element === "input" && PATTERN_INPUTS.has(h.attrs?.type) && t.pattern) {
         h.attrs = { ...h.attrs, pattern: htmlPattern(t.pattern) };
         // The browser shows title when the pattern fails; placeholder shows the shape before typing.

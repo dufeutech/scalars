@@ -223,9 +223,6 @@
         "note": "The picker returns lowercase #rrggbb; #rrggbbaa needs the newer alpha attribute where supported, else a separate opacity input."
     },
     "char": {
-        "attrs": {
-            "maxlength": "1"
-        },
         "note": null
     },
     "int8": {

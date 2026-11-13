@@ -150,6 +150,14 @@
                 "pattern": {
                     "$ref": "#/$defs/nullable_string"
                 },
+                "minLength": {
+                    "type": ["integer", "null"],
+                    "minimum": 0
+                },
+                "maxLength": {
+                    "type": ["integer", "null"],
+                    "minimum": 1
+                },
                 "minimum": {
                     "$ref": "#/$defs/nullable_number"
                 },

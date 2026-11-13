@@ -185,7 +185,7 @@
             "long"
         ],
         "format": "int64",
-        "pattern": "^-?\\d+$",
+        "pattern": "^-?[0-9]+$",
         "examples": {
             "valid": [
                 "9007199254740993",
@@ -240,7 +240,7 @@
             "numeric"
         ],
         "format": "decimal",
-        "pattern": "^-?\\d+(\\.\\d+)?$",
+        "pattern": "^-?[0-9]+(\\.[0-9]+)?$",
         "examples": {
             "valid": [
                 "1234.56",
@@ -380,7 +380,7 @@
         ],
         "type": "string",
         "format": "date",
-        "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
         "examples": {
             "valid": [
                 "2026-08-16",
@@ -412,7 +412,7 @@
         ],
         "type": "string",
         "format": "time-local",
-        "pattern": "^\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?$",
+        "pattern": "^[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?$",
         "examples": {
             "valid": [
                 "14:30:00",
@@ -443,7 +443,7 @@
         ],
         "type": "string",
         "format": "date-time",
-        "pattern": "^\\d{4}-\\d{2}-\\d{2}[Tt]\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?([Zz]|[+-]\\d{2}:\\d{2})$",
+        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt][0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?([Zz]|[+-][0-9]{2}:[0-9]{2})$",
         "examples": {
             "valid": [
                 "2026-08-16T14:30:00Z",
@@ -474,7 +474,7 @@
         ],
         "type": "string",
         "format": "date-time-local",
-        "pattern": "^\\d{4}-\\d{2}-\\d{2}[Tt]\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?$",
+        "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt][0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?$",
         "examples": {
             "valid": [
                 "2026-08-16T14:30:00",
@@ -504,7 +504,7 @@
             "timespan"
         ],
         "format": "duration",
-        "pattern": "^P(?!$)(\\d+Y)?(\\d+M)?(\\d+W)?(\\d+D)?(T(?=\\d)(\\d+H)?(\\d+M)?(\\d+(\\.\\d+)?S)?)?$",
+        "pattern": "^P(([0-9]+Y([0-9]+M)?([0-9]+W)?([0-9]+D)?|[0-9]+M([0-9]+W)?([0-9]+D)?|[0-9]+W([0-9]+D)?|[0-9]+D)(T([0-9]+H([0-9]+M)?([0-9]+(\\.[0-9]+)?S)?|[0-9]+M([0-9]+(\\.[0-9]+)?S)?|[0-9]+(\\.[0-9]+)?S))?|T([0-9]+H([0-9]+M)?([0-9]+(\\.[0-9]+)?S)?|[0-9]+M([0-9]+(\\.[0-9]+)?S)?|[0-9]+(\\.[0-9]+)?S))$",
         "examples": {
             "valid": [
                 "P3DT4H30M",
@@ -560,7 +560,7 @@
             "mail"
         ],
         "format": "email",
-        "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+        "pattern": "^[^@\\x09-\\x0D\\x20]+@[^@\\x09-\\x0D\\x20]+\\.[^@\\x09-\\x0D\\x20]+$",
         "normalize": [
             "trim"
         ],
@@ -591,7 +591,7 @@
             "host"
         ],
         "format": "hostname",
-        "pattern": "^(?=.{1,253}$)[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$",
+        "pattern": "^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$",
         "normalize": [
             "trim",
             "lowercase"
@@ -604,13 +604,15 @@
             ],
             "invalid": [
                 "-api.example.com",
-                "api..example.com"
+                "api..example.com",
+                "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
             ]
         },
         "standard": "RFC 1123 / RFC 952",
         "docs": "rfc1123",
         "anchor": "#section-2",
-        "details": "A DNS hostname: servers and endpoints without scheme or path. Prefer uri when a full locator travels; internationalized names are a validation choice."
+        "details": "A DNS hostname: servers and endpoints without scheme or path. Prefer uri when a full locator travels; internationalized names are a validation choice.",
+        "maxLength": 253
     },
     "ipv4": {
         "base": "_token",
@@ -624,7 +626,7 @@
             "ip_address"
         ],
         "format": "ipv4",
-        "pattern": "^((25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]?\\d)\\.){3}(25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]?\\d)$",
+        "pattern": "^((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])$",
         "examples": {
             "valid": [
                 "192.0.2.1",
@@ -760,7 +762,7 @@
             "mobile",
             "phone_number"
         ],
-        "pattern": "^\\+[1-9]\\d{1,14}$",
+        "pattern": "^\\+[1-9][0-9]{1,14}$",
         "normalize": [
             "trim",
             "remove_spaces",
@@ -836,7 +838,7 @@
             "mime_type",
             "content_type"
         ],
-        "pattern": "^[A-Za-z0-9!#$&^_.+-]+/[A-Za-z0-9!#$&^_.+-]+(;.*)?$",
+        "pattern": "^[A-Za-z0-9!#$&^_.+-]+/[A-Za-z0-9!#$&^_.+-]+(;[^\\x00-\\x1F\\x7F]*)?$",
         "examples": {
             "valid": [
                 "application/json",
@@ -954,7 +956,7 @@
             "lang"
         ],
         "format": "language",
-        "pattern": "^[a-zA-Z]{2,3}(-[a-zA-Z]{4})?(-([a-zA-Z]{2}|\\d{3}))?$",
+        "pattern": "^[a-zA-Z]{2,3}(-[a-zA-Z]{4})?(-([a-zA-Z]{2}|[0-9]{3}))?$",
         "examples": {
             "valid": [
                 "en-US",
@@ -1017,7 +1019,6 @@
             "letter"
         ],
         "format": "char",
-        "pattern": "^[\\s\\S]$",
         "examples": {
             "valid": [
                 "A",
@@ -1030,7 +1031,9 @@
         },
         "standard": "OpenAPI Format Registry",
         "docs": "openapi_formats",
-        "details": "Exactly one character: a grade, flag, or single-letter code. Prefer string for anything that can grow, and enum when the values form a closed set."
+        "details": "Exactly one character: a grade, flag, or single-letter code. Prefer string for anything that can grow, and enum when the values form a closed set.",
+        "minLength": 1,
+        "maxLength": 1
     },
     "int8": {
         "base": "int32",
@@ -1184,7 +1187,7 @@
             "ulong"
         ],
         "format": "uint64",
-        "pattern": "^\\d+$",
+        "pattern": "^[0-9]+$",
         "examples": {
             "valid": [
                 "18446744073709551615",
@@ -1292,7 +1295,7 @@
             "offset_time"
         ],
         "format": "time",
-        "pattern": "^\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?([Zz]|[+-]\\d{2}:\\d{2})$",
+        "pattern": "^[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?([Zz]|[+-][0-9]{2}:[0-9]{2})$",
         "examples": {
             "valid": [
                 "14:30:00Z",
@@ -1396,7 +1399,7 @@
             "ipv4_subnet"
         ],
         "format": "ipv4-cidr",
-        "pattern": "^((25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]?\\d)\\.){3}(25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]?\\d)/(3[0-2]|[12]?\\d)$",
+        "pattern": "^((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])/(3[0-2]|[12]?[0-9])$",
         "examples": {
             "valid": [
                 "192.0.2.0/24",
@@ -1755,7 +1758,7 @@
             "relative_pointer"
         ],
         "format": "relative-json-pointer",
-        "pattern": "^(0|[1-9]\\d*)(#|(/([^~/]|~[01])*)*)$",
+        "pattern": "^(0|[1-9][0-9]*)(#|(/([^~/]|~[01])*)*)$",
         "examples": {
             "valid": [
                 "1/name",
@@ -1828,7 +1831,7 @@
             "version",
             "semantic_version"
         ],
-        "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+        "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
         "examples": {
             "valid": [
                 "1.4.2-rc.1",
@@ -2039,7 +2042,7 @@
             "imf_fixdate"
         ],
         "format": "http-date",
-        "pattern": "^(Mon|Tue|Wed|Thu|Fri|Sat|Sun), \\d{2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \\d{4} \\d{2}:\\d{2}:\\d{2} GMT$",
+        "pattern": "^(Mon|Tue|Wed|Thu|Fri|Sat|Sun), [0-9]{2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2} GMT$",
         "examples": {
             "valid": [
                 "Sun, 16 Aug 2026 14:30:00 GMT",
@@ -2065,7 +2068,7 @@
         "aliases": [
             "qid"
         ],
-        "pattern": "^Q[1-9]\\d*$",
+        "pattern": "^Q[1-9][0-9]*$",
         "examples": {
             "valid": [
                 "Q42",
@@ -2090,7 +2093,7 @@
         "aliases": [
             "doi_name"
         ],
-        "pattern": "^10\\.\\d{4,9}/[-._;()/:A-Za-z0-9]+$",
+        "pattern": "^10\\.[0-9]{4,9}/[-._;()/:A-Za-z0-9]+$",
         "examples": {
             "valid": [
                 "10.1000/182",
@@ -2115,7 +2118,7 @@
         "aliases": [
             "orcid_id"
         ],
-        "pattern": "^\\d{4}-\\d{4}-\\d{4}-\\d{3}[\\dX]$",
+        "pattern": "^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{3}[0-9X]$",
         "examples": {
             "valid": [
                 "0000-0002-1825-0097",
@@ -2140,7 +2143,7 @@
         "aliases": [
             "legal_entity_identifier"
         ],
-        "pattern": "^[A-Z0-9]{18}\\d{2}$",
+        "pattern": "^[A-Z0-9]{18}[0-9]{2}$",
         "examples": {
             "valid": [
                 "5493001KJTIIGC8Y1R12",
@@ -2166,7 +2169,7 @@
             "accept"
         ],
         "format": "media-range",
-        "pattern": "^(\\*/\\*|[A-Za-z0-9!#$&^_.+-]+/\\*|[A-Za-z0-9!#$&^_.+-]+/[A-Za-z0-9!#$&^_.+-]+)(\\s*;.*)?$",
+        "pattern": "^(\\*/\\*|[A-Za-z0-9!#$&^_.+-]+/\\*|[A-Za-z0-9!#$&^_.+-]+/[A-Za-z0-9!#$&^_.+-]+)([\\x09\\x20]*;[^\\x00-\\x1F\\x7F]*)?$",
         "examples": {
             "valid": [
                 "text/html;q=0.9",
@@ -2359,7 +2362,7 @@
         "aliases": [
             "bank_account"
         ],
-        "pattern": "^[A-Z]{2}\\d{2}[A-Z0-9]{11,30}$",
+        "pattern": "^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$",
         "normalize": [
             "trim",
             "remove_spaces",
@@ -2420,7 +2423,7 @@
             "isbn13",
             "isbn10"
         ],
-        "pattern": "^(\\d{9}[\\dXx]|97[89]\\d{10})$",
+        "pattern": "^([0-9]{9}[0-9Xx]|97[89][0-9]{10})$",
         "normalize": [
             "remove_spaces",
             "remove_hyphens"
@@ -2451,7 +2454,7 @@
             "ean",
             "upc"
         ],
-        "pattern": "^(\\d{8}|\\d{12}|\\d{13}|\\d{14})$",
+        "pattern": "^([0-9]{8}|[0-9]{12}|[0-9]{13}|[0-9]{14})$",
         "normalize": [
             "remove_spaces",
             "remove_hyphens"

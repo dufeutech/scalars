@@ -70,6 +70,13 @@ function shorterThan(s: string, min: number): boolean {
     return n < min;
 }
 
+/** A plain object: prototype is Object.prototype or null. Dates, maps and class instances are not. */
+function isPlainObject(v: unknown): boolean {
+    if (typeof v !== "object" || v === null) return false;
+    const proto = Object.getPrototypeOf(v);
+    return proto === Object.prototype || proto === null;
+}
+
 const NO = Symbol("not valid"); // what `check` returns for "not valid"; a value can never be this symbol
 
 type Kind = "text" | "integer" | "number" | "boolean" | "object" | "array" | "any";
@@ -114,6 +121,7 @@ export class Scalar<T> {
     private readonly minimum: number;
     private readonly maximum: number;
     private rx: RegExp | undefined = undefined;
+    private static index: Map<string, Scalar<unknown>> | undefined = undefined; // every name and alias, built on the first lookup
 
     constructor(init: ScalarInit) {
         this.name = init.name;
@@ -185,20 +193,13 @@ export class Scalar<T> {
             case "boolean":
                 return typeof v === "boolean" ? v : NO;
             case "object":
-                return typeof v === "object" && v !== null && !Array.isArray(v) ? v : NO;
+                return isPlainObject(v) ? v : NO;
             case "array":
                 return Array.isArray(v) ? v : NO;
             default:
                 return v;
         }
     }
-}
-
-let index: Map<string, Scalar<unknown>> | undefined; // every name and alias, built on the first lookup
-
-/** True once the first lookup has built the index. */
-export function lookupBuilt(): boolean {
-    return index !== undefined;
 }
 
 /** The lookup key: trim, lowercase, each run of spaces and hyphens becomes one underscore. One pass, no regex. */
@@ -224,12 +225,12 @@ function clean(word: string): string {
 /** Find a type by name or alias; spacing, hyphens and case are forgiven. Nothing found gives undefined. */
 function find(word: unknown, all: readonly Scalar<unknown>[]): Scalar<unknown> | undefined {
     if (typeof word !== "string") return undefined;
-    let map = index;
+    let map = Scalar["index"]; // bracket access: `index` is private to the class, and find is the one reader
     if (map === undefined) {
         map = new Map();
         for (const t of all) map.set(t.name, t);
         for (const t of all) for (const alias of t.aliases) if (!map.has(alias)) map.set(alias, t);
-        index = map;
+        Scalar["index"] = map;
     }
     const found = map.get(word);
     if (found !== undefined) return found;

@@ -3,7 +3,7 @@ import fs from "node:fs";
 import { identifiers } from "./model.mjs";
 
 /** Names the engine defines on the `scalars` object, so no type may take them. */
-export const RESERVED_TS = ["get", "all"];
+export const RESERVED_TS = ["get", "all", "__proto__"];
 
 const ENGINE = fs.readFileSync(new URL("./engine.ts", import.meta.url), "utf8").replaceAll("\r\n", "\n");
 const NATIVE = { text: "string", integer: "number", number: "number", boolean: "boolean", object: "Record<string, unknown>", array: "unknown[]", any: "unknown" };

@@ -27,7 +27,7 @@ const value = (c: any) => ("special" in c ? { NaN: NaN, Infinity: Infinity }[c.s
 
 // Nothing may be compiled or built at import.
 for (const t of scalars.all) if (t.rx !== undefined) fails.push(`${t.name} compiled its regex at import`);
-if (mod.lookupBuilt()) fails.push("the lookup map was built at import");
+if ((Scalar as any).index !== undefined) fails.push("the lookup map was built at import");
 
 if (scalars.all.length !== Object.keys(types).length) fails.push(`all has ${scalars.all.length} types, dist has ${Object.keys(types).length}`);
 
@@ -84,6 +84,8 @@ for (const c of cases.validate) {
 
 const anyOut = scalars.any.validate([1]);
 if (!Array.isArray(anyOut) || anyOut[0] !== 1) fails.push("any.validate([1]) did not return [1]");
+if (scalars.object.isValid(new Date()) || scalars.object.isValid(new Map())) fails.push("object accepts a Date or a Map");
+if (!scalars.object.isValid(Object.create(null)) || !scalars.object.isValid({})) fails.push("object rejects a plain object");
 if (scalars.enum.validate("x") !== "x") fails.push('enum.validate("x") did not return "x"');
 if (scalars.float64.validate(3) !== 3) fails.push("float64.validate(3) did not return 3");
 

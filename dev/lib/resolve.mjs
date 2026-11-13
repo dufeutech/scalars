@@ -1,6 +1,7 @@
 // Dev-only: resolves the source JSON (scalar.json + targets/*.json) into flat types.
 import fs from "node:fs";
 import path from "node:path";
+import { applyGenerated } from "./derive.mjs";
 
 export const PRIMITIVES = new Set([
     "string", "text", "boolean", "int32", "int64", "float64", "decimal", "object", "array",
@@ -102,7 +103,7 @@ export function resolve({ core, targets }) {
 
         for (const k of SOURCE_ONLY) delete t[k];
         for (const tn of TARGETS) t[tn] = r.targets[tn];
-        out[name] = t;
+        out[name] = applyGenerated(t);
     }
     return out;
 }

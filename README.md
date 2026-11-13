@@ -25,7 +25,7 @@ The source of truth is plain JSON; `dist/` also has a ready-to-copy file per lan
 
 ## Use it from code
 
-Copy the file for your language. Every type has `normalize`, `validate` and `is_valid`. `validate` cleans the value first, then checks it: `" us "` becomes `"US"`. `get` finds a type by name or alias, and `all` lists them.
+Copy the file for your language. In Python and TypeScript every type has `normalize`, `validate` and `is_valid` (`isValid` in TypeScript). In Go and Rust only text types have `normalize`; every other type has just `validate` and `is_valid` (`Validate` and `IsValid` in Go), except that in Rust the `object`, `array` and `any` types are metadata only. `validate` cleans the value first, then checks it: `" us "` becomes `"US"`. `get` finds a type by name or alias, and `all` lists them.
 
 **Python** (3.10 or newer, no dependencies):
 
@@ -62,10 +62,11 @@ console.log(scalars.get("money")?.name); // "decimal"
 s, _ := scalars.Country.Validate(" us ") // "US"
 ok := scalars.Email.IsValid("user@example.com") // true
 _, err := scalars.Phone.Validate("4155552671") // err.Error() is the type's error text
-m, found := scalars.Get("money") // m.Name is "decimal"
+m, found := scalars.Get("money") // metadata only: m.Name is "decimal"
+t := scalars.Lookup(m.Name).(*scalars.TextScalar) // the typed value, to validate with
 ```
 
-Go also has `scalars.Lookup(name)` (the typed value, as `any`) and `scalars.All`.
+In Go, `Get` returns a type's metadata (`*Meta`). To validate a type found by alias, pass its name to `scalars.Lookup`, which returns the typed value (`*TextScalar`, `*IntScalar`, ...) as `any`. `scalars.All` lists the metadata of every type.
 
 **Rust** (1.80 or newer): add `mod scalars;` and the `regex` crate to `Cargo.toml`.
 
@@ -73,10 +74,15 @@ Go also has `scalars.Lookup(name)` (the typed value, as `any`) and `scalars.All`
 let s = scalars::COUNTRY.validate(" us ").unwrap(); // "US"
 let ok = scalars::EMAIL.is_valid("user@example.com"); // true
 let err = scalars::PHONE.validate("4155552671"); // Err(ScalarError): displays the type's error text
-let m = scalars::get("money").unwrap(); // m.name is "decimal"
+let m = scalars::get("money").unwrap(); // metadata only: m.name is "decimal"
+if let Some(scalars::Kind::Text(t)) = scalars::lookup(m.name) {
+    let ok = t.is_valid("12.50"); // the typed value, to validate with
+}
 ```
 
-Rust also has `scalars::lookup(name)` (returns the typed value as a `Kind`) and `scalars::ALL`. Its `Meta` has no examples, and Go leaves out the four object-valued ones, so neither needs start-up code. Examples are in `dist/scalars.json`.
+In Rust, `get` returns a type's metadata (`&Meta`). To validate a type found by alias, pass its name to `scalars::lookup`, which returns the typed value as a `Kind`. `scalars::ALL` lists the metadata of every type.
+
+Rust's `Meta` has no examples at all. Go's `Meta` has them, less the four that are or hold a JSON object. Both leave them out so that nothing runs at start-up; every example is in `dist/scalars.json`.
 
 **Fast on any input.** `validate` takes time proportional to the input length, in all four languages. The build rejects any pattern that isn't provably linear, so no input can make a regex run for seconds.
 
@@ -153,6 +159,7 @@ From `dist/scalars.json` (shortened):
 - `params` (on types like `string`, `decimal`, `enum`) lists the settings a field can take, like `length` or `values`. Each one is defined once in `$meta.params`.
 - `normalize` lists cleanup steps to run on what a person typed *before* checking it. Each step is defined in `$meta.normalize_steps`.
 - `{column}` in `postgres.check` is replaced with your column name.
+- `examples.invalid` values break the type's rule as written in `schema` (its pattern, length or bounds), before any cleanup. A few become valid once `normalize` has run: `country` lists `"us"`, which `validate` turns into `"US"`.
 - `examples.db_invalid` holds values that pass the JSON rule but that only the database can reject, like `2026-02-30`.
 
 ## Editing the types

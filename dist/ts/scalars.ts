@@ -111,6 +111,10 @@ export class Scalar<T> {
     readonly level: string;
     readonly primitive: string;
     readonly aliases: readonly string[];
+    /**
+     * `invalid` values break the type's raw rule (pattern, length or bounds) before any cleanup; a few become
+     * valid after `normalize` (country "us" -> "US").
+     */
     readonly examples: { readonly valid: readonly unknown[]; readonly invalid: readonly unknown[] };
     private readonly kind: Kind;
     private readonly steps: readonly ((s: string) => string)[];

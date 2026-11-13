@@ -55,7 +55,11 @@ _STEPS: Final = {
 
 
 class Scalar(Generic[T]):
-    """One scalar type. Instances are plain records; the regex is compiled on first use."""
+    """One scalar type. Instances are plain records; the regex is compiled on first use.
+
+    `examples["invalid"]` values break the type's raw rule (pattern, length or bounds) before any cleanup; a few
+    become valid after `normalize` (country "us" -> "US").
+    """
 
     __slots__ = (
         "name", "label", "hint", "error", "details", "level", "primitive", "aliases", "examples",

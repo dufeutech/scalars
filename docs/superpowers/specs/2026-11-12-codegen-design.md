@@ -129,7 +129,7 @@ hold for hostile input.
 | `scalars.email` | O(1) | none | A named member, never a search. |
 | `normalize(s)` | O(n) | none when nothing changes, else one copy per step that changes the text | No regex in any step. |
 | `validate(s)`, text | O(n) | same as `normalize` | Every pattern is proven linear by the build; lengths are checked before the pattern. |
-| `validate(s)`, text longer than the type can ever be | O(1) once trimmed | none | The longest possible value is known per type and checked before case mapping and before the pattern. |
+| `validate(s)`, text longer than the type can ever be | O(1) once trimmed; O(n) for types with `remove_*` steps | none, or one copy per `remove_*` step that changes the text | The longest possible value is known per type. The gate runs after any `remove_*` steps (which can shorten text), immediately before the first case step, and always again before the pattern. A type with `remove_*` steps scans the text once before the gate. |
 | `validate(v)`, number or boolean | O(1) | none | |
 | `is_valid(v)` | same as `validate` | none, even on failure | Shares one internal check with `validate`; never raises and catches. |
 | `get(word)` | O(w) expected | at most one short key | One hash lookup in a map built once on first use; never a scan over the types. |
@@ -198,7 +198,8 @@ These replace the efficiency list from the first version.
 
 **Loading**
 
-- No regex compiled, no lookup map built, no step resolved by name at load.
+- No regex compiled and no lookup map built at load. Steps are resolved once, when each record is built (at import in
+  Python and TypeScript, at compile time in Go and Rust), never per call.
 - Go: the table is static data. No function calls and no closures in package-level initializers; the lazy regex is a
   zero-value `sync.Once` plus a pointer inside the struct, not `sync.OnceValue`; steps are a slice of small constants.
 - Rust: `static` items with `OnceLock`/`LazyLock` fields, which the language guarantees are built at compile time.

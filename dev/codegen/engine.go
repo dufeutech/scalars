@@ -14,7 +14,8 @@ import (
 
 // Meta is what every type carries, copied from dist/scalars.json. Valid and Invalid hold the examples as
 // encoding/json decodes them (numbers are float64), less any that is or holds a JSON object: a map literal
-// would run code at program start.
+// would run code at program start. Invalid values break the type's raw rule (pattern, length or bounds) before
+// any cleanup; a few become valid after Normalize (country "us" -> "US").
 type Meta struct {
 	Name, Label, Hint, Error, Details, Level, Primitive string
 	Aliases                                             []string

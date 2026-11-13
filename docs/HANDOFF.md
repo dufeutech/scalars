@@ -9,7 +9,7 @@ State of the project for whoever picks it up next. Last updated 2026-11-12, at r
 - **Generated code:** `dist/python/scalars.py`, `dist/ts/scalars.ts`, `dist/go/` (`scalars.go` and `go.mod`) and `dist/rust/scalars.rs`. One file per language, built from `dist/scalars.json` by `dev/codegen/`. Each has `validate` / `is_valid` per type, `get` by name or alias, and `all`. Python and TypeScript need no dependencies, Go needs `golang.org/x/text`, Rust needs `regex` (each header names the tested versions). Rust `Meta` has no examples, and Go leaves out the 4 object-valued ones (in `any`, `array`, `object`) so the package needs no init code.
 - **Linear guarantee:** `validate` is O(n) worst case in all four languages. The build rejects any pattern that isn't provably linear.
 - **Not run yet:** `go test -race`. The dev machine has no C compiler, so run it where cgo works.
-- **Checks, all passing:** `cd dev && npm test` (156 tests: JSON Schema, the browser's regex engine, real Postgres via PGlite) and `npm run check:langs` (TypeScript, Python, Go, Rust).
+- **Checks, all passing:** `cd dev && npm test` (182 tests: JSON Schema, the browser's regex engine, real Postgres via PGlite) and `npm run check:langs` (TypeScript, Python, Go, Rust).
 
 ## How a type reads in dist (0.3.0)
 

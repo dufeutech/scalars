@@ -145,7 +145,8 @@ test("file schemas validate", () => {
 });
 
 test("repo root is pure JSON", () => {
-    const skip = new Set(["dev", "docs", "coding", "node_modules"]);
+    // dist/ also holds the generated per-language files (dist/python, ...), so it is not walked.
+    const skip = new Set(["dev", "docs", "coding", "node_modules", "dist"]);
     const allowed = new Set(["README.md", "LICENSE", "CHANGELOG.md"]);
     const bad = [];
     const walk = (dir) => {

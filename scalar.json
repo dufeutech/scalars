@@ -73,7 +73,12 @@
         "type": "string",
         "examples": {
             "valid": [
-                "hello"
+                "hello",
+                "Ada Lovelace"
+            ],
+            "invalid": [
+                42,
+                null
             ]
         },
         "standard": "JSON Schema 2020-12",
@@ -86,7 +91,14 @@
         "type": "string",
         "examples": {
             "valid": [
-                "unbounded multi-line body"
+                "unbounded multi-line body",
+                "Line one\nLine two"
+            ],
+            "invalid": [
+                [
+                    "not",
+                    "text"
+                ]
             ]
         },
         "standard": "JSON Schema 2020-12",
@@ -99,7 +111,12 @@
         "type": "boolean",
         "examples": {
             "valid": [
-                true
+                true,
+                false
+            ],
+            "invalid": [
+                "true",
+                1
             ]
         },
         "standard": "JSON Schema 2020-12",
@@ -115,7 +132,13 @@
         "maximum": 2147483647,
         "examples": {
             "valid": [
-                42
+                42,
+                -2147483648,
+                0
+            ],
+            "invalid": [
+                2147483648,
+                1.5
             ]
         },
         "standard": "OpenAPI Format Registry",
@@ -130,7 +153,13 @@
         "pattern": "^-?\\d+$",
         "examples": {
             "valid": [
-                "9007199254740993"
+                "9007199254740993",
+                "-42",
+                "0"
+            ],
+            "invalid": [
+                "12.5",
+                123
             ]
         },
         "standard": "OpenAPI Format Registry",
@@ -144,7 +173,12 @@
         "format": "double",
         "examples": {
             "valid": [
-                3.141592653589793
+                3.141592653589793,
+                -0.5,
+                1e+21
+            ],
+            "invalid": [
+                "3.14"
             ]
         },
         "standard": "IEEE 754 (binary64) / OpenAPI Format Registry",
@@ -159,7 +193,13 @@
         "pattern": "^-?\\d+(\\.\\d+)?$",
         "examples": {
             "valid": [
-                "1234.56"
+                "1234.56",
+                "-0.01",
+                "42"
+            ],
+            "invalid": [
+                "1,234.56",
+                "1e5"
             ]
         },
         "standard": "ISO 80000-1 / OpenAPI Format Registry",
@@ -175,7 +215,14 @@
             "valid": [
                 {
                     "key": "value"
-                }
+                },
+                {}
+            ],
+            "invalid": [
+                [
+                    1,
+                    2
+                ]
             ]
         },
         "standard": "ECMA-404 / JSON Schema 2020-12",
@@ -193,7 +240,13 @@
                     1,
                     2,
                     3
-                ]
+                ],
+                []
+            ],
+            "invalid": [
+                {
+                    "a": 1
+                }
             ]
         },
         "standard": "ECMA-404 / JSON Schema 2020-12",
@@ -206,7 +259,9 @@
         "category": "structure",
         "examples": {
             "valid": [
-                "active"
+                "active",
+                "draft",
+                "archived"
             ]
         },
         "standard": "JSON Schema 2020-12 (enum keyword)",
@@ -226,7 +281,10 @@
                         "two",
                         true
                     ]
-                }
+                },
+                null,
+                "text",
+                7
             ]
         },
         "standard": "JSON Schema 2020-12 (unconstrained schema)",
@@ -241,7 +299,16 @@
         "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
         "examples": {
             "valid": [
-                "2026-08-16"
+                "2026-08-16",
+                "2024-02-29"
+            ],
+            "invalid": [
+                "2026-8-16",
+                "16/08/2026"
+            ],
+            "db_invalid": [
+                "2026-02-30",
+                "2025-02-29"
             ]
         },
         "standard": "ISO 8601 / RFC 3339 full-date",
@@ -257,7 +324,15 @@
         "pattern": "^\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?$",
         "examples": {
             "valid": [
-                "14:30:00"
+                "14:30:00",
+                "09:05:30.250"
+            ],
+            "invalid": [
+                "14:30",
+                "14:30:00Z"
+            ],
+            "db_invalid": [
+                "25:00:00"
             ]
         },
         "standard": "OpenAPI Format Registry (RFC 3339 partial-time, no offset)",
@@ -272,7 +347,15 @@
         "pattern": "^\\d{4}-\\d{2}-\\d{2}[Tt]\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?([Zz]|[+-]\\d{2}:\\d{2})$",
         "examples": {
             "valid": [
-                "2026-08-16T14:30:00Z"
+                "2026-08-16T14:30:00Z",
+                "2026-08-16T14:30:00.123+02:00"
+            ],
+            "invalid": [
+                "2026-08-16T14:30:00",
+                "2026-08-16 14:30:00Z"
+            ],
+            "db_invalid": [
+                "2026-13-01T00:00:00Z"
             ]
         },
         "standard": "ISO 8601 / RFC 3339 date-time",
@@ -288,7 +371,15 @@
         "pattern": "^\\d{4}-\\d{2}-\\d{2}[Tt]\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?$",
         "examples": {
             "valid": [
-                "2026-08-16T14:30:00"
+                "2026-08-16T14:30:00",
+                "2026-08-16T09:00:00.5"
+            ],
+            "invalid": [
+                "2026-08-16T14:30:00Z",
+                "2026-08-16"
+            ],
+            "db_invalid": [
+                "2026-02-30T00:00:00"
             ]
         },
         "standard": "OpenAPI Format Registry (RFC 3339 date-time with no offset)",
@@ -303,7 +394,13 @@
         "pattern": "^P(?!$)(\\d+Y)?(\\d+M)?(\\d+W)?(\\d+D)?(T(?=\\d)(\\d+H)?(\\d+M)?(\\d+(\\.\\d+)?S)?)?$",
         "examples": {
             "valid": [
-                "P3DT4H30M"
+                "P3DT4H30M",
+                "PT0.5S",
+                "P1Y2M"
+            ],
+            "invalid": [
+                "P",
+                "3 days"
             ]
         },
         "standard": "ISO 8601-1 duration / RFC 3339 Appendix A",
@@ -318,7 +415,13 @@
         "pattern": "^(UTC|[A-Za-z_]+/[A-Za-z0-9_+-]+(/[A-Za-z0-9_+-]+)?)$",
         "examples": {
             "valid": [
-                "America/New_York"
+                "America/New_York",
+                "UTC",
+                "America/Argentina/Buenos_Aires"
+            ],
+            "invalid": [
+                "New York",
+                "America/New York"
             ]
         },
         "standard": "IANA Time Zone Database",
@@ -333,7 +436,12 @@
         "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
         "examples": {
             "valid": [
-                "user@example.com"
+                "user@example.com",
+                "first.last+tag@sub.example.co.uk"
+            ],
+            "invalid": [
+                "user@",
+                "user example.com"
             ]
         },
         "standard": "RFC 5321 / RFC 5322",
@@ -348,7 +456,13 @@
         "pattern": "^(?=.{1,253}$)[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$",
         "examples": {
             "valid": [
-                "api.example.com"
+                "api.example.com",
+                "localhost",
+                "a-b.example"
+            ],
+            "invalid": [
+                "-api.example.com",
+                "api..example.com"
             ]
         },
         "standard": "RFC 1123 / RFC 952",
@@ -364,7 +478,13 @@
         "pattern": "^((25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]?\\d)\\.){3}(25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]?\\d)$",
         "examples": {
             "valid": [
-                "192.0.2.1"
+                "192.0.2.1",
+                "0.0.0.0",
+                "255.255.255.255"
+            ],
+            "invalid": [
+                "256.0.0.1",
+                "192.0.2"
             ]
         },
         "standard": "RFC 791",
@@ -378,7 +498,13 @@
         "format": "ipv6",
         "examples": {
             "valid": [
-                "2001:db8::1"
+                "2001:db8::1",
+                "::1",
+                "fe80::1ff:fe23:4567:890a"
+            ],
+            "db_invalid": [
+                "2001:db8::zz",
+                "1:2:3:4:5:6:7:8:9"
             ]
         },
         "standard": "RFC 4291 addressing / RFC 8200",
@@ -392,7 +518,12 @@
         "category": "identity",
         "examples": {
             "valid": [
-                "192.0.2.0/24"
+                "192.0.2.0/24",
+                "2001:db8::/32",
+                "10.0.0.0/8"
+            ],
+            "db_invalid": [
+                "192.0.2.1/24"
             ]
         },
         "standard": "RFC 4632 (IPv4) / RFC 4291 (IPv6 prefix)",
@@ -406,7 +537,9 @@
         "format": "uri",
         "examples": {
             "valid": [
-                "https://example.com/a/b?c=1"
+                "https://example.com/a/b?c=1",
+                "mailto:user@example.com",
+                "urn:isbn:9780306406157"
             ]
         },
         "standard": "RFC 3986",
@@ -421,7 +554,12 @@
         "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
         "examples": {
             "valid": [
-                "f81d4fae-7dec-11d0-a765-00a0c91e6bf6"
+                "f81d4fae-7dec-11d0-a765-00a0c91e6bf6",
+                "F81D4FAE-7DEC-11D0-A765-00A0C91E6BF6"
+            ],
+            "invalid": [
+                "f81d4fae7dec11d0a76500a0c91e6bf6",
+                "f81d4fae-7dec-11d0-a765-00a0c91e6bfg"
             ]
         },
         "standard": "RFC 9562 (obsoletes RFC 4122)",
@@ -435,7 +573,12 @@
         "pattern": "^\\+[1-9]\\d{1,14}$",
         "examples": {
             "valid": [
-                "+14155552671"
+                "+14155552671",
+                "+442071838750"
+            ],
+            "invalid": [
+                "4155552671",
+                "+1 415 555 2671"
             ]
         },
         "standard": "ITU-T E.164",
@@ -448,7 +591,8 @@
         "category": "technical",
         "examples": {
             "valid": [
-                "SGVsbG8gd29ybGQ="
+                "SGVsbG8gd29ybGQ=",
+                ""
             ]
         },
         "standard": "OpenAPI 3.2 binary data / RFC 4648 Section 4 (base64 in JSON)",
@@ -463,7 +607,8 @@
         "format": "password",
         "examples": {
             "valid": [
-                "••••••••"
+                "••••••••",
+                "correct horse battery staple"
             ]
         },
         "standard": "OpenAPI Format Registry (display hint only, not a guarantee)",
@@ -477,7 +622,13 @@
         "pattern": "^[A-Za-z0-9!#$&^_.+-]+/[A-Za-z0-9!#$&^_.+-]+(;.*)?$",
         "examples": {
             "valid": [
-                "application/json"
+                "application/json",
+                "text/html; charset=utf-8",
+                "image/svg+xml"
+            ],
+            "invalid": [
+                "json",
+                "application/"
             ]
         },
         "standard": "RFC 6838 / IANA Media Types",
@@ -491,7 +642,13 @@
         "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
         "examples": {
             "valid": [
-                "getting-started"
+                "getting-started",
+                "a",
+                "v2-release-notes"
+            ],
+            "invalid": [
+                "Getting-Started",
+                "getting--started"
             ]
         },
         "standard": "RFC 3986 (path segment)",
@@ -506,7 +663,12 @@
         "pattern": "^[A-Z]{2}$",
         "examples": {
             "valid": [
-                "US"
+                "US",
+                "DE"
+            ],
+            "invalid": [
+                "us",
+                "USA"
             ]
         },
         "standard": "ISO 3166-1 alpha-2",
@@ -520,7 +682,12 @@
         "pattern": "^[A-Z]{3}$",
         "examples": {
             "valid": [
-                "USD"
+                "USD",
+                "EUR"
+            ],
+            "invalid": [
+                "usd",
+                "US"
             ]
         },
         "standard": "ISO 4217 alpha-3",
@@ -535,7 +702,14 @@
         "pattern": "^[a-zA-Z]{2,3}(-[a-zA-Z]{4})?(-([a-zA-Z]{2}|\\d{3}))?$",
         "examples": {
             "valid": [
-                "en-US"
+                "en-US",
+                "en",
+                "zh-Hant-TW",
+                "es-419"
+            ],
+            "invalid": [
+                "english",
+                "en_US"
             ]
         },
         "standard": "BCP 47 / RFC 5646",
@@ -549,7 +723,14 @@
         "pattern": "^#[0-9a-f]{6}([0-9a-f]{2})?$",
         "examples": {
             "valid": [
-                "#1a2b3c"
+                "#1a2b3c",
+                "#1a2b3c80",
+                "#000000"
+            ],
+            "invalid": [
+                "#ABC",
+                "#1A2B3C",
+                "red"
             ]
         },
         "standard": "CSS Color Module Level 4 (hex notation), canonical lowercase",
@@ -565,7 +746,12 @@
         "pattern": "^[\\s\\S]$",
         "examples": {
             "valid": [
-                "A"
+                "A",
+                "é"
+            ],
+            "invalid": [
+                "",
+                "AB"
             ]
         },
         "standard": "OpenAPI Format Registry",
@@ -581,7 +767,13 @@
         "maximum": 127,
         "examples": {
             "valid": [
-                -7
+                -7,
+                -128,
+                127
+            ],
+            "invalid": [
+                128,
+                -129
             ]
         },
         "standard": "OpenAPI Format Registry",
@@ -597,7 +789,12 @@
         "maximum": 32767,
         "examples": {
             "valid": [
-                1024
+                1024,
+                -32768
+            ],
+            "invalid": [
+                32768,
+                -32769
             ]
         },
         "standard": "OpenAPI Format Registry",
@@ -613,7 +810,13 @@
         "maximum": 255,
         "examples": {
             "valid": [
-                200
+                200,
+                0,
+                255
+            ],
+            "invalid": [
+                256,
+                -1
             ]
         },
         "standard": "OpenAPI Format Registry",
@@ -629,7 +832,12 @@
         "maximum": 65535,
         "examples": {
             "valid": [
-                8080
+                8080,
+                65535
+            ],
+            "invalid": [
+                65536,
+                -1
             ]
         },
         "standard": "OpenAPI Format Registry",
@@ -646,7 +854,12 @@
         "maximum": 4294967295,
         "examples": {
             "valid": [
-                3000000000
+                3000000000,
+                4294967295
+            ],
+            "invalid": [
+                4294967296,
+                -1
             ]
         },
         "standard": "OpenAPI Format Registry",
@@ -661,7 +874,15 @@
         "pattern": "^\\d+$",
         "examples": {
             "valid": [
-                "18446744073709551615"
+                "18446744073709551615",
+                "0"
+            ],
+            "invalid": [
+                "-1",
+                "1.5"
+            ],
+            "db_invalid": [
+                "18446744073709551616"
             ]
         },
         "standard": "OpenAPI Format Registry",
@@ -678,7 +899,12 @@
         "maximum": 9007199254740991,
         "examples": {
             "valid": [
-                9007199254740991
+                9007199254740991,
+                -9007199254740991
+            ],
+            "invalid": [
+                9007199254740992,
+                1.5
             ]
         },
         "standard": "OpenAPI Format Registry (integer exactly representable as a double)",
@@ -692,7 +918,11 @@
         "format": "float",
         "examples": {
             "valid": [
-                3.14
+                3.14,
+                -1.5
+            ],
+            "invalid": [
+                "3.14"
             ]
         },
         "standard": "IEEE 754 (binary32) / OpenAPI Format Registry",
@@ -706,7 +936,12 @@
         "format": "decimal128",
         "examples": {
             "valid": [
-                "1234.567890123456789012345678901234"
+                "1234.567890123456789012345678901234",
+                "-1"
+            ],
+            "invalid": [
+                "1e10",
+                "abc"
             ]
         },
         "standard": "IEEE 754-2019 (decimal128) / OpenAPI Format Registry",
@@ -721,7 +956,15 @@
         "pattern": "^\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?([Zz]|[+-]\\d{2}:\\d{2})$",
         "examples": {
             "valid": [
-                "14:30:00Z"
+                "14:30:00Z",
+                "09:05:30.250+05:30"
+            ],
+            "invalid": [
+                "14:30:00",
+                "2:30 PM"
+            ],
+            "db_invalid": [
+                "24:30:00Z"
             ]
         },
         "standard": "ISO 8601 / RFC 3339 full-time",
@@ -739,7 +982,12 @@
         "maximum": null,
         "examples": {
             "valid": [
-                1786000000
+                1786000000,
+                0,
+                -86400
+            ],
+            "invalid": [
+                1.5
             ]
         },
         "standard": "POSIX.1-2024 (IEEE Std 1003.1-2024) seconds since the Epoch",
@@ -755,7 +1003,8 @@
         "format": "idn-email",
         "examples": {
             "valid": [
-                "用户@例子.广告"
+                "用户@例子.广告",
+                "ñoño@ejemplo.es"
             ]
         },
         "standard": "RFC 6531 (internationalized email)",
@@ -770,7 +1019,8 @@
         "format": "idn-hostname",
         "examples": {
             "valid": [
-                "例子.广告"
+                "例子.广告",
+                "bücher.example"
             ]
         },
         "standard": "RFC 5890 (IDNA2008)",
@@ -785,7 +1035,15 @@
         "pattern": "^((25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]?\\d)\\.){3}(25[0-5]|2[0-4]\\d|1\\d{2}|[1-9]?\\d)/(3[0-2]|[12]?\\d)$",
         "examples": {
             "valid": [
-                "192.0.2.0/24"
+                "192.0.2.0/24",
+                "0.0.0.0/0"
+            ],
+            "invalid": [
+                "192.0.2.0/33",
+                "192.0.2.0"
+            ],
+            "db_invalid": [
+                "192.0.2.1/24"
             ]
         },
         "standard": "RFC 4632 (CIDR)",
@@ -799,7 +1057,11 @@
         "format": "ipv6-cidr",
         "examples": {
             "valid": [
-                "2001:db8::/32"
+                "2001:db8::/32",
+                "::/0"
+            ],
+            "db_invalid": [
+                "2001:db8::1/32"
             ]
         },
         "standard": "RFC 4291 Section 2.3 (IPv6 address prefix)",
@@ -814,7 +1076,12 @@
         "pattern": "^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$",
         "examples": {
             "valid": [
-                "00:1b:44:11:3a:b7"
+                "00:1b:44:11:3a:b7",
+                "00-1B-44-11-3A-B7"
+            ],
+            "invalid": [
+                "00:1b:44:11:3a",
+                "00:1b:44:11:3a:zz"
             ]
         },
         "standard": "IEEE 802 (EUI-48)",
@@ -829,7 +1096,9 @@
         "format": "uri-reference",
         "examples": {
             "valid": [
-                "/a/b?c=1"
+                "/a/b?c=1",
+                "../up",
+                "#fragment"
             ]
         },
         "standard": "RFC 3986 Section 4.1",
@@ -845,7 +1114,8 @@
         "format": "iri",
         "examples": {
             "valid": [
-                "https://例子.广告/路径"
+                "https://例子.广告/路径",
+                "https://bücher.example/straße"
             ]
         },
         "standard": "RFC 3987 (internationalized URI)",
@@ -860,7 +1130,8 @@
         "format": "iri-reference",
         "examples": {
             "valid": [
-                "/路径?c=1"
+                "/路径?c=1",
+                "../straße"
             ]
         },
         "standard": "RFC 3987 Section 2.2 (internationalized URI reference)",
@@ -875,7 +1146,12 @@
         "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
         "examples": {
             "valid": [
-                "018f4b2c-9c1e-7a3b-8f2d-1a2b3c4d5e6f"
+                "018f4b2c-9c1e-7a3b-8f2d-1a2b3c4d5e6f",
+                "018F4B2C-9C1E-7A3B-BF2D-1A2B3C4D5E6F"
+            ],
+            "invalid": [
+                "f81d4fae-7dec-11d0-a765-00a0c91e6bf6",
+                "018f4b2c-9c1e-7a3b-cf2d-1a2b3c4d5e6f"
             ]
         },
         "standard": "RFC 9562 Section 5.7 (time-ordered)",
@@ -891,7 +1167,13 @@
         "pattern": "^[0-7][0-9A-HJKMNP-TV-Z]{25}$",
         "examples": {
             "valid": [
-                "01ARZ3NDEKTSV4RRFFQ69G5FAV"
+                "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+                "7ZZZZZZZZZZZZZZZZZZZZZZZZZ"
+            ],
+            "invalid": [
+                "01ARZ3NDEKTSV4RRFFQ69G5FA",
+                "81ARZ3NDEKTSV4RRFFQ69G5FAV",
+                "01ARZ3NDEKTSV4RRFFQ69G5FAI"
             ]
         },
         "standard": "ULID specification (Crockford Base32)",
@@ -906,7 +1188,13 @@
         "contentEncoding": null,
         "examples": {
             "valid": [
-                "SGVsbG8gd29ybGQ="
+                "SGVsbG8gd29ybGQ=",
+                "",
+                "YQ=="
+            ],
+            "invalid": [
+                "SGVsbG8gd29ybGQ",
+                "SGVsbG8_d29ybGQ="
             ]
         },
         "standard": "RFC 4648 Section 4 (OpenAPI 3.2: contentEncoding base64)",
@@ -922,7 +1210,13 @@
         "contentEncoding": null,
         "examples": {
             "valid": [
-                "SGVsbG8gd29ybGQ"
+                "SGVsbG8gd29ybGQ",
+                "YQ",
+                "-_-_"
+            ],
+            "invalid": [
+                "SGVsbG8+d29ybGQ",
+                "SGVs/bG8"
             ]
         },
         "standard": "RFC 4648 Section 5 (OpenAPI 3.2: contentEncoding base64url)",
@@ -938,7 +1232,16 @@
         "pattern": "^(#[0-9a-fA-F]{3,4}|#[0-9a-fA-F]{6}|#[0-9a-fA-F]{8}|[a-zA-Z]+|(rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\\([^()]*\\))$",
         "examples": {
             "valid": [
-                "oklch(70% 0.15 250)"
+                "oklch(70% 0.15 250)",
+                "#fff",
+                "rebeccapurple",
+                "color(display-p3 1 0.5 0)",
+                "rgb(10 20 30 / 50%)"
+            ],
+            "invalid": [
+                "color-mix(in srgb, red, blue)",
+                "oklch(from var(--brand) l c h)",
+                "#12"
             ]
         },
         "standard": "CSS Color Module Level 4",
@@ -952,7 +1255,8 @@
         "format": "commonmark",
         "examples": {
             "valid": [
-                "# Title\n\nSome **bold** text."
+                "# Title\n\nSome **bold** text.",
+                "- one\n- two"
             ]
         },
         "standard": "CommonMark 0.31.2",
@@ -966,7 +1270,8 @@
         "format": "html",
         "examples": {
             "valid": [
-                "<p>Hello</p>"
+                "<p>Hello</p>",
+                "<ul><li>one</li></ul>"
             ]
         },
         "standard": "WHATWG HTML Living Standard",
@@ -981,7 +1286,13 @@
         "pattern": "^(/([^~/]|~[01])*)*$",
         "examples": {
             "valid": [
-                "/users/0/email"
+                "/users/0/email",
+                "",
+                "/a~1b/~0c"
+            ],
+            "invalid": [
+                "users/0",
+                "/a~2b"
             ]
         },
         "standard": "RFC 6901",
@@ -996,7 +1307,13 @@
         "pattern": "^(0|[1-9]\\d*)(#|(/([^~/]|~[01])*)*)$",
         "examples": {
             "valid": [
-                "1/name"
+                "1/name",
+                "0",
+                "2#"
+            ],
+            "invalid": [
+                "/name",
+                "01/name"
             ]
         },
         "standard": "JSON Schema 2020-12 (relative-json-pointer)",
@@ -1012,7 +1329,8 @@
         "format": "uri-template",
         "examples": {
             "valid": [
-                "/users/{id}{?fields}"
+                "/users/{id}{?fields}",
+                "https://api.example.com{/version}/items"
             ]
         },
         "standard": "RFC 6570",
@@ -1026,7 +1344,8 @@
         "format": "regex",
         "examples": {
             "valid": [
-                "^[a-z][a-z0-9_]*$"
+                "^[a-z][a-z0-9_]*$",
+                "\\d+"
             ]
         },
         "standard": "ECMA-262 regular expressions",
@@ -1041,7 +1360,13 @@
         "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
         "examples": {
             "valid": [
-                "1.4.2-rc.1"
+                "1.4.2-rc.1",
+                "0.0.1",
+                "2.0.0+build.5"
+            ],
+            "invalid": [
+                "1.4",
+                "01.4.2"
             ]
         },
         "standard": "Semantic Versioning 2.0.0",
@@ -1056,7 +1381,12 @@
         "pattern": "^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]*$",
         "examples": {
             "valid": [
-                "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.sig"
+                "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.sig",
+                "eyJhbGciOiJub25lIn0.eyJzdWIiOiIxIn0."
+            ],
+            "invalid": [
+                "eyJhbGciOiJIUzI1NiJ9",
+                "not a token"
             ]
         },
         "standard": "RFC 7519 (JSON Web Token)",
@@ -1070,7 +1400,12 @@
         "pattern": "^[A-Fa-f0-9]{64}$",
         "examples": {
             "valid": [
-                "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+            ],
+            "invalid": [
+                "e3b0",
+                "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
             ]
         },
         "standard": "FIPS 180-4 (SHA-256), hex-encoded",
@@ -1086,7 +1421,13 @@
         "maximum": 65535,
         "examples": {
             "valid": [
-                5432
+                5432,
+                0,
+                65535
+            ],
+            "invalid": [
+                65536,
+                -1
             ]
         },
         "standard": "RFC 6335 (IANA port numbers)",
@@ -1099,7 +1440,8 @@
         "category": "technical",
         "examples": {
             "valid": [
-                "0 3 * * *"
+                "0 3 * * *",
+                "*/15 9-17 * * 1-5"
             ]
         },
         "standard": "POSIX.1-2024 crontab (IEEE Std 1003.1-2024)",
@@ -1113,7 +1455,12 @@
         "pattern": "^[A-Z]{3}$",
         "examples": {
             "valid": [
-                "USA"
+                "USA",
+                "DEU"
+            ],
+            "invalid": [
+                "usa",
+                "US"
             ]
         },
         "standard": "ISO 3166-1 alpha-3",
@@ -1127,7 +1474,13 @@
         "pattern": "^[A-Z]{2}-[A-Z0-9]{1,3}$",
         "examples": {
             "valid": [
-                "US-CA"
+                "US-CA",
+                "GB-ENG",
+                "FR-75C"
+            ],
+            "invalid": [
+                "US_CA",
+                "US-"
             ]
         },
         "standard": "ISO 3166-2 (country subdivision)",
@@ -1141,7 +1494,12 @@
         "pattern": "^[a-z]{2,3}$",
         "examples": {
             "valid": [
-                "en"
+                "en",
+                "haw"
+            ],
+            "invalid": [
+                "EN",
+                "english"
             ]
         },
         "standard": "ISO 639-1 / ISO 639-3",
@@ -1156,7 +1514,12 @@
         "pattern": "^(Mon|Tue|Wed|Thu|Fri|Sat|Sun), \\d{2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \\d{4} \\d{2}:\\d{2}:\\d{2} GMT$",
         "examples": {
             "valid": [
-                "Sun, 16 Aug 2026 14:30:00 GMT"
+                "Sun, 16 Aug 2026 14:30:00 GMT",
+                "Mon, 01 Jan 2024 00:00:00 GMT"
+            ],
+            "invalid": [
+                "2026-08-16T14:30:00Z",
+                "Sun, 16 Aug 2026 14:30:00 UTC"
             ]
         },
         "standard": "RFC 9110 Section 5.6.7 (IMF-fixdate)",
@@ -1171,7 +1534,12 @@
         "pattern": "^Q[1-9]\\d*$",
         "examples": {
             "valid": [
-                "Q42"
+                "Q42",
+                "Q1"
+            ],
+            "invalid": [
+                "Q0",
+                "42"
             ]
         },
         "standard": "Wikidata entity identifier",
@@ -1185,7 +1553,12 @@
         "pattern": "^10\\.\\d{4,9}/[-._;()/:A-Za-z0-9]+$",
         "examples": {
             "valid": [
-                "10.1000/182"
+                "10.1000/182",
+                "10.1038/nphys1170"
+            ],
+            "invalid": [
+                "10.1/182",
+                "doi:10.1000/182"
             ]
         },
         "standard": "ISO 26324 (Digital Object Identifier)",
@@ -1199,7 +1572,12 @@
         "pattern": "^\\d{4}-\\d{4}-\\d{4}-\\d{3}[\\dX]$",
         "examples": {
             "valid": [
-                "0000-0002-1825-0097"
+                "0000-0002-1825-0097",
+                "0000-0002-9079-593X"
+            ],
+            "invalid": [
+                "0000-0002-1825-009",
+                "0000000218250097"
             ]
         },
         "standard": "ORCID iD (ISO 27729 ISNI block)",
@@ -1213,7 +1591,12 @@
         "pattern": "^[A-Z0-9]{18}\\d{2}$",
         "examples": {
             "valid": [
-                "5493001KJTIIGC8Y1R12"
+                "5493001KJTIIGC8Y1R12",
+                "529900T8BM49AURSDO55"
+            ],
+            "invalid": [
+                "5493001KJTIIGC8Y1R1",
+                "5493001kjtiigc8y1r12"
             ]
         },
         "standard": "ISO 17442 (Legal Entity Identifier)",
@@ -1228,7 +1611,13 @@
         "pattern": "^(\\*/\\*|[A-Za-z0-9!#$&^_.+-]+/\\*|[A-Za-z0-9!#$&^_.+-]+/[A-Za-z0-9!#$&^_.+-]+)(\\s*;.*)?$",
         "examples": {
             "valid": [
-                "text/html;q=0.9"
+                "text/html;q=0.9",
+                "*/*",
+                "image/*"
+            ],
+            "invalid": [
+                "*/html",
+                "text"
             ]
         },
         "standard": "RFC 9110 Section 12.5.1 (media-range)",
@@ -1246,7 +1635,12 @@
         "maximum": 999999999999999,
         "examples": {
             "valid": [
-                42
+                42,
+                -999999999999999
+            ],
+            "invalid": [
+                1000000000000000,
+                1.5
             ]
         },
         "standard": "RFC 9651 Section 3.3.1 (Structured Fields integer)",
@@ -1262,7 +1656,14 @@
         "format": "sf-decimal",
         "examples": {
             "valid": [
-                4.5
+                4.5,
+                -999999999999.999
+            ],
+            "invalid": [
+                "4.5"
+            ],
+            "db_invalid": [
+                1.2345
             ]
         },
         "standard": "RFC 9651 Section 3.3.2 (Structured Fields decimal)",
@@ -1278,7 +1679,12 @@
         "pattern": "^[\\x20-\\x7E]*$",
         "examples": {
             "valid": [
-                "hello world"
+                "hello world",
+                ""
+            ],
+            "invalid": [
+                "tab\there",
+                "café"
             ]
         },
         "standard": "RFC 9651 Section 3.3.3 (Structured Fields string)",
@@ -1294,7 +1700,13 @@
         "pattern": "^[A-Za-z*][A-Za-z0-9:/!#$%&'*+\\-.^_`|~]*$",
         "examples": {
             "valid": [
-                "gzip"
+                "gzip",
+                "*",
+                "text/html"
+            ],
+            "invalid": [
+                "1gzip",
+                "gz ip"
             ]
         },
         "standard": "RFC 9651 Section 3.3.4 (Structured Fields token)",
@@ -1311,7 +1723,12 @@
         "contentEncoding": null,
         "examples": {
             "valid": [
-                ":aGVsbG8=:"
+                ":aGVsbG8=:",
+                "::"
+            ],
+            "invalid": [
+                "aGVsbG8=",
+                "::x"
             ]
         },
         "standard": "RFC 9651 Section 3.3.5 (Structured Fields byte sequence)",
@@ -1326,7 +1743,11 @@
         "format": "sf-boolean",
         "examples": {
             "valid": [
-                true
+                true,
+                false
+            ],
+            "invalid": [
+                "?1"
             ]
         },
         "standard": "RFC 9651 Section 3.3.6 (Structured Fields boolean)",
@@ -1341,7 +1762,12 @@
         "pattern": "^[A-Z]{2}\\d{2}[A-Z0-9]{11,30}$",
         "examples": {
             "valid": [
-                "DE89370400440532013000"
+                "DE89370400440532013000",
+                "GB82WEST12345698765432"
+            ],
+            "invalid": [
+                "de89370400440532013000",
+                "DE89 3704 0044 0532 0130 00"
             ]
         },
         "standard": "ISO 13616 (IBAN)",
@@ -1355,7 +1781,12 @@
         "pattern": "^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$",
         "examples": {
             "valid": [
-                "DEUTDEFF500"
+                "DEUTDEFF500",
+                "DEUTDEFF"
+            ],
+            "invalid": [
+                "DEUTDEFF5",
+                "deutdeff"
             ]
         },
         "standard": "ISO 9362 (BIC / SWIFT code)",
@@ -1369,7 +1800,12 @@
         "pattern": "^(\\d{9}[\\dXx]|97[89]\\d{10})$",
         "examples": {
             "valid": [
-                "9780306406157"
+                "9780306406157",
+                "030640615X"
+            ],
+            "invalid": [
+                "978030640615",
+                "0306406152XX"
             ]
         },
         "standard": "ISO 2108 (ISBN-10 / ISBN-13)",
@@ -1383,7 +1819,12 @@
         "pattern": "^(\\d{8}|\\d{12}|\\d{13}|\\d{14})$",
         "examples": {
             "valid": [
-                "0614141000036"
+                "0614141000036",
+                "96385074"
+            ],
+            "invalid": [
+                "123456789",
+                "0614141000036A"
             ]
         },
         "standard": "GS1 GTIN (ISO/IEC 15459 family)",

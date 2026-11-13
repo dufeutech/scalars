@@ -48,5 +48,7 @@ State of the project for whoever picks it up next. Last updated 2026-11-12, at r
 
 ## History
 
+- Codegen (2026-11-13): generated Go, Python, Rust and TypeScript packages in `dist/`. The spec and plan are in git history (`docs/superpowers/specs/2026-11-12-codegen-design.md`, `docs/superpowers/plans/2026-11-12-codegen.md`, removed once merged).
+
 - 0.3.0 (2026-11-12): portable patterns, `params` in the core, `schema` block, closed `primitive`, removed `category`/`templates`, runners in four languages. The details are in [CHANGELOG.md](../CHANGELOG.md), and the full plan is in git history (`docs/superpowers/plans/2026-11-12-scalars-0.3.0.md`, removed in the commit that added this file).
-- 0.2.0 (2026-11-12): first pure-JSON release.
+- 0.2.0 (2026-11-12): first pure-JSON release. The plan is in git history (`docs/superpowers/plans/2026-11-12-scalar-core-v2.md`).

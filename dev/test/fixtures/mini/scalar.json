@@ -1,0 +1,17 @@
+{
+    "$schema": "../../../../schema/scalar.schema.json",
+    "version": "0.0.0",
+    "$defs": {
+        "standards": {
+            "rfc3986": { "name": "RFC 3986", "url": "https://datatracker.ietf.org/doc/html/rfc3986" },
+            "rfc9562": { "name": "RFC 9562", "url": "https://datatracker.ietf.org/doc/html/rfc9562" }
+        }
+    },
+    "string": { "level": "core", "category": "primitive", "type": "string", "label": "Text" },
+    "_token": { "abstract": true, "base": "string" },
+    "slug": { "base": "_token", "level": "core", "category": "technical", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$", "standard": "rfc3986", "anchor": "#section-3.3" },
+    "uuid": { "base": "_token", "level": "core", "category": "identity", "format": "uuid", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", "standard": "rfc9562" },
+    "uuid_v7": { "base": "uuid", "level": "advanced", "category": "identity", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$" },
+    "jwt_like": { "base": "uuid", "level": "advanced", "category": "identity", "format": null, "alternative": "string" },
+    "quiet": { "base": "string", "level": "advanced", "category": "technical" }
+}

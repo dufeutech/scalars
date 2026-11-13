@@ -1,0 +1,24 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://scalars.dev/schema/postgres.schema.json",
+    "title": "Postgres target (source)",
+    "description": "How each type is stored as a Postgres column. Blocks inherit from the type's base; null deletes. Regex and range CHECKs are generated, never written here; check_extra holds the few that cannot be.",
+    "type": "object",
+    "properties": {
+        "$schema": { "type": "string" },
+        "$defs": { "type": "object" }
+    },
+    "additionalProperties": {
+        "type": "object",
+        "properties": {
+            "type": { "type": "string" },
+            "attr": {
+                "type": ["object", "null"],
+                "additionalProperties": { "type": ["string", "object"] }
+            },
+            "note": { "type": ["string", "null"] },
+            "check_extra": { "type": ["string", "null"], "pattern": "^CHECK \\(.*\\{column\\}.*\\)$" }
+        },
+        "additionalProperties": false
+    }
+}

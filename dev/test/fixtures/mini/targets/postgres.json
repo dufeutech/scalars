@@ -1,0 +1,6 @@
+{
+    "$schema": "../../../../../schema/postgres.schema.json",
+    "string": { "type": "text", "attr": { "collation": "collation" }, "note": "N" },
+    "uuid": { "type": "uuid", "attr": null },
+    "quiet": { "note": null }
+}

@@ -1,0 +1,30 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://scalars.dev/schema/html.schema.json",
+    "title": "HTML target (source)",
+    "description": "How each type renders as a form control. Blocks inherit from the type's base; attrs merge; null deletes. pattern, title and placeholder are generated, never written here.",
+    "type": "object",
+    "properties": { "$schema": { "type": "string" } },
+    "additionalProperties": {
+        "type": "object",
+        "properties": {
+            "element": { "enum": ["input", "textarea", "select"] },
+            "attrs": {
+                "type": ["object", "null"],
+                "propertyNames": { "not": { "enum": ["pattern", "title", "placeholder"] } },
+                "additionalProperties": { "type": ["string", "null"] }
+            },
+            "options": {
+                "type": ["object", "null"],
+                "properties": {
+                    "source": { "type": "string" },
+                    "js": { "type": "string" }
+                },
+                "required": ["source"],
+                "additionalProperties": false
+            },
+            "note": { "type": ["string", "null"] }
+        },
+        "additionalProperties": false
+    }
+}

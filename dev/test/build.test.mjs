@@ -57,3 +57,10 @@ test("committed dist matches a fresh build", () => {
         assert.equal(committed, text, `dist/${file} is stale: run npm run build`);
     }
 });
+
+test("dist holds only built files", () => {
+    const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true })
+        .flatMap((e) => e.isDirectory() ? walk(path.join(dir, e.name)).map((f) => `${e.name}/${f}`) : [e.name]);
+    const want = ["scalars.json", "openapi.json", ...Object.keys(out.code)].sort();
+    assert.deepEqual(walk(path.join(root, "dist")).sort(), want);
+});

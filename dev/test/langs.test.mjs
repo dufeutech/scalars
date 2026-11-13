@@ -6,6 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "../build.mjs";
 import { lookup, normalize, validate } from "../lib/reference.mjs";
+import { matchLengths } from "../lib/linear.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const { types, $meta } = build(root).scalars;
@@ -42,4 +43,12 @@ test("hostile cases", () => {
         assert.equal(r.ok, c.ok, c.type);
         assert.ok(ms < 2000, `${c.type} took ${Math.round(ms)} ms`);
     }
+});
+
+test("every unbounded patterned type has a hostile case", () => {
+    const covered = new Set(cases.hostile.map((c) => c.type));
+    const unbounded = Object.values(types).filter((t) => t.schema?.pattern && t.schema.maxLength === undefined
+        && matchLengths(t.schema.pattern).max === Infinity).map((t) => t.name);
+    assert.ok(unbounded.length > 0);
+    assert.deepEqual(unbounded.filter((n) => !covered.has(n)), []);
 });

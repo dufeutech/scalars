@@ -75,3 +75,8 @@ test("the email rewrite accepts exactly what the old pattern did", () => {
         words = words.flatMap((s) => ["a", ".", "@", " "].map((c) => s + c));
     }
 });
+
+test("nested stars over nullable bodies", () => {
+    for (const p of ["^((ab)*)*$", "^(a*b?)*$"]) assert.notDeepEqual(linearProblems(p), [], p);
+    for (const p of ["^(a?)*$", "^(a|b?)+$"]) assert.deepEqual(linearProblems(p), [], p);
+});

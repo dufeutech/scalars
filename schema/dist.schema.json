@@ -1,0 +1,93 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://scalars.dev/schema/dist.schema.json",
+    "title": "Scalar types (resolved release file)",
+    "description": "dist/scalars.json: every type fully resolved. Nothing here needs code to read: no inheritance, no references.",
+    "type": "object",
+    "required": ["version", "$meta", "types"],
+    "properties": {
+        "$schema": { "type": "string" },
+        "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+        "$meta": {
+            "type": "object",
+            "required": ["lookup", "normalize_steps", "templates"],
+            "properties": {
+                "lookup": { "type": "string", "description": "How to find a type from a word a person typed." },
+                "normalize_steps": {
+                    "type": "object",
+                    "description": "Every cleanup step a type's normalize list may name, with its exact meaning.",
+                    "additionalProperties": { "type": "string" }
+                },
+                "templates": { "type": "object", "description": "Placeholders used in generated text, like {column} in postgres.check." }
+            },
+            "additionalProperties": false
+        },
+        "types": {
+            "type": "object",
+            "propertyNames": { "pattern": "^[a-z][a-z0-9_]*$" },
+            "additionalProperties": { "$ref": "#/$defs/type" }
+        }
+    },
+    "additionalProperties": false,
+    "$defs": {
+        "type": {
+            "type": "object",
+            "required": ["name", "primitive", "level", "category", "label", "hint", "error", "examples", "html", "postgres"],
+            "properties": {
+                "name": { "type": "string" },
+                "primitive": { "type": "string", "description": "The basic type this one is built from." },
+                "level": { "enum": ["core", "advanced", "domain"] },
+                "category": { "type": "string" },
+                "alternative": { "type": "string", "description": "For advanced and domain types: the core type to use instead." },
+                "label": { "type": "string" },
+                "hint": { "type": "string" },
+                "error": { "type": "string" },
+                "aliases": { "type": "array", "items": { "type": "string" } },
+                "type": { "enum": ["string", "integer", "number", "boolean", "object", "array"] },
+                "format": { "type": "string" },
+                "pattern": { "type": "string" },
+                "minimum": { "type": "number" },
+                "maximum": { "type": "number" },
+                "contentEncoding": { "type": "string" },
+                "normalize": { "type": "array", "items": { "type": "string" } },
+                "examples": {
+                    "type": "object",
+                    "required": ["valid"],
+                    "properties": {
+                        "valid": { "type": "array", "minItems": 1 },
+                        "invalid": { "type": "array" },
+                        "db_invalid": { "type": "array" }
+                    },
+                    "additionalProperties": false
+                },
+                "standard": { "type": "string" },
+                "docs_link": { "type": "string" },
+                "details": { "type": "string" },
+                "html": {
+                    "type": "object",
+                    "properties": {
+                        "element": { "enum": ["input", "textarea", "select"] },
+                        "attrs": { "type": "object", "additionalProperties": { "type": "string" } },
+                        "options": { "type": "object" },
+                        "note": { "type": "string" }
+                    },
+                    "required": ["element"],
+                    "additionalProperties": false
+                },
+                "postgres": {
+                    "type": "object",
+                    "properties": {
+                        "type": { "type": "string" },
+                        "attr": { "type": "object", "additionalProperties": { "type": "object" } },
+                        "note": { "type": "string" },
+                        "check": { "type": "string" },
+                        "docs_link": { "type": "string" }
+                    },
+                    "required": ["type"],
+                    "additionalProperties": false
+                }
+            },
+            "additionalProperties": false
+        }
+    }
+}

@@ -8,6 +8,8 @@ The whole release is plain JSON. You don't need to install anything to use it.
 
 ## Which file do I use?
 
+**The shape is stable from 0.3.0:** new releases add or fix types, but never rename or move a field.
+
 **Use what's in `dist/`. Edit what's in `src/`.** The two hold the same types. `src/` is short and has no repeats, so it's easy to edit. `dist/` is generated from it with every value written out, so tools can read it directly.
 
 | You want to… | Use |

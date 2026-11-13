@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.3.0 — 2026-11-12
+
+Every rule now means the same thing in Go, Python, Rust and TypeScript, checked by a runner in each language. **The shape of `dist/scalars.json` is now stable:** from here on, releases only add or fix types. No field will be renamed or moved.
+
+### Fixed
+- **Patterns match the same in every language.** Go and Rust could not compile `duration` and `hostname` (they used lookaround). Python and Rust read `\d` and `\s` as Unicode, so `+1٣٣٣` passed as a `phone` there but not in Go or JS. Patterns now use a subset every engine reads the same way (based on RFC 9485): no `\d` `\s` `\w`, no `.`, no lookaround or backreferences. The build rejects anything else.
+- **`hostname`** keeps its 253-character limit as `maxLength`. **`char`** is `minLength: 1` + `maxLength: 1` (one code point) instead of a pattern.
+- **Media types** no longer accept control characters in their parameters.
+- **Lookup** says exactly what to do: the trim step, the lowercase step, then each run of spaces and `-` becomes one `_`.
+
+### Changed
+- **`schema`.** Each type's JSON Schema keys (`type`, `format`, `pattern`, `minLength`, `maxLength`, `minimum`, `maximum`, `contentEncoding`) are grouped under `schema`, ready to pass to any validator. `dist/openapi.json` is unchanged.
+- **`params`.** Settings a field can take (`length`, `precision`, `scale`, `fractional_seconds`, `values`) belong to the type, not to Postgres. Each type lists its own in `params`, and each setting is defined once in `$meta.params`. `nullable` applies to every type. HTML no longer reads enum options from Postgres.
+- **`primitive`** is a closed list of 16. It's all a language needs to pick a native type.
+- **Postgres.** `postgres.attr` is a list of names defined once in `$meta.postgres_attrs`, and only `enum` and `duration` have one. `collation` applies to every text column. `check_extra` is now `check` in the source.
+- The `lowercase` and `uppercase` steps spell out the full Unicode mapping (`İ` → `i̇`, `ß` → `SS`). In Go that means `golang.org/x/text/cases`, not `strings.ToLower`.
+
+### Removed
+- `category`. It was a second classification next to `level`, and its value `primitive` clashed with the `primitive` field.
+- `$meta.templates`. The `{column}` rule is in the description of `postgres.check`.
+
+### Added
+- `dev/langs/`: a short, standalone runner per language (TypeScript, Python, Go, Rust) that reads `dist/scalars.json` and checks every example plus shared cases. Run them with `npm run check:langs`.
+
 ## 0.2.0 — 2026-11-12
 
 First release. Everything is plain JSON.

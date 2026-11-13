@@ -40,6 +40,9 @@ for t in scalars.all:
     if t._re is not None:
         fails.append(f"{t.name} compiled its regex at import")
 
+if scalars._index is not None:
+    fails.append("the lookup index was built at import")
+
 if len(scalars.all) != len(types):
     fails.append(f"all has {len(scalars.all)} types, dist has {len(types)}")
 
@@ -107,6 +110,8 @@ for c in cases["validate"]:
 
 if scalars.any.validate([1]) != [1]:
     fails.append("any.validate([1]) did not return [1]")
+if type(scalars.float64.validate(3)) is not float:
+    fails.append("float64.validate(3) did not return a float")
 if scalars.object.validate({}) != {}:
     fails.append("object.validate({}) did not return {}")
 

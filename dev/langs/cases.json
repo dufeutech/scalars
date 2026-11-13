@@ -35,6 +35,8 @@
         { "type": "iban", "in": " gb82 west 1234 5698 7654 32 ", "ok": true, "out": "GB82WEST12345698765432" },
         { "type": "country", "in": "ß", "ok": true, "out": "SS" },
         { "type": "phone", "in": "+14155552671\n", "ok": true, "out": "+14155552671" },
+        { "type": "isbn", "in": "978-0-306-40615-7", "ok": true, "out": "9780306406157" },
+        { "type": "iban", "in": "MT84 MALT 0110 0001 2345 MTLC AST0 01S", "ok": true, "out": "MT84MALT011000012345MTLCAST001S" },
         { "type": "char", "in": "é", "ok": true, "out": "é" },
         { "type": "char", "in": "😀", "ok": true, "out": "😀" },
         { "type": "int32", "in": 2147483647, "ok": true, "out": 2147483647 },

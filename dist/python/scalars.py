@@ -17,11 +17,12 @@ T = TypeVar("T")
 
 # Unicode White_Space, written out. `str.strip()` without an argument also strips U+001C-U+001F, which is not white space.
 _WS: Final = (
-    "\t\n\v\f\r \x85\xa0            "
-    "    　"
+    "\u0009\u000a\u000b\u000c\u000d\u0020\u0085\u00a0\u1680\u2000\u2001\u2002\u2003"
+    "\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000"
 )
 
-_NO: Final = _b.object()  # what _check returns for "not valid"; a value can never be this object
+_Obj = _b.object  # annotations say `object`, which the table below shadows
+_NO: Final = _Obj()  # what _check returns for "not valid"; a value can never be this object
 
 
 class ScalarError(ValueError):
@@ -32,19 +33,27 @@ class ScalarError(ValueError):
         self.scalar = scalar
 
 
-def _step(name: str, s: str) -> str:
-    # str.lower/upper are the full Unicode mapping, in C, and linear. No regex here.
-    if name == "trim":
-        return s.strip(_WS)
-    if name == "lowercase":
-        return s.lower()
-    if name == "uppercase":
-        return s.upper()
-    if name == "remove_spaces":
-        return s.replace(" ", "")
-    if name == "remove_hyphens":
-        return s.replace("-", "")
-    raise ValueError(f"unknown normalize step {name!r}")
+def _trim(s: str) -> str:
+    return s.strip(_WS)
+
+
+def _remove_spaces(s: str) -> str:
+    return s.replace(" ", "")
+
+
+def _remove_hyphens(s: str) -> str:
+    return s.replace("-", "")
+
+
+# Each step by name, resolved once per type in Scalar.__init__. No regex here: str.lower/upper are the full
+# Unicode mapping, in C, and linear.
+_STEPS: Final = {
+    "trim": _trim,
+    "lowercase": str.lower,
+    "uppercase": str.upper,
+    "remove_spaces": _remove_spaces,
+    "remove_hyphens": _remove_hyphens,
+}
 
 
 class Scalar(Generic[T]):
@@ -52,7 +61,7 @@ class Scalar(Generic[T]):
 
     __slots__ = (
         "name", "label", "hint", "error", "details", "level", "primitive", "aliases", "examples",
-        "_kind", "_steps", "_pattern", "_min_len", "_max_len", "_minimum", "_maximum", "_re",
+        "_kind", "_steps", "_case_at", "_pattern", "_min_len", "_max_len", "_minimum", "_maximum", "_re",
     )
 
     def __init__(
@@ -85,7 +94,10 @@ class Scalar(Generic[T]):
         self.aliases = aliases
         self.examples = examples
         self._kind = kind
-        self._steps = steps
+        self._steps = tuple(_STEPS[s] for s in steps)  # a bad name fails here, not on first use
+        # Index of the first case step: the length gate runs just before it, since case mapping never shortens
+        # text but remove_spaces and remove_hyphens do.
+        self._case_at = next((i for i, s in enumerate(steps) if s in ("lowercase", "uppercase")), -1)
         self._pattern = pattern
         self._min_len = min_len
         self._max_len = max_len
@@ -100,17 +112,17 @@ class Scalar(Generic[T]):
         """Apply the type's normalize steps in order. Identity for types that are not text."""
         if self._kind == "text":
             for step in self._steps:
-                s = _step(step, s)
+                s = step(s)
         return s
 
-    def validate(self, v: object) -> T:
+    def validate(self, v: _Obj) -> T:
         """Normalize (text), then check kind, length, pattern and bounds. Returns the clean value or raises ScalarError."""
         r = self._check(v)
         if r is _NO:
             raise ScalarError(self)
         return r  # type: ignore[no-any-return]
 
-    def is_valid(self, v: object) -> bool:
+    def is_valid(self, v: _Obj) -> bool:
         """True exactly when `validate(v)` would succeed. Never builds an error."""
         return self._check(v) is not _NO
 
@@ -124,17 +136,15 @@ class Scalar(Generic[T]):
         if kind == "text":
             if not _b.isinstance(v, str):
                 return _NO
-            steps = self._steps
-            first = 0
-            if steps and steps[0] == "trim":
-                v = v.strip(_WS)
-                first = 1
-            # Case mapping never shortens the text, so text already too long is refused without being copied.
             top = self._max_len
-            if top is not None and len(v) > top:
-                return _NO
-            for i in range(first, len(steps)):
-                v = _step(steps[i], v)
+            gate = self._case_at if top is not None else -1
+            i = 0
+            for step in self._steps:
+                # Text already too long is refused before case mapping copies it.
+                if i == gate and len(v) > top:
+                    return _NO
+                v = step(v)
+                i += 1
             n = len(v)
             if n < self._min_len or (top is not None and n > top):
                 return _NO
@@ -161,7 +171,12 @@ class Scalar(Generic[T]):
                 return _NO
             if _b.isinstance(v, float) and not _math.isfinite(v):
                 return _NO
-            return v if self._in_range(v) else _NO
+            if not self._in_range(v):
+                return _NO
+            try:
+                return float(v)  # the native value of a number type is a float
+            except OverflowError:  # an int too large for a float
+                return _NO
         if kind == "boolean":
             return v if _b.isinstance(v, bool) else _NO
         if kind == "object":

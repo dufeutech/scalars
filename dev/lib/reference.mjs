@@ -61,10 +61,15 @@ export function validate(t, v) {
         case "text": {
             if (typeof v !== "string") return fail;
             let s = v;
-            const steps = [...m.steps];
-            if (steps[0] === "trim") s = STEPS[steps.shift()](s);
-            if (m.maxLen !== null && codePoints(s) > m.maxLen) return fail;
-            for (const step of steps) s = STEPS[step](s);
+            // The length gate runs just before the first case step: remove_* steps shorten text, case steps never do.
+            let gated = false;
+            for (const step of m.steps) {
+                if (!gated && (step === "lowercase" || step === "uppercase")) {
+                    gated = true;
+                    if (m.maxLen !== null && codePoints(s) > m.maxLen) return fail;
+                }
+                s = STEPS[step](s);
+            }
             const n = codePoints(s);
             if (n < m.minLen || (m.maxLen !== null && n > m.maxLen)) return fail;
             if (re && !re.test(s)) return fail;

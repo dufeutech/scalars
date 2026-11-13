@@ -13,7 +13,7 @@ const LOOKUP_RULE =
 export const serialize = (data) => canonical(data) + "\n";
 
 export function build(root) {
-    const sources = loadSources(root);
+    const sources = loadSources(path.join(root, "src"));
     const types = resolve(sources);
     const pgDefs = sources.targets.postgres.$defs ?? {};
     const schema = JSON.parse(fs.readFileSync(path.join(root, "schema/scalar.schema.json"), "utf8"));

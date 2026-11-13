@@ -7,17 +7,17 @@ import { canonical, loadSources, resolve } from "../lib/resolve.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "../..");
-const resolved = resolve(loadSources(root));
+const resolved = resolve(loadSources(path.join(root, "src")));
 
 /** Resolve after deleting one key from the source; used to prove that key is not redundant. */
 function resolveWithout(mutate) {
-    const s = loadSources(root);
+    const s = loadSources(path.join(root, "src"));
     mutate(s);
     try { return resolve(s); } catch { return null; }
 }
 
 test("dry", async (t) => {
-    const s = loadSources(root);
+    const s = loadSources(path.join(root, "src"));
     const reserved = new Set(["$schema", "version", "$defs"]);
     const coreRedundant = [];
     for (const [name, def] of Object.entries(s.core)) {
@@ -53,7 +53,7 @@ test("dry", async (t) => {
 test("source files validate against their schemas", async () => {
     const { default: Ajv2020 } = await import("ajv/dist/2020.js");
     const ajv = new Ajv2020({ allErrors: true, validateFormats: false });
-    for (const [schema, file] of [["scalar", "scalar.json"], ["html", "targets/html.json"], ["postgres", "targets/postgres.json"]]) {
+    for (const [schema, file] of [["scalar", "src/scalar.json"], ["html", "src/targets/html.json"], ["postgres", "src/targets/postgres.json"]]) {
         const validate = ajv.compile(JSON.parse(fs.readFileSync(path.join(root, "schema", `${schema}.schema.json`), "utf8")));
         assert.ok(validate(JSON.parse(fs.readFileSync(path.join(root, file), "utf8"))), `${file}: ${JSON.stringify(validate.errors?.slice(0, 3))}`);
     }

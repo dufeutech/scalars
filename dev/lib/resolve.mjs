@@ -1,4 +1,4 @@
-// Dev-only: resolves the source JSON (scalar.json + targets/*.json) into flat types.
+// Dev-only: resolves the source JSON (src/scalar.json + src/targets/*.json) into flat types.
 import fs from "node:fs";
 import path from "node:path";
 import { applyGenerated } from "./derive.mjs";

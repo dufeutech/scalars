@@ -1,5 +1,5 @@
 {
-    "$schema": "../schema/postgres.schema.json",
+    "$schema": "../../schema/postgres.schema.json",
     "$defs": {
         "attr": {
             "length": {

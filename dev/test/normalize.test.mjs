@@ -7,7 +7,7 @@ import { loadSources, resolve } from "../lib/resolve.mjs";
 import { normalize } from "../lib/reference.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const types = resolve(loadSources(root));
+const types = resolve(loadSources(path.join(root, "src")));
 const schema = JSON.parse(fs.readFileSync(path.join(root, "schema/scalar.schema.json"), "utf8"));
 const STEPS = schema.$defs.normalize_step.oneOf.map((s) => s.const);
 

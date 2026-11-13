@@ -1,5 +1,5 @@
 {
-    "$schema": "./schema/scalar.schema.json",
+    "$schema": "../schema/scalar.schema.json",
     "version": "0.2.0",
     "$defs": {
         "docs": {

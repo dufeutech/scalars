@@ -8,11 +8,13 @@ The whole release is plain JSON. You don't need to install anything to use it.
 
 ## Which file do I use?
 
+**Use what's in `dist/`. Edit what's in `src/`.** The two hold the same types. `src/` is short and has no repeats, so it's easy to edit. `dist/` is generated from it with every value written out, so tools can read it directly.
+
 | You want to… | Use |
 |---|---|
 | Build a tool, form generator or code generator | [`dist/scalars.json`](dist/scalars.json): every type fully resolved, nothing to look up |
 | Reference the types from an OpenAPI document | [`dist/openapi.json`](dist/openapi.json): one JSON Schema per type under `components.schemas` |
-| Change or add a type | [`scalar.json`](scalar.json) plus [`targets/html.json`](targets/html.json) and [`targets/postgres.json`](targets/postgres.json) (then rebuild, see below) |
+| Change or add a type | [`src/scalar.json`](src/scalar.json) plus [`src/targets/html.json`](src/targets/html.json) and [`src/targets/postgres.json`](src/targets/postgres.json) (then rebuild, see below) |
 | Check a file in your editor | [`schema/`](schema/): schemas for every file above |
 
 ## Pick a type
@@ -89,7 +91,7 @@ From `dist/scalars.json` (shortened):
 
 ## Editing the types
 
-The source files avoid repeating themselves. A type can say `"base": "string"` and then list only what differs. Three hidden building blocks (`_token`, `_json`, `_bytes`) hold settings that many types share. The HTML `pattern`, the Postgres `CHECK`s and the `docs_link`s are never written by hand; they're generated from the type's one `pattern`.
+The files in `src/` avoid repeating themselves. A type can say `"base": "string"` and then list only what differs. Three hidden building blocks (`_token`, `_json`, `_bytes`) hold settings that many types share. The HTML `pattern`, the Postgres `CHECK`s and the `docs_link`s are never written by hand; they're generated from the type's one `pattern`.
 
 After editing, rebuild and test. This is development tooling only, and the release doesn't need it:
 

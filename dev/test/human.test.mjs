@@ -6,7 +6,7 @@ import { loadSources, resolve } from "../lib/resolve.mjs";
 import { lookup } from "../lib/reference.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const types = resolve(loadSources(root));
+const types = resolve(loadSources(path.join(root, "src")));
 const all = Object.values(types);
 
 const JARGON = ["RFC", "ISO", "IANA", "regex", "pattern", "E.164", "octet", "UTC", "string", "integer", "boolean", "null", "JSON"];

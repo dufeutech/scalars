@@ -10,7 +10,7 @@ import { sqlString, toJsonSchema } from "../lib/derive.mjs";
 import { pgLiteral } from "./helpers/pg.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const types = resolve(loadSources(root));
+const types = resolve(loadSources(path.join(root, "src")));
 const ajv = new Ajv2020({ strict: false, validateFormats: false });
 let db;
 

@@ -1,5 +1,5 @@
 {
-    "$schema": "../schema/html.schema.json",
+    "$schema": "../../schema/html.schema.json",
     "_token": {
         "attrs": {
             "autocapitalize": "none",

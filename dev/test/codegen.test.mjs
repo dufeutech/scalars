@@ -2,7 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { build } from "../build.mjs";
+import { build, serialize } from "../build.mjs";
+import { emitGo, RESERVED_GO } from "../codegen/go.mjs";
 import { toModel, identifiers } from "../codegen/model.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -28,4 +29,21 @@ test("identifiers", () => {
     assert.equal(identifiers(toModel(scalars), "rust", []).get("uuid_v7"), "UUID_V7");
     for (const lang of ["ts", "python"]) assert.equal(identifiers(toModel(scalars), lang, []).get("uuid_v7"), "uuid_v7");
     assert.throws(() => identifiers(toModel(scalars), "go", ["Email"]), /Identifier "Email" is used by/);
+});
+
+test("model: catalogue order", () => {
+    const names = toModel(scalars).map((t) => t.name);
+    assert.deepEqual(names, Object.keys(JSON.parse(serialize(scalars)).types));
+});
+
+test("go: patterns, reserved names, static table", () => {
+    const go = emitGo(toModel(scalars), scalars.version)["go/scalars.go"];
+    assert.match(go, /^\/\/ Code generated .* DO NOT EDIT\.$/m);
+    const token = scalars.types.sf_token.schema.pattern;
+    assert.ok(token.includes("`") && go.includes(`\tpattern: ${JSON.stringify(token)},\n`), "sf_token's backtick forces an interpreted string");
+    assert.ok(go.includes(`\tpattern: \`${scalars.types.email.schema.pattern}\`,\n`), "other patterns are raw strings");
+    assert.ok(go.includes("\tsteps:   []step{stepTrim, stepLowercase},\n"), "steps are constants");
+    assert.ok(!go.includes("map[string]any{"), "no map literal in the table");
+    const snake = (id) => id.replace(/[A-Z]/g, (c, i) => (i ? "_" : "") + c.toLowerCase()); // "ScalarError" -> "scalar_error"
+    for (const id of RESERVED_GO) assert.throws(() => identifiers([{ name: snake(id) }], "go", RESERVED_GO), /reserved/);
 });

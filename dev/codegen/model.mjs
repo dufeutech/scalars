@@ -4,8 +4,8 @@ import { matchLengths } from "../lib/linear.mjs";
 
 const KINDS = new Set(["string", "integer", "number", "boolean", "object", "array"]);
 
-/** One record per type, in catalogue (alphabetical) order. */
-export const toModel = (scalars) => Object.values(scalars.types).map(modelOf);
+/** One record per type, in catalogue order: sorted by name, as dist/scalars.json is written. */
+export const toModel = (scalars) => Object.keys(scalars.types).sort().map((name) => modelOf(scalars.types[name]));
 
 /** The model record for one catalogue type. */
 export function modelOf(t) {

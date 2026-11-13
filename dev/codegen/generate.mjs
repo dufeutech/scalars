@@ -2,9 +2,10 @@
 import { toModel } from "./model.mjs";
 import { emitPython } from "./python.mjs";
 import { emitTypeScript } from "./ts.mjs";
+import { emitGo } from "./go.mjs";
 
 /** Each emitter is (models, version) => { "<path under dist/>": text }. Tasks add theirs here. */
-const EMITTERS = [emitPython, emitTypeScript];
+const EMITTERS = [emitPython, emitTypeScript, emitGo];
 
 export function generate(scalars) {
     const models = toModel(scalars);

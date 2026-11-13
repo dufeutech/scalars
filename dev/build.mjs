@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { canonical, loadSources, resolve } from "./lib/resolve.mjs";
 import { groupSchema } from "./lib/derive.mjs";
+import { generate } from "./codegen/generate.mjs";
 
 const LOOKUP_RULE =
     "To find a type from a word: apply the trim step, then the lowercase step, then replace each run of spaces and '-' with one '_'. " +
@@ -43,7 +44,7 @@ export function build(root) {
         info: { title: "Scalar types", version },
         components: { schemas: Object.fromEntries(Object.entries(types).map(([n, t]) => [n, component(t)])) },
     };
-    return { scalars, openapi };
+    return { scalars, openapi, code: generate(scalars) };
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
@@ -53,5 +54,10 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     for (const [file, data] of [["scalars.json", out.scalars], ["openapi.json", out.openapi]]) {
         fs.writeFileSync(path.join(root, "dist", file), serialize(data));
         console.log(`wrote dist/${file} (${serialize(data).length} bytes)`);
+    }
+    for (const [file, text] of Object.entries(out.code)) {
+        fs.mkdirSync(path.dirname(path.join(root, "dist", file)), { recursive: true });
+        fs.writeFileSync(path.join(root, "dist", file), text);
+        console.log(`wrote dist/${file} (${text.length} bytes)`);
     }
 }

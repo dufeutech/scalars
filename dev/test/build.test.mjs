@@ -52,4 +52,8 @@ test("committed dist matches a fresh build", () => {
         const committed = fs.readFileSync(path.join(root, "dist", file), "utf8");
         assert.equal(committed, serialize(data), `dist/${file} is stale: run npm run build`);
     }
+    for (const [file, text] of Object.entries(out.code)) {
+        const committed = fs.readFileSync(path.join(root, "dist", file), "utf8");
+        assert.equal(committed, text, `dist/${file} is stale: run npm run build`);
+    }
 });

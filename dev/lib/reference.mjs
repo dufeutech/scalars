@@ -1,5 +1,6 @@
 // Dev-only reference implementations of the rules dist/ describes as data.
 // They exist to prove the written rules mean what they say; tools implement them in their own language.
+import { modelOf } from "../codegen/model.mjs";
 
 /** Lookup rule: the trim step, lowercase, each run of spaces and "-" becomes one "_"; exact name first, then alias. */
 export function lookup(types, word) {
@@ -41,4 +42,45 @@ export function normalize(t, value) {
         s = fn(s);
     }
     return s;
+}
+
+const models = new WeakMap();
+const codePoints = (s) => { let n = 0; for (let i = 0; i < s.length; i++) { n++; if (s.charCodeAt(i) >= 0xd800 && s.charCodeAt(i) < 0xdc00) i++; } return n; };
+
+/**
+ * Validates a value against a type, following the spec: text is trimmed, length-gated at maxLen
+ * before case mapping, normalized, length-checked and pattern-matched; numbers are checked against bounds.
+ * Returns { ok, value } where value is the normalized text or the integer.
+ */
+export function validate(t, v) {
+    if (!models.has(t)) models.set(t, { m: modelOf(t), re: t.schema?.pattern ? new RegExp(t.schema.pattern, "u") : null });
+    const { m, re } = models.get(t);
+    const fail = { ok: false };
+    const inRange = (n) => (m.minimum === null || n >= m.minimum) && (m.maximum === null || n <= m.maximum);
+    switch (m.kind) {
+        case "text": {
+            if (typeof v !== "string") return fail;
+            let s = v;
+            const steps = [...m.steps];
+            if (steps[0] === "trim") s = STEPS[steps.shift()](s);
+            if (m.maxLen !== null && codePoints(s) > m.maxLen) return fail;
+            for (const step of steps) s = STEPS[step](s);
+            const n = codePoints(s);
+            if (n < m.minLen || (m.maxLen !== null && n > m.maxLen)) return fail;
+            if (re && !re.test(s)) return fail;
+            return { ok: true, value: s };
+        }
+        case "integer":
+            return typeof v === "number" && Number.isInteger(v) && inRange(v) ? { ok: true, value: v } : fail;
+        case "number":
+            return typeof v === "number" && Number.isFinite(v) && inRange(v) ? { ok: true, value: v } : fail;
+        case "boolean":
+            return typeof v === "boolean" ? { ok: true, value: v } : fail;
+        case "object":
+            return v !== null && typeof v === "object" && !Array.isArray(v) ? { ok: true, value: v } : fail;
+        case "array":
+            return Array.isArray(v) ? { ok: true, value: v } : fail;
+        default:
+            return { ok: true, value: v };
+    }
 }

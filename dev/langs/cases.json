@@ -22,10 +22,44 @@
     ],
     "match": [
         { "type": "phone", "in": "+14155552671", "ok": true },
-        { "type": "phone", "in": "+14155552671\n", "ok": false },
         { "type": "phone", "in": "+1٣٣٣", "ok": false },
         { "type": "media_type", "in": "text/html;\r\ncharset=utf-8", "ok": false },
         { "type": "char", "in": "😀", "ok": true },
-        { "type": "char", "in": "ab", "ok": false }
+        { "type": "char", "in": "ab", "ok": false },
+        { "type": "media_type", "in": "text/html\n", "ok": false }
+    ],
+    "validate": [
+        { "type": "email", "in": "  user@example.com ", "ok": true, "out": "user@example.com" },
+        { "type": "email", "in": "user@", "ok": false },
+        { "type": "uuid", "in": " F81D4FAE-7DEC-11D0-A765-00A0C91E6BF6 ", "ok": true, "out": "f81d4fae-7dec-11d0-a765-00a0c91e6bf6" },
+        { "type": "iban", "in": " gb82 west 1234 5698 7654 32 ", "ok": true, "out": "GB82WEST12345698765432" },
+        { "type": "country", "in": "ß", "ok": true, "out": "SS" },
+        { "type": "phone", "in": "+14155552671\n", "ok": true, "out": "+14155552671" },
+        { "type": "char", "in": "é", "ok": true, "out": "é" },
+        { "type": "char", "in": "😀", "ok": true, "out": "😀" },
+        { "type": "int32", "in": 2147483647, "ok": true, "out": 2147483647 },
+        { "type": "int32", "in": 2147483648, "ok": false },
+        { "type": "int32", "in": 3.0, "ok": true, "out": 3 },
+        { "type": "int32", "in": 3.5, "ok": false },
+        { "type": "int32", "in": true, "ok": false, "dynamic": true },
+        { "type": "email", "in": null, "ok": false, "dynamic": true },
+        { "type": "email", "in": 123, "ok": false, "dynamic": true },
+        { "type": "float64", "special": "NaN", "ok": false },
+        { "type": "float64", "special": "Infinity", "ok": false },
+        { "type": "boolean", "in": false, "ok": true, "out": false },
+        { "type": "object", "in": [], "ok": false, "dynamic": true },
+        { "type": "any", "in": [1, "two"], "ok": true, "out": [1, "two"] }
+    ],
+    "hostile": [
+        { "type": "email", "prefix": "a@", "repeat": ".", "count": 200000, "suffix": "@", "ok": false },
+        { "type": "slug", "prefix": "x", "repeat": " ", "count": 200000, "suffix": "x", "ok": false },
+        { "type": "email", "prefix": "", "repeat": " ", "count": 200000, "suffix": "a@b.c", "ok": true },
+        { "type": "json_pointer", "prefix": "", "repeat": "/a", "count": 100000, "suffix": "~2", "ok": false },
+        { "type": "semver", "prefix": "1.0.0-", "repeat": "0.", "count": 100000, "suffix": "", "ok": false },
+        { "type": "decimal", "prefix": "", "repeat": "1", "count": 200000, "suffix": ".5", "ok": true },
+        { "type": "duration", "prefix": "P", "repeat": "1", "count": 200000, "suffix": "D", "ok": true },
+        { "type": "hostname", "prefix": "", "repeat": "a.", "count": 100000, "suffix": "a", "ok": false },
+        { "type": "base64", "prefix": "", "repeat": "QUJD", "count": 50000, "suffix": "!", "ok": false },
+        { "type": "uuid", "prefix": "", "repeat": "f", "count": 200000, "suffix": "", "ok": false }
     ]
 }

@@ -10,7 +10,8 @@ from typing import Final, Generic, Literal, TypeVar
 
 T = TypeVar("T")
 
-# Module attributes named `any`, `object` and `all` shadow the builtins: the engine reaches them as `_b.x`.
+# Each type is a module attribute named after the type (`any`, `object`, `all` already shadow builtins), so the
+# engine reaches every builtin it calls as `_b.x`: a new type name can never change what the engine runs.
 
 # Unicode White_Space, written out. `str.strip()` without an argument also strips U+001C-U+001F, which is not white space.
 _WS: Final = (
@@ -22,11 +23,11 @@ _Obj = _b.object  # annotations say `object`, which the table below shadows
 _NO: Final = _Obj()  # what _check returns for "not valid"; a value can never be this object
 
 
-class ScalarError(ValueError):
+class ScalarError(_b.ValueError):
     """A value failed a type's rule. `str(error)` is the type's `error` text; `scalar` is the type."""
 
     def __init__(self, scalar: Scalar[_Any]) -> None:
-        super().__init__(scalar.error)
+        _b.super(ScalarError, self).__init__(scalar.error)
         self.scalar = scalar
 
 
@@ -46,8 +47,8 @@ def _remove_hyphens(s: str) -> str:
 # Unicode mapping, in C, and linear.
 _STEPS: Final = {
     "trim": _trim,
-    "lowercase": str.lower,
-    "uppercase": str.upper,
+    "lowercase": _b.str.lower,
+    "uppercase": _b.str.upper,
     "remove_spaces": _remove_spaces,
     "remove_hyphens": _remove_hyphens,
 }
@@ -91,10 +92,10 @@ class Scalar(Generic[T]):
         self.aliases = aliases
         self.examples = examples
         self._kind = kind
-        self._steps = tuple(_STEPS[s] for s in steps)  # a bad name fails here, not on first use
+        self._steps = _b.tuple(_STEPS[s] for s in steps)  # a bad name fails here, not on first use
         # Index of the first case step: the length gate runs just before it, since case mapping never shortens
         # text but remove_spaces and remove_hyphens do.
-        self._case_at = next((i for i, s in enumerate(steps) if s in ("lowercase", "uppercase")), -1)
+        self._case_at = _b.next((i for i, s in _b.enumerate(steps) if s in ("lowercase", "uppercase")), -1)
         self._pattern = pattern
         self._min_len = min_len
         self._max_len = max_len
@@ -131,18 +132,18 @@ class Scalar(Generic[T]):
     def _check(self, v: _Any) -> _Any:
         kind = self._kind
         if kind == "text":
-            if not _b.isinstance(v, str):
+            if not _b.isinstance(v, _b.str):
                 return _NO
             top = self._max_len
             gate = self._case_at if top is not None else -1
             i = 0
             for step in self._steps:
                 # Text already too long is refused before case mapping copies it.
-                if i == gate and len(v) > top:
+                if i == gate and _b.len(v) > top:
                     return _NO
                 v = step(v)
                 i += 1
-            n = len(v)
+            n = _b.len(v)
             if n < self._min_len or (top is not None and n > top):
                 return _NO
             pattern = self._pattern
@@ -154,32 +155,32 @@ class Scalar(Generic[T]):
                     return _NO
             return v
         if kind == "integer":
-            if _b.isinstance(v, bool):
+            if _b.isinstance(v, _b.bool):
                 return _NO
-            if _b.isinstance(v, float):
+            if _b.isinstance(v, _b.float):
                 if not _math.isfinite(v) or not v.is_integer():
                     return _NO
-                v = int(v)
-            elif not _b.isinstance(v, int):
+                v = _b.int(v)
+            elif not _b.isinstance(v, _b.int):
                 return _NO
             return v if self._in_range(v) else _NO
         if kind == "number":
-            if _b.isinstance(v, bool) or not _b.isinstance(v, (int, float)):
+            if _b.isinstance(v, _b.bool) or not _b.isinstance(v, (_b.int, _b.float)):
                 return _NO
-            if _b.isinstance(v, float) and not _math.isfinite(v):
+            if _b.isinstance(v, _b.float) and not _math.isfinite(v):
                 return _NO
             if not self._in_range(v):
                 return _NO
             try:
-                return float(v)  # the native value of a number type is a float
-            except OverflowError:  # an int too large for a float
+                return _b.float(v)  # the native value of a number type is a float
+            except _b.OverflowError:  # an int too large for a float
                 return _NO
         if kind == "boolean":
-            return v if _b.isinstance(v, bool) else _NO
+            return v if _b.isinstance(v, _b.bool) else _NO
         if kind == "object":
-            return v if _b.isinstance(v, dict) else _NO
+            return v if _b.isinstance(v, _b.dict) else _NO
         if kind == "array":
-            return v if _b.isinstance(v, list) else _NO
+            return v if _b.isinstance(v, _b.list) else _NO
         return v
 
 
@@ -209,7 +210,7 @@ def _clean(word: str) -> str:
 def get(word: Name | str) -> Scalar[_Any] | None:
     """Find a type by name or alias; spacing, hyphens and case are forgiven. Nothing found gives None."""
     global _index
-    if not _b.isinstance(word, str):
+    if not _b.isinstance(word, _b.str):
         return None
     index = _index
     if index is None:

@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { build, serialize } from "../build.mjs";
 import { emitGo, RESERVED_GO } from "../codegen/go.mjs";
 import { emitRust, RESERVED_RUST } from "../codegen/rust.mjs";
+import { RESERVED_PY } from "../codegen/python.mjs";
 import { toModel, identifiers } from "../codegen/model.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -62,4 +63,10 @@ test("rust: patterns, reserved names, static table", () => {
     assert.ok(label.includes(`label: "a\\r\\u{7}\\"\\\\",`), "string literals escape what Rust can't hold");
     const upper = RESERVED_RUST.filter((id) => id === id.toUpperCase()); // only these can meet a SCREAMING_SNAKE type
     for (const id of upper) assert.throws(() => identifiers([{ name: id.toLowerCase() }], "rust", RESERVED_RUST), /reserved/);
+});
+
+test("python: keywords and annotation builtins are reserved", () => {
+    for (const name of ["class", "import", "lambda", "str", "int", "dict"]) {
+        assert.throws(() => identifiers([{ name }], "python", RESERVED_PY), /reserved/, name);
+    }
 });

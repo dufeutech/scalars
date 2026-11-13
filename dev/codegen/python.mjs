@@ -2,8 +2,22 @@
 import fs from "node:fs";
 import { identifiers } from "./model.mjs";
 
-/** Names the engine defines, so no type may take them. */
-export const RESERVED_PY = ["Scalar", "ScalarError", "Name", "get", "all", "Final", "Generic", "Literal", "T"];
+/** Python's keywords (keyword.kwlist), which can never name a module attribute. */
+const KEYWORDS_PY = [
+    "False", "None", "True", "and", "as", "assert", "async", "await", "break", "class", "continue", "def", "del",
+    "elif", "else", "except", "finally", "for", "from", "global", "if", "import", "in", "is", "lambda", "nonlocal",
+    "not", "or", "pass", "raise", "return", "try", "while", "with", "yield",
+];
+
+/**
+ * Names no type may take: the engine's own names, the builtins its annotations name (the engine calls every
+ * builtin as `_b.x`, but a type checker reads annotations against the module), and Python's keywords.
+ */
+export const RESERVED_PY = [
+    "Scalar", "ScalarError", "Name", "get", "all", "Final", "Generic", "Literal", "TypeVar", "T",
+    "str", "int", "float", "bool", "dict", "list", "tuple",
+    ...KEYWORDS_PY,
+];
 
 const ENGINE = fs.readFileSync(new URL("./engine.py", import.meta.url), "utf8").replaceAll("\r\n", "\n");
 const NATIVE = { text: "str", integer: "int", number: "float", boolean: "bool", object: "dict[str, _Any]", array: "list[_Any]", any: "_Any" };

@@ -70,11 +70,11 @@
                 },
                 {
                     "const": "lowercase",
-                    "description": "Unicode default lowercase mapping, locale-independent."
+                    "description": "Unicode default lowercase mapping, locale-independent: the full mapping, so U+0130 becomes i + U+0307 and a final capital sigma becomes U+03C2. In Go use golang.org/x/text/cases, not strings.ToLower."
                 },
                 {
                     "const": "uppercase",
-                    "description": "Unicode default uppercase mapping, locale-independent."
+                    "description": "Unicode default uppercase mapping, locale-independent: the full mapping, so U+00DF becomes SS. In Go use golang.org/x/text/cases, not strings.ToUpper."
                 },
                 {
                     "const": "remove_spaces",

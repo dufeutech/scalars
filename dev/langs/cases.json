@@ -1,0 +1,31 @@
+{
+    "description": "Cases every language runner checks besides the examples in dist/scalars.json, so all of them prove the same thing.",
+    "normalize": [
+        { "steps": ["trim", "lowercase", "remove_hyphens"], "in": " Ab-C ", "out": "abc" },
+        { "steps": ["trim", "remove_spaces", "uppercase"], "in": "\tgb82 west　", "out": "GB82WEST" },
+        { "steps": ["trim"], "in": "\u0085 x 　", "out": "x" },
+        { "steps": ["trim"], "in": "﻿x\u001f", "out": "﻿x\u001f" },
+        { "steps": ["lowercase"], "in": "İ", "out": "i̇" },
+        { "steps": ["lowercase"], "in": "ΟΔΟΣ", "out": "οδος" },
+        { "steps": ["uppercase"], "in": "straße", "out": "STRASSE" },
+        { "steps": ["remove_spaces", "remove_hyphens"], "in": "+1 415-555 0123", "out": "+1415555 0123" }
+    ],
+    "lookup": [
+        { "in": "phone", "out": "phone" },
+        { "in": " Phone Number ", "out": "phone" },
+        { "in": "phone-number", "out": "phone" },
+        { "in": "Phone  -  Number", "out": "phone" },
+        { "in": "　URL\t", "out": "uri" },
+        { "in": "Money", "out": "decimal" },
+        { "in": "﻿url", "out": null },
+        { "in": "nothing like it", "out": null }
+    ],
+    "match": [
+        { "type": "phone", "in": "+14155552671", "ok": true },
+        { "type": "phone", "in": "+14155552671\n", "ok": false },
+        { "type": "phone", "in": "+1٣٣٣", "ok": false },
+        { "type": "media_type", "in": "text/html;\r\ncharset=utf-8", "ok": false },
+        { "type": "char", "in": "😀", "ok": true },
+        { "type": "char", "in": "ab", "ok": false }
+    ]
+}

@@ -6,7 +6,7 @@ import { canonical, loadSources, resolve } from "./lib/resolve.mjs";
 import { groupSchema } from "./lib/derive.mjs";
 
 const LOOKUP_RULE =
-    "To find a type from a word: trim it, lowercase it, and turn spaces and '-' into '_'. " +
+    "To find a type from a word: apply the trim step, then the lowercase step, then replace each run of spaces and '-' with one '_'. " +
     "If a type has that exact name, use it; otherwise use the type whose aliases contain it; otherwise there is no match.";
 
 /** Minified, key-sorted JSON with a trailing newline: the committed form of every dist file. */

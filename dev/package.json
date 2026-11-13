@@ -5,7 +5,8 @@
     "engines": { "node": ">=22" },
     "scripts": {
         "test": "node --test",
-        "build": "node build.mjs"
+        "build": "node build.mjs",
+        "check:langs": "node langs/run.mjs"
     },
     "devDependencies": {
         "@electric-sql/pglite": "0.2.17",

@@ -103,7 +103,10 @@ cd dev
 npm install
 npm run build   # rewrites dist/
 npm test        # every example runs through JSON Schema, the browser's regex engine and real Postgres
+npm run check:langs   # the same examples, normalize and lookup in TypeScript, Python, Go and Rust
 ```
+
+`check:langs` needs Python 3, Go and Cargo installed. Each runner in [`dev/langs/`](dev/langs/) is a short, standalone example of reading `dist/scalars.json` in that language.
 
 ## License
 

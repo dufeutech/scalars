@@ -458,7 +458,8 @@ class _Field:
     """A resolved field: kind "type" (a scalar and its settings), "model" (a full model name) or "array" (`items`).
     The settings validate reads are unpacked here once, at load."""
 
-    __slots__ = ("kind", "nullable", "type", "settings", "allowed", "model", "items", "length", "values", "precision", "scale")
+    __slots__ = ("kind", "nullable", "type", "settings", "allowed", "model", "target", "items", "length", "values",
+                 "precision", "scale", "limited")
 
     def __init__(self, kind: str, nullable: bool, *, type: Scalar[_Any] | None = None, settings: dict[str, _Any] | None = None,
                  allowed: frozenset[str] | None = None, model: str = "", items: _Field | None = None) -> None:
@@ -468,12 +469,15 @@ class _Field:
         self.settings = settings
         self.allowed = allowed  # the set of `values`, built once per written list and shared by its copies
         self.model = model
+        self.target: Model | None = None  # the loaded Model named `model`, bound once the file has loaded
         self.items = items
         s = {} if settings is None else settings
         self.length = s.get("length")
         self.values = s.get("values")
         self.precision = s.get("precision")
         self.scale = s.get("scale", 0)
+        # Whether validate has any setting to check after the type's own: a plain field skips those reads.
+        self.limited = self.length is not None or self.values is not None or self.precision is not None
 
 
 class _Def:
@@ -535,6 +539,7 @@ class _Loader:
         self.problems: list[tuple[_Any, Problem]] = []
         self.nodes: dict[str, _Node] = {}  # "domain:model" -> model node
         self.defs: list[_Def] = []  # every written field, in file order
+        self.fields: list[_Field] = []  # every field resolve built, `items` included: models() binds their targets
         self.names(data)
         for d in self.defs:
             self.parse(d)
@@ -739,7 +744,8 @@ class _Loader:
                 if _b.isinstance(value, _b.list):
                     # A list setting (`values`) is copied, so the loaded models never alias the caller's data.
                     value = _b.list(value)
-                    values_set = _b.frozenset(value)
+                    if key == "values":
+                        values_set = _b.frozenset(value)
                 elif _b.isinstance(value, _b.float):
                     value = _b.int(value)  # an integral float (3.0) is the integer it holds
                 settings[key] = value  # type: ignore[index]
@@ -763,6 +769,7 @@ class _Loader:
             v.field = _Field("array", nullable, items=items)
         else:
             v.field = _Field("model", nullable, model=base.model)
+        self.fields.append(v.field)
         # The model this field nests, through any `items` (an edge of the nesting graph), and how many `items`
         # levels lie on the way: each counts toward the depth limit like a model.
         if kind == "model":
@@ -855,13 +862,14 @@ class _Loader:
 class Model:
     """One model of a loaded models file: `validate(payload)` and `is_valid(payload)`."""
 
-    __slots__ = ("name", "_fields", "_entries", "_models")
+    __slots__ = ("name", "_fields", "_entries", "_root")
 
-    def __init__(self, name: str, fields: dict[str, _Field], models: dict[str, Model]) -> None:
+    def __init__(self, name: str, fields: dict[str, _Field]) -> None:
         self.name = name
         self._fields = fields
         self._entries = _b.tuple(fields.items())  # (name, field) in declared order, built once, not per payload
-        self._models = models  # every model of the file, by full name
+        self._root = _Field("model", False, model=name)  # the payload itself, a value of this model
+        self._root.target = self
 
     def __repr__(self) -> str:
         return f"<Model {self.name}>"
@@ -870,7 +878,7 @@ class Model:
         """The cleaned payload (declared keys only, normalized values, a missing nullable key as None), or raises
         ModelError listing every problem, sorted."""
         problems: list[tuple[_Any, Problem]] = []
-        out = _Run(self._models, problems, False).root(self, payload)
+        out = _Run(problems, False).root(self, payload)
         if problems:
             raise ModelError(_sorted(problems))
         return out  # type: ignore[no-any-return]
@@ -879,7 +887,7 @@ class Model:
         """True exactly when `validate(payload)` would succeed. Stops at the first problem."""
         problems: list[tuple[_Any, Problem]] = []
         try:
-            _Run(self._models, problems, True).root(self, payload)
+            _Run(problems, True).root(self, payload)
         except _Stop:
             return False
         return not problems
@@ -893,10 +901,9 @@ class _Run:
     """One payload's walk. A location is a link (parent, segment), so a deep value costs O(1); the segments are
     built only for a problem. Recursion follows the models, at most _MAX_DEPTH levels, never the input."""
 
-    __slots__ = ("models", "problems", "first")
+    __slots__ = ("problems", "first")
 
-    def __init__(self, models: dict[str, Model], problems: list[tuple[_Any, Problem]], first: bool) -> None:
-        self.models = models
+    def __init__(self, problems: list[tuple[_Any, Problem]], first: bool) -> None:
         self.problems = problems
         self.first = first
 
@@ -914,7 +921,7 @@ class _Run:
         if not _b.isinstance(payload, _b.dict):
             self.report(None, "not_object")
             return None
-        return self.walk(_Field("model", False, model=model.name), payload, None, None)
+        return self.walk(model._root, payload, None, None)
 
     def walk(self, f: _Field, v: _Any, up: _Any, seg: _Any) -> _Any:
         """The cleaned `v`, which sits at segment `seg` under location `up` (the root: both None). Its own location
@@ -930,20 +937,22 @@ class _Run:
             if r is _NO:
                 self.report(_at(up, seg), "invalid", {"type": t.name}, t.error)
                 return None
-            length = f.length
-            if length is not None and _b.len(r) > length:  # a str's len counts code points
-                self.report(_at(up, seg), "too_long", {"max": length})
-            if f.allowed is not None and r not in f.allowed:
-                self.report(_at(up, seg), "not_allowed", {"values": _b.list(f.values)})  # type: ignore[arg-type]
-            if f.precision is not None and not _fits_numeric(r, f.precision, f.scale):
-                self.report(_at(up, seg), "too_many_digits", {"precision": f.precision, "scale": f.scale})
+            if f.limited:
+                length = f.length
+                if length is not None and _b.len(r) > length:  # a str's len counts code points
+                    self.report(_at(up, seg), "too_long", {"max": length})
+                if f.allowed is not None and r not in f.allowed:
+                    self.report(_at(up, seg), "not_allowed", {"values": _b.list(f.values)})  # type: ignore[arg-type]
+                if f.precision is not None and not _fits_numeric(r, f.precision, f.scale):
+                    self.report(_at(up, seg), "too_many_digits", {"precision": f.precision, "scale": f.scale})
             return r
-        at = _at(up, seg)
+        # A container's own link is the parent of its entries' links (inline: no call per container).
+        at = up if seg is None else (up, seg)
         if kind == "model":
             if not _b.isinstance(v, _b.dict):
                 self.report(at, "not_object")
                 return None
-            model = self.models[f.model]
+            model: Model = f.target  # type: ignore[assignment]
             fields = model._fields
             if not fields.keys() >= v.keys():  # one C-level test; the loop below runs only when a key is unknown
                 for k in v:
@@ -1025,7 +1034,11 @@ def models(data: _Obj) -> Models:
         raise ModelsError(_sorted(loaded.problems))
     by_name: dict[str, Model] = {}
     for node in loaded.nodes.values():
-        by_name[node.name] = Model(node.name, {f: d.field for f, d in node.fields.items()}, by_name)  # type: ignore[misc]
+        by_name[node.name] = Model(node.name, {f: d.field for f, d in node.fields.items()})  # type: ignore[misc]
+    # Each model field points at its Model once, here, so validate never looks a model up by name.
+    for field in loaded.fields:
+        if field.kind == "model":
+            field.target = by_name[field.model]
     return Models(by_name)
 
 

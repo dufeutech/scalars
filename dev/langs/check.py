@@ -236,6 +236,9 @@ for c in cases["models"]["hostile"]:
     start = time.perf_counter()  # load and validate
     try:
         m = scalars.models(data).get(c["model"])
+        if m is None:
+            fails.append(f"models.hostile {c['kind']}: no model {c['model']!r}")
+            continue
         try:
             m.validate(payload)
             problems = None

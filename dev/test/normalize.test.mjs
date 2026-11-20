@@ -51,3 +51,17 @@ test("normalized messy input becomes valid", () => {
         assert.match(normalize(t, messy), new RegExp(t.pattern, "u"), name);
     }
 });
+
+test("normalize leaves every validated example unchanged", async () => {
+    const { build } = await import("../build.mjs");
+    const { validate } = await import("../lib/reference.mjs");
+    const changed = [];
+    for (const t of Object.values(build(path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")).scalars.types)) {
+        if (t.schema?.type !== "string") continue;
+        for (const v of t.examples.valid) {
+            const r = validate(t, v);
+            if (r.ok && normalize(t, r.value) !== r.value) changed.push(`${t.name}: ${JSON.stringify(v)}`);
+        }
+    }
+    assert.deepEqual(changed, []);
+});

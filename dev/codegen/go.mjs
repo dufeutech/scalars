@@ -1,13 +1,13 @@
 // Emits dist/go/scalars.go (the hand-written engine.go followed by one generated record per type) and its go.mod.
 // Everything is written already gofmt-clean, and the table is plain composite literals, so Go builds it statically.
-import fs from "node:fs";
-import { identifiers, paramRules } from "./model.mjs";
+import { fail, header, int64, noLoneSurrogate, readEngine } from "./common.mjs";
+import { identifiers, metaFields, paramRules, styled } from "./model.mjs";
 
 /** Names the engine exports, so no type may take them. */
 export const RESERVED_GO = ["Meta", "ScalarError", "TextScalar", "IntScalar", "NumberScalar", "BoolScalar", "ShapeScalar", "Get", "All", "Lookup"];
 
 const TEXT_VERSION = "v0.21.0"; // golang.org/x/text, the version the runner tests with
-const ENGINE = fs.readFileSync(new URL("./engine.go", import.meta.url), "utf8").replaceAll("\r\n", "\n");
+const ENGINE = readEngine("engine.go");
 const STRUCT = {
     text: "TextScalar",
     integer: "IntScalar",
@@ -17,19 +17,17 @@ const STRUCT = {
     array: "ShapeScalar[[]any]",
     any: "ShapeScalar[any]",
 };
-const CHECK = { gs1_mod10: "checkGS1Mod10", iso7064_mod97_10: "checkMod97", iban: "checkIBAN", isbn: "checkISBN", iso7064_mod11_2: "checkMod11_2", int64_range: "checkInt64Range", uint64_range: "checkUint64Range" };
-const STEP = { trim: "stepTrim", lowercase: "stepLowercase", uppercase: "stepUppercase", remove_spaces: "stepRemoveSpaces", remove_hyphens: "stepRemoveHyphens" };
+
+/** The engine's name for a check or step: `check` or `step` plus the name in PascalCase. It must exist in engine.go. */
+function engineName(kind, name, owner) {
+    const id = `${kind}${styled("go", name)}`;
+    return new RegExp(`\\b${id}\\b`).test(ENGINE) ? id : fail(`${owner}: unknown ${kind} "${name}" (engine.go has no ${id})`);
+}
 
 /** A Go interpreted string literal. JSON escapes are valid Go escapes; Go forbids a BOM in source and lone surrogates. */
 function str(s) {
     noLoneSurrogate(s);
     return JSON.stringify(s).replaceAll("﻿", "\\ufeff");
-}
-
-/** Fails the build on a lone surrogate, which no Go literal can hold (it would become U+FFFD). */
-function noLoneSurrogate(s) {
-    if (/[\ud800-\udfff]/u.test(s.replace(/[\ud800-\udbff][\udc00-\udfff]/g, ""))) throw new Error(`Lone surrogate in ${JSON.stringify(s)}`);
-    return s;
 }
 
 /** A pattern as a raw string when it can be one: raw strings can't hold a backtick, and drop carriage returns. */
@@ -54,12 +52,6 @@ function lit(v) {
 /** Examples without JSON objects: a map literal runs code at program start. */
 const examples = (list) => `[]any{${(list ?? []).filter((v) => !hasObject(v)).map(lit).join(", ")}}`;
 
-function int64(n, name, fallback) {
-    if (n === null) return fallback;
-    if (!Number.isInteger(n) || Math.abs(n) >= 2 ** 63) throw new Error(`${name}: bound ${n} is not an int64`);
-    return String(n);
-}
-
 /** `key: value` lines as gofmt writes them: values aligned one space past the longest key. */
 function fields(pairs, indent) {
     const width = Math.max(...pairs.map(([k]) => k.length)) + 2;
@@ -71,11 +63,11 @@ function rules(m) {
     switch (m.kind) {
         case "text":
             return [
-                ["steps", `[]step{${m.steps.map((s) => STEP[s] ?? fail(`${m.name}: unknown normalize step "${s}"`)).join(", ")}}`],
+                ["steps", `[]step{${m.steps.map((s) => engineName("step", s, m.name)).join(", ")}}`],
                 ["pattern", m.pattern === null ? `""` : pattern(m.pattern)],
                 ["minLen", String(m.minLen)],
                 ["maxLen", m.maxLen === null ? "noMax" : String(m.maxLen)],
-                ...(m.check === null ? [] : [["rule", CHECK[m.check] ?? fail(`${m.name}: unknown check "${m.check}"`)]]),
+                ...(m.check === null ? [] : [["rule", engineName("check", m.check, m.name)]]),
             ];
         case "integer":
             return [["minimum", int64(m.minimum, m.name, "math.MinInt64")], ["maximum", int64(m.maximum, m.name, "math.MaxInt64")]];
@@ -86,24 +78,25 @@ function rules(m) {
     }
 }
 
-function fail(message) {
-    throw new Error(message);
-}
-
 const oneLine = (s) => s.replace(/\s+/g, " ").trim();
 
 /** The doc comment: `Id is label: hint.`, then the details as a second paragraph. */
 const doc = (m, id) => [`// ${id} is ${oneLine(m.label)}: ${oneLine(m.hint)}.`, ...(m.details ? ["//", `// ${oneLine(m.details)}`] : [])].join("\n");
 
+const strings = (list) => `[]string{${list.map(str).join(", ")}}`;
+
+/** The shared facts (metaFields) that Meta holds, in the order of its fields: [fact, Go field, Go value]. */
+const META = [
+    ["name", "Name", str], ["label", "Label", str], ["hint", "Hint", str], ["error", "Error", str],
+    ["details", "Details", str], ["level", "Level", str], ["primitive", "Primitive", str],
+    ["aliases", "Aliases", strings], ["params", "Params", strings],
+    ["examples", "Valid", (e) => examples(e.valid)], ["examples", "Invalid", (e) => examples(e.invalid)],
+    ["check", "Check", str],
+];
+
 function record(m, id) {
-    const meta = fields([
-        ["Name", str(m.name)], ["Label", str(m.label)], ["Hint", str(m.hint)], ["Error", str(m.error)],
-        ["Details", str(m.details)], ["Level", str(m.level)], ["Primitive", str(m.primitive)],
-        ["Aliases", `[]string{${m.aliases.map(str).join(", ")}}`],
-        ...(m.params.length ? [["Params", `[]string{${m.params.map(str).join(", ")}}`]] : []),
-        ["Valid", examples(m.examples.valid)], ["Invalid", examples(m.examples.invalid)],
-        ...(m.check === null ? [] : [["Check", str(m.check)]]),
-    ], "\t\t");
+    const facts = new Map(metaFields(m));
+    const meta = fields(META.filter(([k]) => facts.has(k)).map(([k, field, value]) => [field, value(facts.get(k))]), "\t\t");
     const more = rules(m);
     const tail = more.length ? `\n${fields(more, "\t")}` : "";
     return `${doc(m, id)}
@@ -135,17 +128,14 @@ ${errors.join("")}}
 export function emitGo(models, version, meta) {
     const ids = identifiers(models, "go", RESERVED_GO);
     const id = (m) => ids.get(m.name);
-    const header = [
-        "// Code generated from dist/scalars.json by dev/codegen/go.mjs. DO NOT EDIT.",
-        `// scalars.go, catalogue version ${version}. Run \`npm run build\` in dev/ to regenerate.`,
-        `// Requires Go >= 1.21 and golang.org/x/text (tested with ${TEXT_VERSION} on Go 1.26.3).`,
-        "",
-        "",
-    ].join("\n");
+    const top = header({
+        file: "scalars.go", source: "go.mjs", version,
+        requires: `Requires Go >= 1.21 and golang.org/x/text (tested with ${TEXT_VERSION} on Go 1.26.3).`,
+    });
     const table = models.map((m) => record(m, id(m))).join("\n");
     const lookup = models.map((m) => `\tcase ${str(m.name)}:\n\t\treturn ${id(m)}\n`).join("");
     const every = models.map((m) => `\t&scalar${id(m)}.Meta,\n`).join("");
-    const source = `${header}${ENGINE}
+    const source = `${top}${ENGINE}
 ${tables(meta)}
 ${table}
 // All is every type, in catalogue order.

@@ -59,11 +59,11 @@ type checkKind uint8
 
 const (
 	checkNone checkKind = iota
-	checkGS1Mod10
-	checkMod97
-	checkIBAN
-	checkISBN
-	checkMod11_2
+	checkGs1Mod10
+	checkIso7064Mod9710
+	checkIban
+	checkIsbn
+	checkIso7064Mod112
 	checkInt64Range
 	checkUint64Range
 )
@@ -72,13 +72,13 @@ const (
 // shape: digits where the pattern put digits. Every rule is O(n).
 func (k checkKind) passes(s string) bool {
 	switch k {
-	case checkGS1Mod10:
+	case checkGs1Mod10:
 		return gs1Mod10(s)
-	case checkMod97:
+	case checkIso7064Mod9710:
 		return mod97(s, 0)
-	case checkIBAN:
+	case checkIban:
 		return mod97(s, 4)
-	case checkISBN:
+	case checkIsbn:
 		if len(s) == 13 {
 			return gs1Mod10(s)
 		}
@@ -91,7 +91,7 @@ func (k checkKind) passes(s string) bool {
 			t += d * (10 - i)
 		}
 		return t%11 == 0
-	case checkMod11_2:
+	case checkIso7064Mod112:
 		t := 0
 		for i := 0; i < len(s)-1; i++ {
 			if s[i] != '-' {

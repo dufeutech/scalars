@@ -1,26 +1,20 @@
 // Emits dist/rust/scalars.rs: the hand-written engine.rs followed by one generated static per type.
 // Everything is written rustfmt-clean, and every static is a plain constant expression, so nothing runs at load.
-import fs from "node:fs";
-import { identifiers, paramRules } from "./model.mjs";
+import { fail, header, int64, noLoneSurrogate, readEngine } from "./common.mjs";
+import { identifiers, metaFields, paramRules, styled } from "./model.mjs";
 
 /** Upper-case names the engine defines and the statics it uses, so no type may take them. */
 export const RESERVED_RUST = ["META", "ALL", "INDEX", "WS", "Kind", "lookup"];
 
 const REGEX_VERSION = "1.13.1"; // the regex crate, the version the runner tests with
 const RUST_VERSION = "1.97.0";
-const ENGINE = fs.readFileSync(new URL("./engine.rs", import.meta.url), "utf8").replaceAll("\r\n", "\n");
-const CHECK = { gs1_mod10: "Gs1Mod10", iso7064_mod97_10: "Mod97", iban: "Iban", isbn: "Isbn", iso7064_mod11_2: "Mod11_2", int64_range: "Int64Range", uint64_range: "Uint64Range" };
-const STEP = { trim: "Trim", lowercase: "Lowercase", uppercase: "Uppercase", remove_spaces: "RemoveSpaces", remove_hyphens: "RemoveHyphens" };
+const ENGINE = readEngine("engine.rs");
 const SHAPES = new Set(["object", "array", "any"]);
 
-function fail(message) {
-    throw new Error(message);
-}
-
-/** Fails the build on a lone surrogate, which no Rust literal can hold (it would become U+FFFD). */
-function noLoneSurrogate(s) {
-    if (/[\ud800-\udfff]/u.test(s.replace(/[\ud800-\udbff][\udc00-\udfff]/g, ""))) fail(`Lone surrogate in ${JSON.stringify(s)}`);
-    return s;
+/** The engine's enum variant for a check or step: its name in PascalCase. It must be a variant in engine.rs. */
+function engineVariant(kind, name, owner) {
+    const id = styled("go", name);
+    return new RegExp(`^\\s+${id},$`, "m").test(ENGINE) ? id : fail(`${owner}: unknown ${kind} "${name}" (engine.rs has no ${id})`);
 }
 
 /** A Rust string literal. Control characters, carriage returns and the BOM are escaped; lone surrogates can't be. */
@@ -43,12 +37,6 @@ function pattern(p) {
 /** `Some(p)` for the `pattern` field, with `p` on its own line when the field is too long for one, as rustfmt does. */
 const some = (p) => (`    pattern: Some(${p}),`.length <= 100 ? `Some(${p})` : `Some(\n        ${p},\n    )`);
 
-function int64(n, name, fallback) {
-    if (n === null) return fallback;
-    if (!Number.isInteger(n) || Math.abs(n) >= 2 ** 63) fail(`${name}: bound ${n} is not an i64`);
-    return String(n);
-}
-
 /** An f64 literal: Rust needs a dot or an exponent to read a float. */
 function f64(n, fallback) {
     if (n === null) return fallback;
@@ -61,11 +49,11 @@ function rules(m) {
     switch (m.kind) {
         case "text":
             return ["Text", [
-                ["steps", `&[${m.steps.map((s) => `Step::${STEP[s] ?? fail(`${m.name}: unknown normalize step "${s}"`)}`).join(", ")}]`],
+                ["steps", `&[${m.steps.map((s) => `Step::${engineVariant("step", s, m.name)}`).join(", ")}]`],
                 ["pattern", m.pattern === null ? "None" : some(pattern(m.pattern))],
                 ["min_len", String(m.minLen)],
                 ["max_len", m.maxLen === null ? "usize::MAX" : String(m.maxLen)],
-                ["rule", m.check === null ? "None" : `Some(Check::${CHECK[m.check] ?? fail(`${m.name}: unknown check "${m.check}"`)})`],
+                ["rule", m.check === null ? "None" : `Some(Check::${engineVariant("check", m.check, m.name)})`],
                 ["re", "OnceLock::new()"],
             ]];
         case "integer":
@@ -95,16 +83,19 @@ function list(items, field, indent) {
     return `&[\n${items.map((a) => `${indent}    ${str(a)},\n`).join("")}${indent}]`;
 }
 
+/** The shared facts (metaFields) that Meta holds, in the order of its fields: [field, how to write the fact]. Params and check are always written. */
+const META = [
+    ["name", str], ["label", str], ["hint", str], ["error", str], ["details", str], ["level", str], ["primitive", str],
+    ["aliases", (v, indent) => list(v, "aliases", indent)],
+    ["params", (v, indent) => list(v ?? [], "params", indent)],
+    ["check", (v) => (v === undefined ? "None" : `Some(${str(v)})`)],
+];
+
 function record(m, id) {
     const [struct, more] = rules(m);
     const inner = more === null ? "    " : "        ";
-    const meta = fields([
-        ["name", str(m.name)], ["label", str(m.label)], ["hint", str(m.hint)], ["error", str(m.error)],
-        ["details", str(m.details)], ["level", str(m.level)], ["primitive", str(m.primitive)],
-        ["aliases", list(m.aliases, "aliases", inner)],
-        ["params", list(m.params, "params", inner)],
-        ["check", m.check === null ? "None" : `Some(${str(m.check)})`],
-    ], inner);
+    const facts = new Map(metaFields(m));
+    const meta = fields(META.map(([k, value]) => [k, value(facts.get(k), inner)]), inner);
     const body = more === null ? meta : `    meta: Meta {\n${meta}\n    },${more.length ? `\n${fields(more, "    ")}` : ""}`;
     return `${doc(m)}\npub static ${id}: ${struct} = ${struct} {\n${body}\n};\n`;
 }
@@ -133,18 +124,15 @@ ${errors.join("")}];
 export function emitRust(models, version, meta) {
     const ids = identifiers(models, "rust", RESERVED_RUST);
     const id = (m) => ids.get(m.name);
-    const header = [
-        "// Code generated from dist/scalars.json by dev/codegen/rust.mjs. DO NOT EDIT.",
-        `// scalars.rs, catalogue version ${version}. Run \`npm run build\` in dev/ to regenerate.`,
-        `// Requires Rust >= 1.80 (edition 2021) and the regex crate (tested with regex ${REGEX_VERSION} on Rust ${RUST_VERSION}).`,
-        "",
-        "",
-    ].join("\n");
+    const top = header({
+        file: "scalars.rs", source: "rust.mjs", version,
+        requires: `Requires Rust >= 1.80 (edition 2021) and the regex crate (tested with regex ${REGEX_VERSION} on Rust ${RUST_VERSION}).`,
+    });
     const table = models.map((m) => record(m, id(m))).join("\n");
     const every = models.map((m) => `    &${id(m)}${SHAPES.has(m.kind) ? "" : ".meta"},\n`).join("");
     const variant = (m) => (SHAPES.has(m.kind) ? "Shape" : rules(m)[0]);
     const lookup = models.map((m) => `        ${str(m.name)} => Kind::${variant(m)}(&${id(m)}),\n`).join("");
-    const source = `${header}${ENGINE}
+    const source = `${top}${ENGINE}
 ${tables(meta)}
 ${table}
 /// Every type, in catalogue order.

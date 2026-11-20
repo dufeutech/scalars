@@ -6,7 +6,8 @@ import { build, serialize } from "../build.mjs";
 import { emitGo, RESERVED_GO } from "../codegen/go.mjs";
 import { emitRust, RESERVED_RUST } from "../codegen/rust.mjs";
 import { RESERVED_PY } from "../codegen/python.mjs";
-import { toModel, modelOf, paramRules, identifiers } from "../codegen/model.mjs";
+import { toModel, modelOf, paramRules, identifiers, metaFields } from "../codegen/model.mjs";
+import * as common from "../codegen/common.mjs";
 import { emitPython } from "../codegen/python.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -102,4 +103,23 @@ test("python: params and the two tables are emitted", () => {
     assert.match(py, /^_PARAM_RULES: Final = \{/m);
     assert.match(py, /^_ERRORS: Final = \{/m);
     assert.ok(py.includes('"too_long": "At most {max} characters."'));
+});
+
+test("common: shared emitter helpers", () => {
+    assert.deepEqual(Object.keys(common).sort(), ["fail", "header", "int64", "noLoneSurrogate", "readEngine"]);
+    assert.throws(() => common.int64(2 ** 63, "x", "f"), /x/);
+    assert.equal(common.int64(null, "x", "f"), "f");
+    assert.equal(common.int64(-(2 ** 62), "x", "f"), String(-(2 ** 62)));
+    assert.throws(() => common.noLoneSurrogate("\ud800"), /Lone surrogate/);
+    assert.equal(common.noLoneSurrogate("a😀"), "a😀");
+    assert.throws(() => common.fail("boom"), /boom/);
+    assert.ok(!common.readEngine("engine.py").includes("\r"));
+});
+
+test("model: metaFields lists the facts every record writes, in order", () => {
+    const email = modelOf(scalars.types.email);
+    assert.deepEqual(metaFields(email).map(([k]) => k), [
+        "name", "label", "hint", "error", "details", "level", "primitive", "aliases", "examples", "kind",
+        "steps", "pattern", "minLen",
+    ]);
 });

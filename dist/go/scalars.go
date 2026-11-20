@@ -63,11 +63,11 @@ type checkKind uint8
 
 const (
 	checkNone checkKind = iota
-	checkGS1Mod10
-	checkMod97
-	checkIBAN
-	checkISBN
-	checkMod11_2
+	checkGs1Mod10
+	checkIso7064Mod9710
+	checkIban
+	checkIsbn
+	checkIso7064Mod112
 	checkInt64Range
 	checkUint64Range
 )
@@ -76,13 +76,13 @@ const (
 // shape: digits where the pattern put digits. Every rule is O(n).
 func (k checkKind) passes(s string) bool {
 	switch k {
-	case checkGS1Mod10:
+	case checkGs1Mod10:
 		return gs1Mod10(s)
-	case checkMod97:
+	case checkIso7064Mod9710:
 		return mod97(s, 0)
-	case checkIBAN:
+	case checkIban:
 		return mod97(s, 4)
-	case checkISBN:
+	case checkIsbn:
 		if len(s) == 13 {
 			return gs1Mod10(s)
 		}
@@ -95,7 +95,7 @@ func (k checkKind) passes(s string) bool {
 			t += d * (10 - i)
 		}
 		return t%11 == 0
-	case checkMod11_2:
+	case checkIso7064Mod112:
 		t := 0
 		for i := 0; i < len(s)-1; i++ {
 			if s[i] != '-' {
@@ -1190,7 +1190,7 @@ var scalarGln = TextScalar{
 	pattern: `^[0-9]{13}$`,
 	minLen:  13,
 	maxLen:  13,
-	rule:    checkGS1Mod10,
+	rule:    checkGs1Mod10,
 }
 
 // Gtin is Barcode number: 8, 12, 13 or 14 digits.
@@ -1216,7 +1216,7 @@ var scalarGtin = TextScalar{
 	pattern: `^([0-9]{8}|[0-9]{12}|[0-9]{13}|[0-9]{14})$`,
 	minLen:  8,
 	maxLen:  14,
-	rule:    checkGS1Mod10,
+	rule:    checkGs1Mod10,
 }
 
 // Hostname is Website name: Like api.example.com.
@@ -1315,7 +1315,7 @@ var scalarIban = TextScalar{
 	pattern: `^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$`,
 	minLen:  15,
 	maxLen:  34,
-	rule:    checkIBAN,
+	rule:    checkIban,
 }
 
 // IdnEmail is International email: Email that may use any alphabet.
@@ -1625,7 +1625,7 @@ var scalarIsbn = TextScalar{
 	pattern: `^([0-9]{9}[0-9Xx]|97[89][0-9]{10})$`,
 	minLen:  10,
 	maxLen:  13,
-	rule:    checkISBN,
+	rule:    checkIsbn,
 }
 
 // JsonPointer is JSON Pointer: A path inside a document, like /users/0.
@@ -1723,7 +1723,7 @@ var scalarLei = TextScalar{
 	pattern: `^[A-Z0-9]{18}[0-9]{2}$`,
 	minLen:  20,
 	maxLen:  20,
-	rule:    checkMod97,
+	rule:    checkIso7064Mod9710,
 }
 
 // Locale is Language and region: Like en-US or es-419.
@@ -1865,7 +1865,7 @@ var scalarOrcid = TextScalar{
 	pattern: `^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{3}[0-9X]$`,
 	minLen:  19,
 	maxLen:  19,
-	rule:    checkMod11_2,
+	rule:    checkIso7064Mod112,
 }
 
 // Phone is Phone number: Start with + and your country code.

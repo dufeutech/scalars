@@ -64,10 +64,10 @@ pub enum Step {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Check {
     Gs1Mod10,
-    Mod97,
+    Iso7064Mod9710,
     Iban,
     Isbn,
-    Mod11_2,
+    Iso7064Mod112,
     Int64Range,
     Uint64Range,
 }
@@ -79,7 +79,7 @@ impl Check {
         let b = s.as_bytes();
         match self {
             Check::Gs1Mod10 => gs1_mod10(b),
-            Check::Mod97 => mod97(b, 0),
+            Check::Iso7064Mod9710 => mod97(b, 0),
             Check::Iban => mod97(b, 4),
             Check::Isbn => {
                 if b.len() == 13 {
@@ -97,7 +97,7 @@ impl Check {
                     .sum();
                 t % 11 == 0
             }
-            Check::Mod11_2 => {
+            Check::Iso7064Mod112 => {
                 let (last, body) = b.split_last().expect("the pattern makes it non-empty");
                 let t = body
                     .iter()

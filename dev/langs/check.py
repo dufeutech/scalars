@@ -54,7 +54,7 @@ for name, spec in types.items():
         fails.append(f"scalars.{name} is not the type get({name!r}) returns")
     if (t.name, t.label, t.hint, t.error, t.details, t.level, t.primitive) != (
         name, spec["label"], spec["hint"], spec["error"], spec["details"], spec["level"], spec["primitive"],
-    ) or t.aliases != tuple(spec.get("aliases", [])):
+    ) or t.aliases != tuple(spec.get("aliases", [])) or t.check != spec.get("check"):
         fails.append(f"{name} metadata differs from dist")
     for v in spec["examples"]["valid"]:
         if not t.is_valid(v):
@@ -63,6 +63,9 @@ for name, spec in types.items():
         # Invalid examples break the raw pattern; normalizing may repair one ("usa" -> "USA"), so only those may pass.
         if t.is_valid(v) and not (isinstance(v, str) and t.normalize(v) != v):
             fails.append(f"{name} accepts invalid {v!r}")
+    for v in spec["examples"].get("check_invalid", []):
+        if t.is_valid(v):
+            fails.append(f"{name} accepts check_invalid {v!r}")
     for alias in spec.get("aliases", []):
         if scalars.get(alias) is not t:
             fails.append(f"get({alias!r}) is not {name}")

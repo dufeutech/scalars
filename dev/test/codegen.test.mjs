@@ -56,7 +56,7 @@ test("rust: patterns, reserved names, static table", () => {
     assert.ok(rs.includes(`    pattern: Some(r"${scalars.types.email.schema.pattern}"),\n`), "patterns are raw strings");
     assert.ok(rs.includes("    steps: &[Step::Trim, Step::Lowercase],\n"), "steps are variants");
     assert.ok(rs.includes("    re: OnceLock::new(),\n"), "the regex waits for first use");
-    const probe = { name: "probe", label: "L", hint: "H", error: "E", details: "", level: "core", primitive: "string", aliases: [], kind: "text", steps: [], minLen: 0, maxLen: null };
+    const probe = { name: "probe", label: "L", hint: "H", error: "E", details: "", level: "core", primitive: "string", aliases: [], kind: "text", steps: [], check: null, minLen: 0, maxLen: null };
     const quoted = emitRust([{ ...probe, pattern: 'a"#b\\"c' }], "0")["rust/scalars.rs"];
     assert.ok(quoted.includes(`pattern: Some(r##"a"#b\\"c"##),`), "a pattern holding \"# takes more hashes");
     const label = emitRust([{ ...probe, pattern: null, label: "a\r\u0007\"\\" }], "0")["rust/scalars.rs"];

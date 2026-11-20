@@ -72,6 +72,67 @@ _STEPS: Final = {
 }
 
 
+# The checks of $meta.checks. Each runs on the normalized value after the pattern matched, so it reads ASCII of the
+# pattern's shape: digits where the pattern put digits. All are O(n).
+def _gs1_mod10(s: str) -> bool:
+    n = _b.len(s)
+    t = 0
+    for i in _b.range(n):
+        t += (_b.ord(s[n - 1 - i]) - 48) * (3 if i % 2 else 1)
+    return t % 10 == 0
+
+
+def _mod97(s: str, start: int) -> bool:
+    """ISO 7064 MOD 97-10 over s[start:] then s[:start]: one pass, no rotated copy."""
+    n = _b.len(s)
+    r = 0
+    for k in _b.range(n):
+        c = _b.ord(s[(start + k) % n])
+        r = (r * 100 + c - 55) % 97 if c >= 65 else (r * 10 + c - 48) % 97  # A-Z are 10-35
+    return r == 1
+
+
+def _isbn(s: str) -> bool:
+    if _b.len(s) == 13:
+        return _gs1_mod10(s)
+    t = 0
+    for i in _b.range(10):
+        c = s[i]
+        t += (10 if c in "Xx" else _b.ord(c) - 48) * (10 - i)
+    return t % 11 == 0
+
+
+def _mod11_2(s: str) -> bool:
+    t = 0
+    for c in s[:-1]:
+        if c != "-":
+            t = (t + _b.ord(c) - 48) * 2
+    r = (12 - t % 11) % 11
+    return s[-1] == ("X" if r == 10 else _b.str(r))
+
+
+def _at_most(s: str, start: int, top: str) -> bool:
+    """Digits from start compared with top as text: leading zeros skipped, then fewer digits is smaller."""
+    n = _b.len(s)
+    i = start
+    while i < n - 1 and s[i] == "0":
+        i += 1
+    if n - i != _b.len(top):
+        return n - i < _b.len(top)
+    return s[i:] <= top
+
+
+_CHECKS: Final = {
+    "gs1_mod10": _gs1_mod10,
+    "iso7064_mod97_10": lambda s: _mod97(s, 0),
+    "iban": lambda s: _mod97(s, 4),
+    "isbn": _isbn,
+    "iso7064_mod11_2": _mod11_2,
+    "int64_range": lambda s: _at_most(s, 1, "9223372036854775808") if s[:1] == "-" else _at_most(s, 0, "9223372036854775807"),
+    "uint64_range": lambda s: _at_most(s, 0, "18446744073709551615"),
+}
+
+
 class Scalar(Generic[T]):
     """One scalar type. Instances are plain records; the regex is compiled on first use.
 
@@ -80,8 +141,8 @@ class Scalar(Generic[T]):
     """
 
     __slots__ = (
-        "name", "label", "hint", "error", "details", "level", "primitive", "aliases", "examples",
-        "_kind", "_steps", "_case_at", "_form_at", "_early", "_pattern", "_min_len", "_max_len", "_minimum", "_maximum", "_re",
+        "name", "label", "hint", "error", "details", "level", "primitive", "aliases", "examples", "check",
+        "_kind", "_steps", "_case_at", "_form_at", "_early", "_pattern", "_min_len", "_max_len", "_minimum", "_maximum", "_re", "_test",
     )
 
     def __init__(
@@ -99,6 +160,7 @@ class Scalar(Generic[T]):
         kind: str = "any",
         steps: tuple[str, ...] = (),
         pattern: str | None = None,
+        check: str | None = None,
         min_len: int = 0,
         max_len: int | None = None,
         minimum: float | None = None,
@@ -124,6 +186,8 @@ class Scalar(Generic[T]):
         # Text already too long is refused there too, before the check reads it, unless a later step can shorten it.
         self._early = max_len is not None and not _b.any(s in ("remove_spaces", "remove_hyphens") for s in steps)
         self._pattern = pattern
+        self.check = check  # the name of the rule beyond the pattern ($meta.checks), or None
+        self._test = None if check is None else _CHECKS[check]  # a bad name fails here, not on first use
         self._min_len = min_len
         self._max_len = max_len
         self._minimum = minimum
@@ -192,6 +256,9 @@ class Scalar(Generic[T]):
                     rx = self._re = _re.compile(pattern)
                 if rx.fullmatch(v) is None:  # not match/search: "$" would also accept a final "\n"
                     return _NO
+            test = self._test
+            if test is not None and not test(v):
+                return _NO
             return v
         if kind == "integer":
             if _b.isinstance(v, _b.bool):
@@ -831,6 +898,7 @@ gln: Final[Scalar[str]] = Scalar(
     kind="text",
     steps=("remove_spaces", "remove_hyphens"),
     pattern="^[0-9]{13}$",
+    check="gs1_mod10",
     min_len=13,
     max_len=13,
 )
@@ -853,6 +921,7 @@ gtin: Final[Scalar[str]] = Scalar(
     kind="text",
     steps=("remove_spaces", "remove_hyphens"),
     pattern="^([0-9]{8}|[0-9]{12}|[0-9]{13}|[0-9]{14})$",
+    check="gs1_mod10",
     min_len=8,
     max_len=14,
 )
@@ -936,6 +1005,7 @@ iban: Final[Scalar[str]] = Scalar(
     kind="text",
     steps=("trim", "remove_spaces", "uppercase"),
     pattern="^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$",
+    check="iban",
     min_len=15,
     max_len=34,
 )
@@ -1033,6 +1103,7 @@ int64: Final[Scalar[str]] = Scalar(
     examples={"valid": ("9007199254740993", "-42", "0", "9223372036854775807", "-9223372036854775808"), "invalid": ("12.5", 123)},
     kind="text",
     pattern="^-?[0-9]+$",
+    check="int64_range",
     min_len=1,
 )
 """Big whole number
@@ -1188,6 +1259,7 @@ isbn: Final[Scalar[str]] = Scalar(
     kind="text",
     steps=("remove_spaces", "remove_hyphens"),
     pattern="^([0-9]{9}[0-9Xx]|97[89][0-9]{10})$",
+    check="isbn",
     min_len=10,
     max_len=13,
 )
@@ -1269,6 +1341,7 @@ lei: Final[Scalar[str]] = Scalar(
     examples={"valid": ("5493001KJTIIGC8Y1R12", "529900T8BM49AURSDO55"), "invalid": ("5493001KJTIIGC8Y1R1", "5493001kjtiigc8y1r12")},
     kind="text",
     pattern="^[A-Z0-9]{18}[0-9]{2}$",
+    check="iso7064_mod97_10",
     min_len=20,
     max_len=20,
 )
@@ -1390,6 +1463,7 @@ orcid: Final[Scalar[str]] = Scalar(
     examples={"valid": ("0000-0002-1825-0097", "0000-0002-9079-593X"), "invalid": ("0000-0002-1825-009", "0000000218250097")},
     kind="text",
     pattern="^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{3}[0-9X]$",
+    check="iso7064_mod11_2",
     min_len=19,
     max_len=19,
 )
@@ -1844,6 +1918,7 @@ uint64: Final[Scalar[str]] = Scalar(
     examples={"valid": ("18446744073709551615", "0"), "invalid": ("-1", "1.5")},
     kind="text",
     pattern="^[0-9]+$",
+    check="uint64_range",
     min_len=1,
 )
 """Huge count

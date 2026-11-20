@@ -36,6 +36,61 @@ const STEPS: Readonly<Record<Step, (s: string) => string>> = {
     remove_hyphens: (s) => s.replaceAll("-", ""),
 };
 
+type Check = "gs1_mod10" | "iso7064_mod97_10" | "iban" | "isbn" | "iso7064_mod11_2" | "int64_range" | "uint64_range";
+
+// The checks of $meta.checks. Each runs on the normalized value after the pattern matched, so it reads ASCII of the
+// pattern's shape: one UTF-16 unit per character, and digits where the pattern put digits. All are O(n).
+const digit = (s: string, i: number): number => s.charCodeAt(i) - 48;
+
+function gs1Mod10(s: string): boolean {
+    let t = 0;
+    for (let i = 0; i < s.length; i++) t += digit(s, s.length - 1 - i) * (i % 2 ? 3 : 1);
+    return t % 10 === 0;
+}
+
+/** ISO 7064 MOD 97-10 over `s` from `from` to the end, then over `s` up to `from`: one pass, no rotated copy. */
+function mod97(s: string, from: number): boolean {
+    let r = 0;
+    for (let k = 0; k < s.length; k++) {
+        const c = s.charCodeAt((from + k) % s.length);
+        r = c >= 65 ? (r * 100 + c - 55) % 97 : (r * 10 + c - 48) % 97; // A-Z are 10-35
+    }
+    return r === 1;
+}
+
+function isbn(s: string): boolean {
+    if (s.length === 13) return gs1Mod10(s);
+    let t = 0;
+    for (let i = 0; i < 10; i++) t += (s[i] === "X" || s[i] === "x" ? 10 : digit(s, i)) * (10 - i);
+    return t % 11 === 0;
+}
+
+function mod11_2(s: string): boolean {
+    let t = 0;
+    for (let i = 0; i < s.length - 1; i++) if (s[i] !== "-") t = (t + digit(s, i)) * 2;
+    const r = (12 - (t % 11)) % 11;
+    return s[s.length - 1] === (r === 10 ? "X" : String(r));
+}
+
+/** Digits from `from` compared with `max` as text: leading zeros skipped, then fewer digits is smaller. */
+function atMost(s: string, from: number, max: string): boolean {
+    let i = from;
+    while (i < s.length - 1 && s[i] === "0") i++;
+    const n = s.length - i;
+    if (n !== max.length) return n < max.length;
+    return s.slice(i) <= max;
+}
+
+const CHECKS: Readonly<Record<Check, (s: string) => boolean>> = {
+    gs1_mod10: gs1Mod10,
+    iso7064_mod97_10: (s) => mod97(s, 0),
+    iban: (s) => mod97(s, 4),
+    isbn,
+    iso7064_mod11_2: mod11_2,
+    int64_range: (s) => (s[0] === "-" ? atMost(s, 1, "9223372036854775808") : atMost(s, 0, "9223372036854775807")),
+    uint64_range: (s) => atMost(s, 0, "18446744073709551615"),
+};
+
 /** True when a low surrogate sits at `i`, so the unit before it is the first half of a pair. */
 function isLow(s: string, i: number): boolean {
     const c = s.charCodeAt(i);
@@ -99,7 +154,7 @@ function isPlainObject(v: unknown): boolean {
     return proto === Object.prototype || proto === null;
 }
 
-const NO = Symbol("not valid"); // what `check` returns for "not valid"; a value can never be this symbol
+const NO = Symbol("not valid"); // what `run` returns for "not valid"; a value can never be this symbol
 
 type Kind = "text" | "integer" | "number" | "boolean" | "object" | "array" | "any";
 
@@ -117,6 +172,7 @@ export interface ScalarInit {
     readonly kind?: Kind;
     readonly steps?: readonly Step[];
     readonly pattern?: string;
+    readonly check?: Check;
     readonly minLen?: number;
     readonly maxLen?: number;
     readonly minimum?: number;
@@ -133,6 +189,8 @@ export class Scalar<T> {
     readonly level: string;
     readonly primitive: string;
     readonly aliases: readonly string[];
+    /** The name of the rule beyond the pattern ($meta.checks), or undefined. */
+    readonly check: string | undefined;
     /**
      * `invalid` values break the type's raw rule (pattern, length or bounds) before any cleanup; a few become
      * valid after `normalize` (country "us" -> "US").
@@ -144,6 +202,7 @@ export class Scalar<T> {
     private readonly formAt: number; // index of the first step that is not trim, or steps.length
     private readonly early: boolean; // a maxLen and no step that shortens text: refuse overlong text once trimmed
     private readonly pattern: string | undefined;
+    private readonly test: ((s: string) => boolean) | undefined;
     private readonly minLen: number;
     private readonly maxLen: number; // Infinity when unbounded
     private readonly minimum: number;
@@ -177,6 +236,9 @@ export class Scalar<T> {
         this.formAt = formAt === -1 ? names.length : formAt;
         this.early = init.maxLen !== undefined && !names.some((s) => s === "remove_spaces" || s === "remove_hyphens");
         this.pattern = init.pattern;
+        this.check = init.check;
+        if (init.check !== undefined && !Object.hasOwn(CHECKS, init.check)) throw new Error(`unknown check "${init.check}"`);
+        this.test = init.check === undefined ? undefined : CHECKS[init.check];
         this.minLen = init.minLen ?? 0;
         this.maxLen = init.maxLen ?? Infinity;
         this.minimum = init.minimum ?? -Infinity;
@@ -191,14 +253,14 @@ export class Scalar<T> {
 
     /** Normalize (text), then check kind, length, pattern and bounds. Returns the clean value or throws ScalarError. */
     validate(v: unknown): T {
-        const r = this.check(v);
+        const r = this.run(v);
         if (r === NO) throw new ScalarError(this);
         return r as T;
     }
 
     /** True exactly when `validate(v)` would succeed. Never builds an error. */
     isValid(v: unknown): boolean {
-        return this.check(v) !== NO;
+        return this.run(v) !== NO;
     }
 
     /** Once trimmed: not already too long (O(1): a code point is at most two units), then well-formed. */
@@ -207,7 +269,7 @@ export class Scalar<T> {
         return isWellFormed(s);
     }
 
-    private check(v: unknown): unknown {
+    private run(v: unknown): unknown {
         switch (this.kind) {
             case "text": {
                 if (typeof v !== "string") return NO;
@@ -227,6 +289,7 @@ export class Scalar<T> {
                     const rx = (this.rx ??= new RegExp(this.pattern, "u"));
                     if (!rx.test(s)) return NO;
                 }
+                if (this.test !== undefined && !this.test(s)) return NO;
                 return s;
             }
             case "integer":

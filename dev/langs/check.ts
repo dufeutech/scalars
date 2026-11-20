@@ -37,12 +37,13 @@ for (const [name, spec] of Object.entries(types)) {
     if (scalars[name] !== t) fails.push(`scalars.${name} is not the type get(${show(name)}) returns`);
     const same = [t.name, t.label, t.hint, t.error, t.details, t.level, t.primitive, JSON.stringify(t.aliases)]
         .join("\u0000") === [name, spec.label, spec.hint, spec.error, spec.details, spec.level, spec.primitive, JSON.stringify(spec.aliases ?? [])].join("\u0000");
-    if (!same) fails.push(`${name} metadata differs from dist`);
+    if (!same || (t.check ?? null) !== (spec.check ?? null)) fails.push(`${name} metadata differs from dist`);
     for (const v of spec.examples.valid) if (!t.isValid(v)) fails.push(`${name} rejects valid ${show(v)}`);
     for (const v of spec.examples.invalid ?? []) {
         // Normalizing may repair an invalid example ("usa" -> "USA"), so only those may pass.
         if (t.isValid(v) && !(typeof v === "string" && t.normalize(v) !== v)) fails.push(`${name} accepts invalid ${show(v)}`);
     }
+    for (const v of spec.examples.check_invalid ?? []) if (t.isValid(v)) fails.push(`${name} accepts check_invalid ${show(v)}`);
     for (const alias of spec.aliases ?? []) if (scalars.get(alias) !== t) fails.push(`get(${show(alias)}) is not ${name}`);
 }
 

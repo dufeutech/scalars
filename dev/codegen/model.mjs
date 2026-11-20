@@ -33,6 +33,7 @@ export function modelOf(t) {
         kind,
         steps: t.normalize ?? [],
         pattern,
+        check: t.check ?? null,
         minLen,
         maxLen,
         minimum: s.minimum ?? null,

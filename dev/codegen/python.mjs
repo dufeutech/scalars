@@ -46,6 +46,7 @@ function record(m, id) {
     ];
     if (m.steps.length) fields.push(["steps", tuple(m.steps)]);
     if (m.pattern !== null) fields.push(["pattern", lit(m.pattern)]);
+    if (m.check !== null) fields.push(["check", lit(m.check)]);
     if (m.minLen) fields.push(["min_len", lit(m.minLen)]);
     if (m.maxLen !== null) fields.push(["max_len", lit(m.maxLen)]);
     if (m.minimum !== null) fields.push(["minimum", lit(m.minimum)]);

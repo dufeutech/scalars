@@ -5,7 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "../build.mjs";
-import { fitsNumeric, isValidModel, loadModels, problem, sortProblems, validateModel } from "../lib/models.mjs";
+import { NAME, REF, fitsNumeric, isValidModel, loadModels, problem, sortProblems, validateModel } from "../lib/models.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const { scalars } = build(root);
@@ -217,7 +217,6 @@ test("fitsNumeric agrees with exact arithmetic", () => {
 });
 
 // The JSON Schema for models files checks shape and names only: what a type takes is the loader's job.
-const NAME_PATTERN = "^[a-z][a-z0-9_]*$";
 const modelsSchema = JSON.parse(fs.readFileSync(path.join(root, "schema/models.schema.json"), "utf8"));
 const validateFile = async () => {
     const { default: Ajv2020 } = await import("ajv/dist/2020.js");
@@ -245,5 +244,6 @@ test("schema refuses bad names and unknown settings", async () => {
 test("schema setting keys are the $meta.params keys plus items", () => {
     const keys = Object.keys(modelsSchema.$defs.field.oneOf.find((s) => s.type === "object").properties).filter((k) => k !== "type");
     assert.deepEqual([...keys].sort(), [...Object.keys(scalars.$meta.params), "items"].sort());
-    assert.equal(modelsSchema.$defs.name.pattern, NAME_PATTERN);
+    assert.equal(new RegExp(modelsSchema.$defs.name.pattern).source, NAME.source);
+    assert.equal(new RegExp(modelsSchema.$defs.reference.pattern).source, REF.source);
 });

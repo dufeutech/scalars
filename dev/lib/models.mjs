@@ -4,8 +4,8 @@
 import { modelOf, paramRules } from "../codegen/model.mjs";
 import { codePoints, validate } from "./reference.mjs";
 
-const NAME = /^[a-z][a-z0-9_]*$/;
-const REF = /^(?:([a-z][a-z0-9_]*):)?([a-z][a-z0-9_]*)(?:\.([a-z][a-z0-9_]*))?$/;
+export const NAME = /^[a-z][a-z0-9_]*$/;
+export const REF = /^(?:([a-z][a-z0-9_]*):)?([a-z][a-z0-9_]*)(?:\.([a-z][a-z0-9_]*))?$/;
 /** Nesting deeper than this, each model and each `items` one level, is refused at load: it bounds a payload's depth. */
 export const MAX_DEPTH = 64;
 /** Settings refused on number-kind types: float text differs by language, so digit counts can't agree. */

@@ -215,3 +215,35 @@ test("fitsNumeric agrees with exact arithmetic", () => {
         assert.equal(fitsNumeric(t, p, s), fitsByBigInt(t, p, s), `${t} numeric(${p}, ${s})`);
     }
 });
+
+// The JSON Schema for models files checks shape and names only: what a type takes is the loader's job.
+const NAME_PATTERN = "^[a-z][a-z0-9_]*$";
+const modelsSchema = JSON.parse(fs.readFileSync(path.join(root, "schema/models.schema.json"), "utf8"));
+const validateFile = async () => {
+    const { default: Ajv2020 } = await import("ajv/dist/2020.js");
+    return new Ajv2020({ allErrors: true, strict: true, validateFormats: false }).compile(modelsSchema);
+};
+
+test("schema accepts every loadable shared case", async () => {
+    const validate = await validateFile();
+    for (const c of cases.models.load.filter((x) => x.ok)) assert.ok(validate(c.data), `${c.name}: ${JSON.stringify(validate.errors?.slice(0, 3))}`);
+});
+
+test("schema refuses bad names and unknown settings", async () => {
+    const validate = await validateFile();
+    for (const name of ["bad_domain_name", "dollar_key", "bad_field_name"]) assert.ok(!validate(caseNamed(name).data), name);
+    assert.ok(!validate({ app: { user: { x: { type: "string", lenght: 3 } } } }), "a setting no type has");
+    assert.ok(!validate({ app: { user: { x: { type: "string", $note: 1 } } } }), "a $ key in a field");
+    assert.ok(!validate({ app: { user: { x: { length: 3 } } } }), "no type");
+    assert.ok(!validate({ app: { user: { x: { type: "string", length: "3" } } } }), "a mistyped setting");
+    assert.ok(!validate({ app: { user: { x: { type: "array", items: { type: "string", nullable: 1 } } } } }), "a nested bad setting");
+    assert.ok(!validate({ app: { user: { x: "Not a ref" } } }), "a bad reference");
+    assert.ok(!validate({ app: { "user-1": {} } }), "a bad model name");
+    assert.ok(validate({ $schema: "../schema/models.schema.json", app: { user: { x: "billing:invoice.total" } } }));
+});
+
+test("schema setting keys are the $meta.params keys plus items", () => {
+    const keys = Object.keys(modelsSchema.$defs.field.oneOf.find((s) => s.type === "object").properties).filter((k) => k !== "type");
+    assert.deepEqual([...keys].sort(), [...Object.keys(scalars.$meta.params), "items"].sort());
+    assert.equal(modelsSchema.$defs.name.pattern, NAME_PATTERN);
+});

@@ -14,18 +14,31 @@ const DIGIT_SETTINGS = ["precision", "scale"];
 const isObject = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
 const escape = (s) => String(s).replaceAll("~", "~0").replaceAll("/", "~1");
 
-/** A problem at `segments` (keys and list indices); the message is the code's `$meta.errors` template, filled in. */
-export function problem(segments, code, params, $meta) {
-    if (!Object.hasOwn($meta.errors, code)) throw new Error(`No template for code "${code}"`);
-    const message = $meta.errors[code].replace(/\{([a-z_]+)\}/g, (_, name) => {
+/**
+ * A problem at `segments` (keys and list indices). The message is the code's `$meta.errors` template, filled in;
+ * a code without a template (`invalid`, whose text is the type's `error`) needs `message`, used only then.
+ */
+export function problem(segments, code, params, $meta, message) {
+    if (!Object.hasOwn($meta.errors, code)) {
+        if (typeof message !== "string") throw new Error(`Code "${code}" has no template, so it needs a message`);
+        return located(segments, { code, params, message });
+    }
+    return located(segments, { code, params, message: fill(code, params, $meta) });
+}
+
+/** Adds the pointer, and the decoded segments sorting needs (a key "10" and an index 10 differ), kept off the visible shape. */
+function located(segments, { code, params, message }) {
+    const p = { pointer: segments.map((s) => "/" + escape(s)).join(""), code, params, message };
+    Object.defineProperty(p, "segments", { value: [...segments] });
+    return p;
+}
+
+function fill(code, params, $meta) {
+    return $meta.errors[code].replace(/\{([a-z_]+)\}/g, (_, name) => {
         if (!Object.hasOwn(params, name)) throw new Error(`Code "${code}" needs param "${name}"`);
         const v = params[name];
         return Array.isArray(v) ? v.join(", ") : String(v);
     });
-    const p = { pointer: segments.map((s) => "/" + escape(s)).join(""), code, params, message };
-    // Sorting needs the decoded segments (a key "10" and an index 10 differ); kept off the visible shape.
-    Object.defineProperty(p, "segments", { value: [...segments] });
-    return p;
 }
 
 /** Compares two strings by code point (JS `<` compares UTF-16 units, which misorders text outside the BMP). */
@@ -55,8 +68,16 @@ function compareProblems(a, b) {
     return x.length - y.length || compareText(a.code, b.code);
 }
 
-/** A new array of problems, sorted by location (then by code, for two at one location). */
-export const sortProblems = (problems) => [...problems].sort(compareProblems);
+/**
+ * A new array of problems, sorted by location (then by code, for two at one location). Every problem must be
+ * built with problem(): the order needs its decoded segments, which the pointer text can't give back.
+ */
+export function sortProblems(problems) {
+    for (const p of problems) {
+        if (!Array.isArray(p.segments)) throw new Error(`Problem at "${p.pointer}" has no segments: build problems with problem()`);
+    }
+    return [...problems].sort(compareProblems);
+}
 
 /** Per catalogue: alias → canonical name, the settings each type takes, and the setting rules. */
 const catalogues = new WeakMap();

@@ -12,12 +12,14 @@ const { scalars } = build(root);
 const cases = JSON.parse(fs.readFileSync(path.join(root, "dev/langs/cases.json"), "utf8"));
 const caseNamed = (name) => cases.models.load.find((c) => c.name === name);
 
-test("load cases", () => {
+test("load cases", async (t) => {
     for (const c of cases.models.load) {
-        const r = loadModels(c.data, scalars);
-        assert.equal(r.ok, c.ok, `${c.name}: ${JSON.stringify(r.problems ?? r.models?.all)}`);
-        if (c.ok) assert.deepEqual(r.models.all, c.all, c.name);
-        else assert.deepEqual(r.problems, c.problems, c.name);
+        await t.test(c.name, () => {
+            const r = loadModels(c.data, scalars);
+            assert.equal(r.ok, c.ok, JSON.stringify(r.problems ?? r.models?.all));
+            if (c.ok) assert.deepEqual(r.models.all, c.all);
+            else assert.deepEqual(r.problems, c.problems);
+        });
     }
 });
 
@@ -79,6 +81,19 @@ test("problem renders the pointer and the message", () => {
     assert.equal(problem([], "not_object", {}, scalars.$meta).pointer, "");
     assert.equal(problem(["x"], "not_allowed", { values: ["a", "b"] }, scalars.$meta).message, "Must be one of: a, b.");
     assert.equal(problem(["x"], "too_long", { max: 10 }, scalars.$meta).message, "At most 10 characters.");
+});
+
+test("problem takes the message for a code without a template, and only then", () => {
+    const p = problem(["n"], "invalid", { type: "int32" }, scalars.$meta, "Use a whole number.");
+    assert.deepEqual(p, { pointer: "/n", code: "invalid", params: { type: "int32" }, message: "Use a whole number." });
+    assert.throws(() => problem(["n"], "invalid", { type: "int32" }, scalars.$meta), /needs a message/);
+    assert.equal(problem(["n"], "required", {}, scalars.$meta, "ignored").message, "Required.");
+    assert.throws(() => problem(["n"], "too_long", {}, scalars.$meta), /needs param "max"/);
+});
+
+test("sortProblems refuses problems not built with problem()", () => {
+    const fake = { pointer: "/a", code: "required", params: {}, message: "Required." };
+    assert.throws(() => sortProblems([fake, problem(["b"], "required", {}, scalars.$meta)]), /problem\(\)/);
 });
 
 test("sortProblems orders by decoded segments", () => {

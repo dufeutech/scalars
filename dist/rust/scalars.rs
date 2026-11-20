@@ -1816,11 +1816,8 @@ static ERRORS: &[(&str, &str)] = &[
     ("unresolved", "No type or model by this name."),
     ("alias", "This is an alias; write \"{canonical}\"."),
     ("unknown_setting", "This type takes no such setting."),
-    (
-        "bad_setting",
-        "This setting's value is out of range or the wrong kind.",
-    ),
-    ("missing_setting", "This type needs \"{setting}\"."),
+    ("bad_setting", "Out of range or the wrong kind of value."),
+    ("missing_setting", "Needs \"{setting}\"."),
     ("cycle", "This reference leads back to itself."),
     ("too_deep", "Models nest more than {max} levels deep."),
 ];
@@ -3743,8 +3740,8 @@ pub static UNIX_TIME: Int = Int {
         params: &[],
         check: None,
     },
-    minimum: i64::MIN,
-    maximum: i64::MAX,
+    minimum: -9007199254740991,
+    maximum: 9007199254740991,
 };
 
 /// Web link: Like https://example.com/page.

@@ -1603,8 +1603,8 @@ var errorTemplates = [...]errorTemplate{
 	{"unresolved", "No type or model by this name."},
 	{"alias", "This is an alias; write \"{canonical}\"."},
 	{"unknown_setting", "This type takes no such setting."},
-	{"bad_setting", "This setting's value is out of range or the wrong kind."},
-	{"missing_setting", "This type needs \"{setting}\"."},
+	{"bad_setting", "Out of range or the wrong kind of value."},
+	{"missing_setting", "Needs \"{setting}\"."},
 	{"cycle", "This reference leads back to itself."},
 	{"too_deep", "Models nest more than {max} levels deep."},
 }
@@ -3579,8 +3579,8 @@ var scalarUnixTime = IntScalar{
 		Valid:     []any{1786000000.0, 0.0, -86400.0},
 		Invalid:   []any{1.5},
 	},
-	minimum: math.MinInt64,
-	maximum: math.MaxInt64,
+	minimum: -9007199254740991,
+	maximum: 9007199254740991,
 }
 
 // Uri is Web link: Like https://example.com/page.

@@ -112,8 +112,8 @@
             "unresolved": "No type or model by this name.",
             "alias": "This is an alias; write \"{canonical}\".",
             "unknown_setting": "This type takes no such setting.",
-            "bad_setting": "This setting's value is out of range or the wrong kind.",
-            "missing_setting": "This type needs \"{setting}\".",
+            "bad_setting": "Out of range or the wrong kind of value.",
+            "missing_setting": "Needs \"{setting}\".",
             "cycle": "This reference leads back to itself.",
             "too_deep": "Models nest more than {max} levels deep."
         }
@@ -1393,8 +1393,8 @@
             "epoch_seconds"
         ],
         "format": "unixtime",
-        "minimum": null,
-        "maximum": null,
+        "minimum": -9007199254740991,
+        "maximum": 9007199254740991,
         "examples": {
             "valid": [
                 1786000000,

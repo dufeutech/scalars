@@ -9,6 +9,9 @@
 - `schema/models.schema.json`, a JSON Schema for models files.
 - **Rust now needs `serde_json`** (as well as `regex`) for models data and payloads.
 
+### Fixed
+- **`unix_time`** is bounded at ±(2^53−1), like `double_int`. It had no bounds, so the four languages disagreed on values near 2^63 (Python and TypeScript accepted even 1e300).
+
 ### Changed
 - **Rust**: the public `Check` enum variants are renamed `Mod97` → `Iso7064Mod9710` and `Mod11_2` → `Iso7064Mod112`, and `Meta` gained a required `params` field.
 

@@ -64,10 +64,10 @@ pub enum Step {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Check {
     Gs1Mod10,
-    Iso7064Mod9710,
+    Iso7064Mod9710, // iso7064_mod97_10 (ISO 7064 MOD 97-10)
     Iban,
     Isbn,
-    Iso7064Mod112,
+    Iso7064Mod112, // iso7064_mod11_2 (ISO 7064 MOD 11-2)
     Int64Range,
     Uint64Range,
 }

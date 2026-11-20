@@ -1,6 +1,7 @@
 // The language-neutral view of dist/scalars.json that every code emitter reads.
 // Nothing here is typed by hand: rules come from the catalogue, lengths from the pattern.
 import { matchLengths } from "../lib/linear.mjs";
+import { fail } from "./common.mjs";
 
 const KINDS = new Set(["string", "integer", "number", "boolean", "object", "array"]);
 
@@ -73,20 +74,38 @@ export const paramRules = (meta) =>
         ]),
     );
 
-const words = (name) => name.split("_");
+/** PascalCase for a snake_case name: "iso7064_mod11_2" is "Iso7064Mod112". Empty words (a doubled underscore) vanish. */
+export const pascal = (name) => name.split("_").filter(Boolean).map((w) => w[0].toUpperCase() + w.slice(1)).join("");
+
 const IDENTIFIER_STYLES = {
-    go: (n) => words(n).map((w) => w[0].toUpperCase() + w.slice(1)).join(""),
+    go: pascal,
     ts: (n) => n,
     rust: (n) => n.toUpperCase(),
     python: (n) => n,
 };
 
-/** `name` in `lang`'s identifier style: Go's PascalCase for "iban_x" is "IbanX". */
-export const styled = (lang, name) => (IDENTIFIER_STYLES[lang] ?? fail(lang))(name);
+/** `name` in `lang`'s identifier style; throws for a language with none. */
+export const styled = (lang, name) => (IDENTIFIER_STYLES[lang] ?? fail(`Unknown language "${lang}"`))(name);
+
+/**
+ * Maps each check or step name to the engine's identifier for it: `prefix` + PascalCase (Go: "check"/"step",
+ * Rust: none). Throws when two names derive one identifier, or when `defined(id)` says the engine lacks it.
+ */
+export function engineNames(kind, names, prefix, defined, engineFile) {
+    const out = new Map();
+    const owner = new Map();
+    for (const name of new Set(names)) {
+        const id = prefix + pascal(name);
+        if (owner.has(id)) fail(`${kind} names "${owner.get(id)}" and "${name}" both become the identifier "${id}"`);
+        owner.set(id, name);
+        out.set(name, id);
+    }
+    for (const [name, id] of out) if (!defined(id)) fail(`Unknown ${kind} "${name}": ${engineFile} has no ${id}`);
+    return out;
+}
 
 /** Maps each type name to its identifier in `lang`; throws when two share one or one is reserved. */
 export function identifiers(models, lang, reserved) {
-    if (!IDENTIFIER_STYLES[lang]) throw new Error(`Unknown language "${lang}"`);
     const owner = new Map(reserved.map((r) => [r, "a reserved name"]));
     const out = new Map();
     for (const m of models) {

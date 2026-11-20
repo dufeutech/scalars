@@ -1,7 +1,7 @@
 // Emits dist/go/scalars.go (the hand-written engine.go followed by one generated record per type) and its go.mod.
 // Everything is written already gofmt-clean, and the table is plain composite literals, so Go builds it statically.
-import { fail, header, int64, noLoneSurrogate, readEngine } from "./common.mjs";
-import { identifiers, metaFields, paramRules, styled } from "./model.mjs";
+import { header, int64, noLoneSurrogate, readEngine } from "./common.mjs";
+import { engineNames, identifiers, metaFields, paramRules } from "./model.mjs";
 
 /** Names the engine exports, so no type may take them. */
 export const RESERVED_GO = ["Meta", "ScalarError", "TextScalar", "IntScalar", "NumberScalar", "BoolScalar", "ShapeScalar", "Get", "All", "Lookup"];
@@ -18,10 +18,13 @@ const STRUCT = {
     any: "ShapeScalar[any]",
 };
 
-/** The engine's name for a check or step: `check` or `step` plus the name in PascalCase. It must exist in engine.go. */
-function engineName(kind, name, owner) {
-    const id = `${kind}${styled("go", name)}`;
-    return new RegExp(`\\b${id}\\b`).test(ENGINE) ? id : fail(`${owner}: unknown ${kind} "${name}" (engine.go has no ${id})`);
+/** Each used check and step name mapped to its engine.go identifier (`check`/`step` + PascalCase), which must exist. */
+function engineIds(models, meta) {
+    const defined = (id) => new RegExp(`\\b${id}\\b`).test(ENGINE);
+    return {
+        check: engineNames("check", [...Object.keys(meta.checks ?? {}), ...models.map((m) => m.check).filter(Boolean)], "check", defined, "engine.go"),
+        step: engineNames("step", models.flatMap((m) => m.steps), "step", defined, "engine.go"),
+    };
 }
 
 /** A Go interpreted string literal. JSON escapes are valid Go escapes; Go forbids a BOM in source and lone surrogates. */
@@ -59,15 +62,15 @@ function fields(pairs, indent) {
 }
 
 /** The fields of the kind struct after Meta. */
-function rules(m) {
+function rules(m, ids) {
     switch (m.kind) {
         case "text":
             return [
-                ["steps", `[]step{${m.steps.map((s) => engineName("step", s, m.name)).join(", ")}}`],
+                ["steps", `[]step{${m.steps.map((s) => ids.step.get(s)).join(", ")}}`],
                 ["pattern", m.pattern === null ? `""` : pattern(m.pattern)],
                 ["minLen", String(m.minLen)],
                 ["maxLen", m.maxLen === null ? "noMax" : String(m.maxLen)],
-                ...(m.check === null ? [] : [["rule", engineName("check", m.check, m.name)]]),
+                ...(m.check === null ? [] : [["rule", ids.check.get(m.check)]]),
             ];
         case "integer":
             return [["minimum", int64(m.minimum, m.name, "math.MinInt64")], ["maximum", int64(m.maximum, m.name, "math.MaxInt64")]];
@@ -94,10 +97,10 @@ const META = [
     ["check", "Check", str],
 ];
 
-function record(m, id) {
+function record(m, id, ids) {
     const facts = new Map(metaFields(m));
     const meta = fields(META.filter(([k]) => facts.has(k)).map(([k, field, value]) => [field, value(facts.get(k))]), "\t\t");
-    const more = rules(m);
+    const more = rules(m, ids);
     const tail = more.length ? `\n${fields(more, "\t")}` : "";
     return `${doc(m, id)}
 var ${id} = &scalar${id}
@@ -128,11 +131,12 @@ ${errors.join("")}}
 export function emitGo(models, version, meta) {
     const ids = identifiers(models, "go", RESERVED_GO);
     const id = (m) => ids.get(m.name);
+    const engine = engineIds(models, meta);
     const top = header({
         file: "scalars.go", source: "go.mjs", version,
         requires: `Requires Go >= 1.21 and golang.org/x/text (tested with ${TEXT_VERSION} on Go 1.26.3).`,
     });
-    const table = models.map((m) => record(m, id(m))).join("\n");
+    const table = models.map((m) => record(m, id(m), engine)).join("\n");
     const lookup = models.map((m) => `\tcase ${str(m.name)}:\n\t\treturn ${id(m)}\n`).join("");
     const every = models.map((m) => `\t&scalar${id(m)}.Meta,\n`).join("");
     const source = `${top}${ENGINE}

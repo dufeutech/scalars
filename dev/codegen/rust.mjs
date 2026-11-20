@@ -1,7 +1,7 @@
 // Emits dist/rust/scalars.rs: the hand-written engine.rs followed by one generated static per type.
 // Everything is written rustfmt-clean, and every static is a plain constant expression, so nothing runs at load.
-import { fail, header, int64, noLoneSurrogate, readEngine } from "./common.mjs";
-import { identifiers, metaFields, paramRules, styled } from "./model.mjs";
+import { header, int64, noLoneSurrogate, readEngine } from "./common.mjs";
+import { engineNames, identifiers, metaFields, paramRules } from "./model.mjs";
 
 /** Upper-case names the engine defines and the statics it uses, so no type may take them. */
 export const RESERVED_RUST = ["META", "ALL", "INDEX", "WS", "Kind", "lookup"];
@@ -11,10 +11,13 @@ const RUST_VERSION = "1.97.0";
 const ENGINE = readEngine("engine.rs");
 const SHAPES = new Set(["object", "array", "any"]);
 
-/** The engine's enum variant for a check or step: its name in PascalCase. It must be a variant in engine.rs. */
-function engineVariant(kind, name, owner) {
-    const id = styled("go", name);
-    return new RegExp(`^\\s+${id},$`, "m").test(ENGINE) ? id : fail(`${owner}: unknown ${kind} "${name}" (engine.rs has no ${id})`);
+/** Each used check and step name mapped to its engine.rs enum variant (PascalCase), which must exist. */
+function engineIds(models, meta) {
+    const defined = (id) => new RegExp(`^\\s+${id},( //.*)?$`, "m").test(ENGINE);
+    return {
+        check: engineNames("check", [...Object.keys(meta.checks ?? {}), ...models.map((m) => m.check).filter(Boolean)], "", defined, "engine.rs"),
+        step: engineNames("step", models.flatMap((m) => m.steps), "", defined, "engine.rs"),
+    };
 }
 
 /** A Rust string literal. Control characters, carriage returns and the BOM are escaped; lone surrogates can't be. */
@@ -45,15 +48,15 @@ function f64(n, fallback) {
 }
 
 /** The kind struct and its fields after `meta`. */
-function rules(m) {
+function rules(m, ids) {
     switch (m.kind) {
         case "text":
             return ["Text", [
-                ["steps", `&[${m.steps.map((s) => `Step::${engineVariant("step", s, m.name)}`).join(", ")}]`],
+                ["steps", `&[${m.steps.map((s) => `Step::${ids.step.get(s)}`).join(", ")}]`],
                 ["pattern", m.pattern === null ? "None" : some(pattern(m.pattern))],
                 ["min_len", String(m.minLen)],
                 ["max_len", m.maxLen === null ? "usize::MAX" : String(m.maxLen)],
-                ["rule", m.check === null ? "None" : `Some(Check::${engineVariant("check", m.check, m.name)})`],
+                ["rule", m.check === null ? "None" : `Some(Check::${ids.check.get(m.check)})`],
                 ["re", "OnceLock::new()"],
             ]];
         case "integer":
@@ -91,8 +94,8 @@ const META = [
     ["check", (v) => (v === undefined ? "None" : `Some(${str(v)})`)],
 ];
 
-function record(m, id) {
-    const [struct, more] = rules(m);
+function record(m, id, ids) {
+    const [struct, more] = rules(m, ids);
     const inner = more === null ? "    " : "        ";
     const facts = new Map(metaFields(m));
     const meta = fields(META.map(([k, value]) => [k, value(facts.get(k), inner)]), inner);
@@ -124,13 +127,14 @@ ${errors.join("")}];
 export function emitRust(models, version, meta) {
     const ids = identifiers(models, "rust", RESERVED_RUST);
     const id = (m) => ids.get(m.name);
+    const engine = engineIds(models, meta);
     const top = header({
         file: "scalars.rs", source: "rust.mjs", version,
         requires: `Requires Rust >= 1.80 (edition 2021) and the regex crate (tested with regex ${REGEX_VERSION} on Rust ${RUST_VERSION}).`,
     });
-    const table = models.map((m) => record(m, id(m))).join("\n");
+    const table = models.map((m) => record(m, id(m), engine)).join("\n");
     const every = models.map((m) => `    &${id(m)}${SHAPES.has(m.kind) ? "" : ".meta"},\n`).join("");
-    const variant = (m) => (SHAPES.has(m.kind) ? "Shape" : rules(m)[0]);
+    const variant = (m) => (SHAPES.has(m.kind) ? "Shape" : rules(m, engine)[0]);
     const lookup = models.map((m) => `        ${str(m.name)} => Kind::${variant(m)}(&${id(m)}),\n`).join("");
     const source = `${top}${ENGINE}
 ${tables(meta)}

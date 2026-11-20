@@ -64,10 +64,10 @@ type checkKind uint8
 const (
 	checkNone checkKind = iota
 	checkGs1Mod10
-	checkIso7064Mod9710
+	checkIso7064Mod9710 // iso7064_mod97_10 (ISO 7064 MOD 97-10)
 	checkIban
 	checkIsbn
-	checkIso7064Mod112
+	checkIso7064Mod112 // iso7064_mod11_2 (ISO 7064 MOD 11-2)
 	checkInt64Range
 	checkUint64Range
 )

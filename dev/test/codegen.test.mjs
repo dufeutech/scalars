@@ -6,7 +6,7 @@ import { build, serialize } from "../build.mjs";
 import { emitGo, RESERVED_GO } from "../codegen/go.mjs";
 import { emitRust, RESERVED_RUST } from "../codegen/rust.mjs";
 import { RESERVED_PY } from "../codegen/python.mjs";
-import { toModel, modelOf, paramRules, identifiers, metaFields } from "../codegen/model.mjs";
+import { toModel, modelOf, paramRules, identifiers, metaFields, pascal, styled } from "../codegen/model.mjs";
 import * as common from "../codegen/common.mjs";
 import { emitPython } from "../codegen/python.mjs";
 
@@ -84,6 +84,26 @@ test("go and rust: a lone surrogate in a raw-string pattern fails the build", ()
     assert.doesNotThrow(() => emitRust(good, "0", scalars.$meta));
 });
 
+test("go and rust: unknown or colliding check and step names fail the build", () => {
+    const probe = { name: "probe", label: "L", hint: "H", error: "E", details: "", level: "core", primitive: "string", aliases: [], params: [],
+        examples: { valid: [], invalid: [] }, kind: "text", steps: [], check: null, pattern: null, minLen: 0, maxLen: null, minimum: null, maximum: null };
+    for (const [emit, file] of [[emitGo, "engine.go"], [emitRust, "engine.rs"]]) {
+        const run = (extra) => emit([{ ...probe, ...extra }], "0", scalars.$meta);
+        assert.throws(() => run({ check: "no_such_check" }), new RegExp(`Unknown check "no_such_check": ${file} has no`));
+        assert.throws(() => run({ steps: ["no_such_step"] }), new RegExp(`Unknown step "no_such_step": ${file} has no`));
+        assert.throws(() => run({ steps: ["a_b", "a__b"] }), /step names "a_b" and "a__b" both become the identifier/);
+        assert.throws(() => run({ check: "x_y" }), /Unknown check/);
+        assert.throws(() => emit([{ ...probe, check: "gs1_mod10" }, { ...probe, name: "p2", check: "gs1__mod10" }], "0", scalars.$meta), /check names .* both become/);
+        assert.doesNotThrow(() => run({ check: "iso7064_mod11_2", steps: ["trim"] }));
+    }
+});
+
+test("model: styled and pascal", () => {
+    assert.equal(pascal("iso7064_mod11_2"), "Iso7064Mod112");
+    assert.equal(styled("go", "gs1_mod10"), "Gs1Mod10");
+    assert.throws(() => styled("xx", "a"), /Unknown language "xx"/);
+});
+
 test("model: types carry their params", () => {
     assert.deepEqual(modelOf(scalars.types.string).params, ["length"]);
     assert.deepEqual(modelOf(scalars.types.email).params, []);
@@ -106,7 +126,7 @@ test("python: params and the two tables are emitted", () => {
 });
 
 test("common: shared emitter helpers", () => {
-    assert.deepEqual(Object.keys(common).sort(), ["fail", "header", "int64", "noLoneSurrogate", "readEngine"]);
+    for (const name of ["fail", "header", "int64", "noLoneSurrogate", "readEngine"]) assert.equal(typeof common[name], "function", name);
     assert.throws(() => common.int64(2 ** 63, "x", "f"), /x/);
     assert.equal(common.int64(null, "x", "f"), "f");
     assert.equal(common.int64(-(2 ** 62), "x", "f"), String(-(2 ** 62)));

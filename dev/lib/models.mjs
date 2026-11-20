@@ -6,7 +6,7 @@ import { codePoints, validate } from "./reference.mjs";
 
 const NAME = /^[a-z][a-z0-9_]*$/;
 const REF = /^(?:([a-z][a-z0-9_]*):)?([a-z][a-z0-9_]*)(?:\.([a-z][a-z0-9_]*))?$/;
-/** Model nesting deeper than this is refused at load (it bounds how deep models nest in a payload). */
+/** Nesting deeper than this, each model and each `items` one level, is refused at load: it bounds a payload's depth. */
 export const MAX_DEPTH = 64;
 /** Settings refused on number-kind types: float text differs by language, so digit counts can't agree. */
 const DIGIT_SETTINGS = ["precision", "scale"];
@@ -114,7 +114,7 @@ export function loadModels(data, scalars) {
     const defs = []; // every written field, in file order
     // A written field holds its segments; an `items` def links to its parent instead of copying the path, which
     // pathOf builds only for a problem, so a deep `items` chain stays linear.
-    const newDef = (segments, raw, domain, up = null) => ({ segments, up, raw, domain, ref: null, items: null, field: null, leaf: null, failed: false });
+    const newDef = (segments, raw, domain, up = null) => ({ segments, up, raw, domain, ref: null, items: null, field: null, leaf: null, arrays: 0, failed: false });
     const pathOf = (def, ...extra) => {
         const tail = [];
         let n = def;
@@ -267,10 +267,13 @@ export function loadModels(data, scalars) {
             : { kind: "model", model: base.model, nullable };
         // Once per written `values`: copies share the array.
         if (settings?.values && !valueSets.has(settings.values)) valueSets.set(settings.values, new Set(settings.values));
-        // The model this field nests, through any `items`: an edge of the nesting graph below.
-        v.leaf = ref.kind === "model" ? ref.target
-            : base.kind === "array" ? (items === base.items ? ref.target.leaf : v.items.leaf)
-            : ref.kind === "field" ? ref.target.leaf : null;
+        // The model this field nests, through any `items` (an edge of the nesting graph below), and how many
+        // `items` levels lie on the way: each counts toward the depth limit like a model.
+        const from = ref.kind === "model" ? null
+            : base.kind === "array" ? (items === base.items ? ref.target : v.items)
+            : ref.kind === "field" ? ref.target : null;
+        v.leaf = ref.kind === "model" ? ref.target : from ? from.leaf : null;
+        v.arrays = !from ? 0 : from === v.items ? 1 + from.arrays : from.arrays;
     }
 
     /** Checks the value v's `key` holds against its `$meta.params` rule; reports and returns false when refused. */
@@ -299,9 +302,11 @@ export function loadModels(data, scalars) {
         return ok;
     }
 
-    // 4. Nesting depth: the longest path over models (acyclic now: fields on cycles failed above), post-order
-    // with an explicit stack. A model with no model-typed fields has depth 1.
+    // 4. Nesting depth: the longest chain of levels, where each model and each `items` is one level (acyclic now:
+    // fields on cycles failed above). Post-order with an explicit stack. A model of plain fields has depth 1;
+    // a field adds its `items` levels plus the depth of the model it nests.
     const depth = new Map();
+    const fieldDepth = (def) => def.arrays + (def.leaf ? depth.get(def.leaf) : 0);
     for (const start of models.values()) {
         if (depth.has(start)) continue;
         const calls = [{ model: start, i: 0, d: 1 }];
@@ -309,17 +314,22 @@ export function loadModels(data, scalars) {
         while (calls.length) {
             const frame = calls.at(-1);
             if (frame.i < frame.model.list.length) {
-                const leaf = frame.model.list[frame.i++].leaf;
-                if (!leaf) continue;
-                if (depth.has(leaf)) frame.d = Math.max(frame.d, depth.get(leaf) + 1);
-                else if (open.has(leaf)) throw new Error(`Model cycle through "${leaf.name}" survived resolution`);
-                else { open.add(leaf); calls.push({ model: leaf, i: 0, d: 1 }); }
+                const def = frame.model.list[frame.i];
+                const { leaf } = def;
+                if (leaf && !depth.has(leaf)) {
+                    // Visit the nested model first, then come back to this field.
+                    if (open.has(leaf)) throw new Error(`Model cycle through "${leaf.name}" survived resolution`);
+                    open.add(leaf);
+                    calls.push({ model: leaf, i: 0, d: 1 });
+                    continue;
+                }
+                frame.i++;
+                if (!def.failed) frame.d = Math.max(frame.d, 1 + fieldDepth(def));
                 continue;
             }
             calls.pop();
             open.delete(frame.model);
             depth.set(frame.model, frame.d);
-            if (calls.length) calls.at(-1).d = Math.max(calls.at(-1).d, frame.d + 1);
         }
     }
     // Reported once per too-deep chain: at the outermost too-deep model, on each field that makes it too deep.
@@ -328,7 +338,7 @@ export function loadModels(data, scalars) {
     for (const m of deep) for (const def of m.list) if (def.leaf && depth.get(def.leaf) > MAX_DEPTH) inner.add(def.leaf);
     for (const m of deep) {
         if (inner.has(m)) continue;
-        for (const def of m.list) if (def.leaf && depth.get(def.leaf) + 1 > MAX_DEPTH) report(def.segments, "too_deep", { max: MAX_DEPTH });
+        for (const def of m.list) if (!def.failed && 1 + fieldDepth(def) > MAX_DEPTH) report(def.segments, "too_deep", { max: MAX_DEPTH });
     }
 
     if (problems.length) return { ok: false, problems: sortProblems(problems) };
@@ -383,9 +393,9 @@ export function isValidModel(model, payload) {
 }
 
 /**
- * One loop over an explicit stack of pending values: each value is visited once, and no recursion is driven by
- * the input or by the models (an `items` chain can be thousands deep). A value's output slot is made before its
- * children are visited, which fill it in.
+ * One loop over an explicit stack of pending values: each value is visited once. (Load bounds the depth at
+ * MAX_DEPTH, so an engine may recurse instead.) A value's output slot is made before its children are visited,
+ * which fill it in.
  */
 function run(model, payload, first) {
     const { types, $meta, get } = model.context;

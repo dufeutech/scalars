@@ -59,10 +59,10 @@ test("a 5,000-long field-reference chain loads without recursion", () => {
     assert.equal(r.models.get("app:user").fields.get("f0").type, "string");
 });
 
-test("a 20,000-deep items chain loads, and a problem at its bottom has the full pointer", () => {
+test("a 20,000-deep items chain is refused at each field holding it, and a problem at its bottom has the full pointer", () => {
     const nest = (leaf) => { let def = leaf; for (let i = 0; i < 20000; i++) def = { type: "array", items: def }; return def; };
     const r = loadModels({ app: { a: { x: nest("string"), y: "a.x" } } }, scalars);
-    assert.equal(r.ok, true);
+    assert.deepEqual(r.problems.map((p) => [p.pointer, p.code]), [["/app/a/x", "too_deep"], ["/app/a/y", "too_deep"]]);
     const bad = loadModels({ app: { a: { x: nest("nope") } } }, scalars);
     assert.deepEqual(bad.problems.map((p) => p.pointer), ["/app/a/x" + "/items".repeat(20000)]);
 });
@@ -147,12 +147,10 @@ const HOSTILE = {
     many_unknown: (n) => { const p = { ...ADDRESS }; for (let i = 0; i < n; i++) p[`k${i}`] = 1; return p; },
     long_decimal: (n) => ({ to: ADDRESS, status: "draft", total: "1" + "0".repeat(n) }),
     ref_chain: (n) => { const p = {}; for (let i = 0; i < n; i++) p[`f${i}`] = "a"; return p; },
-    deep_items: (n) => { let v = "a"; for (let i = 0; i < n; i++) v = [v]; return { x: v }; },
 };
 /** Hostile kinds without a load case build their models file from the count. */
 const HOSTILE_MODELS = {
     ref_chain: (n) => { const c = {}; for (let i = 0; i < n - 1; i++) c[`f${i}`] = `c.f${i + 1}`; c[`f${n - 1}`] = "string"; return { app: { c } }; },
-    deep_items: (n) => { let def = "string"; for (let i = 0; i < n; i++) def = { type: "array", items: def }; return { app: { d: { x: def } } }; },
 };
 
 test("hostile model cases", async (t) => {

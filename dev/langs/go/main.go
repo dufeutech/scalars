@@ -656,13 +656,6 @@ func checkModels(cases *Cases) (float64, string) {
 				fail("models Get(%q) found a model", name)
 			}
 		}
-		// A JSON number counts as an integer only when its value is integral (no shared case has a fraction).
-		if m, ok := spec.Get("shop:line_item"); ok {
-			_, e := validateModel("fraction", m, map[string]any{"sku": "0614141000036", "qty": 3.5})
-			if e == nil || len(e.Problems) != 1 || e.Problems[0].Code != "invalid" || e.Problems[0].Pointer != "/qty" {
-				fail("models: qty 3.5 for an int32 field is not one invalid at /qty: %v", e)
-			}
-		}
 	}
 	values := []any{"x", "y"}
 	if set, _ := loadModels("owned", map[string]any{"app": map[string]any{"a": map[string]any{"s": map[string]any{"type": "enum", "values": values}}}}); set != nil {

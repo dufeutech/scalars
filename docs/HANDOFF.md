@@ -52,9 +52,8 @@ State of the project for whoever picks it up next. Last updated 2026-11-20, afte
 
 ## Known follow-ups from the models branch (to fix)
 
-Findings from the per-task reviews and the final whole-branch review of the `models` work. The final review's must-fix items are done (smaller `wide_list`, the `type_name` code, the CHANGELOG Rust note, the README load rules). None of these blocks the feature; the first one matters most.
+Findings from the per-task reviews and the final whole-branch review of the `models` work. The final review's must-fix items are done (smaller `wide_list`, the `type_name` code, the CHANGELOG Rust note, the README load rules), and so are the `unix_time` 64-bit edge (now bounded at ±(2^53−1) with shared cases) and the two odd templates (`missing_setting`, `bad_setting`). None of these blocks the feature.
 
-- **The four languages disagree at the 64-bit edge for integer types with no bounds (`unix_time`), the most important follow-up.** It predates models: `unix_time` has no `minimum`/`maximum` in the catalogue. Python, TS and the reference accept 2^63, 1e19 and even 1e300 (Python returns a 301-digit int). Go and Rust refuse those, Go also refuses 9223372036854775807 (float64 rounds it up), and Go and Rust accept -9223372036854775809 as -2^63. Suggested fix: give `unix_time` exact ±(2^53−1) bounds like `double_int`, and add shared cases for ±2^63 and values above 2^53.
 - **Python returns a float for number fields** (`3` → `3.0`), on purpose (engine.py: "the native value of a number type is a float"). TS, Go and Rust return `3`. Numerically equal as JSON, but the text differs, so the shared cases use `1.5`. Decide whether Python should keep numbers as given.
 - **Alias collisions:** Python's `get` lets the first type with an alias win, the JS reference the last. Latent, since no two types share an alias today. Add a build-time check that aliases are unique.
 - **Public constructors:** TS `Model` / `Models` (and probably Python's) can be built by callers from internal maps, skipping load's checks. Make them internal or document "use `models()`".
@@ -65,7 +64,6 @@ Findings from the per-task reviews and the final whole-branch review of the `mod
 - **Rust `Problem` has no JSON conversion.** The README says problems drop into an RFC 9457 response unchanged; Go has JSON tags and Python `_asdict()`, but Rust users build each `Value` by hand. Add `impl From<&Problem> for Value`.
 - **Constants written out in five files:** `MAX_DEPTH` (64), the NAME and REF patterns, and the digit settings live in the reference and each engine. Only the schema is tied to NAME/REF by a test. Emit them like `PARAM_RULES` and `ERRORS`.
 - **Postgres enum limits:** enum `values` accept `""` and labels over 63 bytes, which `CREATE TYPE … AS ENUM` refuses.
-- **Two templates read oddly:** a missing `type` says `This type needs "type".`, and a field that's neither a string nor an object gets "This setting's value…". Codes are a contract once released, so fix these before the next release.
 - **No build check guards the digits rule's precondition:** nothing asserts that a type taking `precision` has a `-?[0-9]+(\.[0-9]+)?` pattern.
 - **Rust copies `any`/`object`/`array` values;** the other three return the input itself (their output shares objects with the input). Harmless, undocumented.
 - **Go `ModelSet.All` and `Model.Name` are exported, mutable fields.**

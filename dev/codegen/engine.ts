@@ -160,7 +160,7 @@ type Kind = "text" | "integer" | "number" | "boolean" | "object" | "array" | "an
 
 /** The limits of one setting in $meta.params; a limit it does not have is null. */
 interface ParamRule {
-    readonly kind: string;
+    readonly kind: "integer" | "boolean" | "array";
     readonly minimum: number | null;
     readonly maximum: number | null;
     readonly minItems: number | null;

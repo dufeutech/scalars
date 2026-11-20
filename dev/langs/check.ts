@@ -112,5 +112,137 @@ for (const c of cases.hostile) {
     if (ms >= 2000) fails.push(`hostile ${c.type} took ${ms.toFixed(0)} ms`);
 }
 
-console.log(fails.length ? fails.join("\n") : `ts: ok, ${Object.keys(types).length} types, slowest hostile ${slowest.type} ${slowest.ms.toFixed(1)} ms`);
+const { Models, ModelError, ModelsError } = mod;
+if (Models?.catalogue !== undefined) fails.push("the models catalogue was built at import");
+
+/** JSON text with sorted keys, so two shapes compare exactly whatever their key order. */
+function canon(v: unknown): string {
+    if (Array.isArray(v)) return `[${v.map(canon).join(",")}]`;
+    if (typeof v === "object" && v !== null) {
+        return `{${Object.keys(v).sort().map((k) => `${JSON.stringify(k)}:${canon((v as Record<string, unknown>)[k])}`).join(",")}}`;
+    }
+    return JSON.stringify(v);
+}
+const joined = (problems: readonly any[]) => problems.map((p) => `${p.pointer}: ${p.message}`).join("; ");
+
+/** Loads a models file: the Models, or the ModelsError it threw. Anything else thrown is a bug and propagates. */
+function load(data: unknown): { models?: any; error?: any } {
+    try {
+        return { models: scalars.models(data) };
+    } catch (e) {
+        if (!(e instanceof ModelsError)) throw e;
+        return { error: e };
+    }
+}
+
+const loadCases: Record<string, any> = Object.fromEntries(cases.models.load.map((c: any) => [c.name, c]));
+for (const c of cases.models.load) {
+    const { models, error } = load(c.data);
+    if (error) {
+        if (c.ok) fails.push(`models.load ${c.name}: refused: ${error.message}`);
+        else if (canon(error.problems) !== canon(c.problems)) fails.push(`models.load ${c.name}: problems ${canon(error.problems)}, want ${canon(c.problems)}`);
+        else if (!(error instanceof Error) || !Array.isArray(error.problems)) fails.push(`models.load ${c.name}: ModelsError is not an Error with a list of problems`);
+        else if (error.message !== joined(error.problems)) fails.push(`models.load ${c.name}: ModelsError message is ${show(error.message)}`);
+        continue;
+    }
+    if (!c.ok) fails.push(`models.load ${c.name}: loaded, want problems ${canon(c.problems)}`);
+    else if (canon(models.all) !== canon(c.all)) fails.push(`models.load ${c.name}: all ${canon(models.all)}, want ${canon(c.all)}`);
+}
+
+function modelOf(c: any): any {
+    const { models, error } = load(loadCases[c.load].data);
+    if (error) {
+        fails.push(`${c.name}: load case ${show(c.load)} must load: ${error.message}`);
+        return undefined;
+    }
+    const m = models.get(c.model);
+    if (m === undefined) fails.push(`${c.name}: no model ${show(c.model)}`);
+    else if (m.name !== c.model) fails.push(`${c.name}: model name ${show(m.name)}`);
+    return m;
+}
+
+for (const c of cases.models.validate) {
+    const m = modelOf(c);
+    if (m === undefined) continue;
+    try {
+        const out = m.validate(c.in);
+        if (!c.ok) fails.push(`models.validate ${c.name}: passed, want problems ${canon(c.problems)}`);
+        else if (canon(out) !== canon(c.out)) fails.push(`models.validate ${c.name}: out ${canon(out)}, want ${canon(c.out)}`);
+    } catch (e: any) {
+        if (!(e instanceof ModelError)) throw e;
+        if (c.ok) fails.push(`models.validate ${c.name}: refused: ${e.message}`);
+        else if (canon(e.problems) !== canon(c.problems)) fails.push(`models.validate ${c.name}: problems ${canon(e.problems)}, want ${canon(c.problems)}`);
+        else if (!(e instanceof Error) || e.message !== joined(e.problems)) fails.push(`models.validate ${c.name}: ModelError is not an Error joining its problems`);
+    }
+    if (m.isValid(c.in) !== c.ok) fails.push(`models.validate ${c.name}: isValid disagrees with ok`);
+}
+// A field named like an Object.prototype member is looked up as an own key: missing, it's required, not inherited.
+const protoModel = scalars.models({ app: { p: { constructor: "string" } } }).get("app:p");
+try {
+    protoModel.validate({});
+    fails.push("models: a missing constructor field passed");
+} catch (e: any) {
+    if (!(e instanceof ModelError) || canon(e.problems.map((p: any) => [p.pointer, p.code])) !== canon([["/constructor", "required"]])) {
+        fails.push(`models: a missing constructor field gave ${e instanceof ModelError ? canon(e.problems) : e}`);
+    }
+}
+if (({} as any).polluted !== undefined || Object.prototype.hasOwnProperty.call(Object.prototype, "polluted")) fails.push("a payload changed Object.prototype");
+
+// get takes the exact full name only, and the loaded settings never alias the caller's data.
+const specModels = scalars.models(loadCases.ok_spec_example.data);
+for (const name of ["order", "shop:Order", "constructor", "__proto__", "toString", 3, null]) {
+    if (specModels.get(name) !== undefined) fails.push(`models.get(${show(name)}) found a model`);
+}
+const owned = { app: { a: { s: { type: "enum", values: ["x", "y"] } } } };
+const ownedModel = scalars.models(owned).get("app:a");
+owned.app.a.s.values[0] = "w";
+owned.app.a.s.values.push("z");
+if (!ownedModel.isValid({ s: "x" }) || ownedModel.isValid({ s: "z" })) fails.push("loaded settings alias the caller's values");
+
+const ADDRESS = { street: "a", country: "US" };
+const HOSTILE: Record<string, (n: number) => unknown> = {
+    wide_list: (n) => ({ bill_to: { ...ADDRESS }, items: Array.from({ length: n }, () => ({ sku: "0614141000036", qty: 1 })), status: "draft" }),
+    many_unknown: (n) => ({ ...ADDRESS, ...Object.fromEntries(Array.from({ length: n }, (_, i) => [`k${i}`, 1])) }),
+    long_decimal: (n) => ({ to: { ...ADDRESS }, status: "draft", total: "1" + "0".repeat(n) }),
+    ref_chain: (n) => Object.fromEntries(Array.from({ length: n }, (_, i) => [`f${i}`, "a"])),
+};
+const HOSTILE_MODELS: Record<string, (n: number) => unknown> = {
+    ref_chain: (n) => ({ app: { c: { ...Object.fromEntries(Array.from({ length: n - 1 }, (_, i) => [`f${i}`, `c.f${i + 1}`])), [`f${n - 1}`]: "string" } } }),
+};
+let modelsSlowest = { ms: 0, kind: "" };
+for (const c of cases.models.hostile) {
+    if (!Object.hasOwn(HOSTILE, c.kind)) {
+        fails.push(`models.hostile: unknown kind ${show(c.kind)}`);
+        continue;
+    }
+    const data = "load" in c ? loadCases[c.load].data : HOSTILE_MODELS[c.kind](c.count);
+    const payload = HOSTILE[c.kind](c.count);
+    const start = performance.now(); // load and validate
+    const { models, error } = load(data);
+    if (error) {
+        fails.push(`models.hostile ${c.kind}: refused at load: ${error.message.slice(0, 200)}`);
+        continue;
+    }
+    const m = models.get(c.model);
+    if (m === undefined) {
+        fails.push(`models.hostile ${c.kind}: no model ${show(c.model)}`);
+        continue;
+    }
+    let problems: any[] | undefined;
+    try {
+        m.validate(payload);
+    } catch (e) {
+        if (!(e instanceof ModelError)) throw e;
+        problems = e.problems;
+    }
+    const ms = performance.now() - start;
+    if (ms > modelsSlowest.ms) modelsSlowest = { ms, kind: c.kind };
+    if ((problems === undefined) !== c.ok) fails.push(`models.hostile ${c.kind}: want ok ${c.ok}`);
+    else if (problems !== undefined && (problems.length !== c.problem_count || problems[0].code !== c.code || problems[0].pointer !== c.pointer)) {
+        fails.push(`models.hostile ${c.kind}: ${problems.length} problems, first ${problems[0].code} at ${show(problems[0].pointer)}`);
+    }
+    if (ms >= 2000) fails.push(`models.hostile ${c.kind} took ${ms.toFixed(0)} ms`);
+}
+
+console.log(fails.length ? fails.join("\n") : `ts: ok, ${Object.keys(types).length} types, slowest hostile ${slowest.type} ${slowest.ms.toFixed(1)} ms, slowest models hostile ${modelsSlowest.kind} ${modelsSlowest.ms.toFixed(1)} ms`);
 process.exit(fails.length ? 1 : 0);

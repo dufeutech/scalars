@@ -1,11 +1,12 @@
-// Emits dist/ts/scalars.ts: the hand-written engine (engine.ts) followed by one generated record per type.
+// Emits dist/ts/scalars.ts: the hand-written engine (engine.ts, then models.ts) followed by one generated record per type.
 import { header, readEngine } from "./common.mjs";
 import { identifiers, metaFields, paramRules } from "./model.mjs";
 
 /** Names the engine defines on the `scalars` object, so no type may take them. */
-export const RESERVED_TS = ["get", "all", "__proto__"];
+export const RESERVED_TS = ["get", "all", "models", "__proto__"];
 
-const ENGINE = readEngine("engine.ts");
+/** The hand-written engine: the scalars, then the models (which read `PARAM_RULES` and `ERRORS`, emitted below). */
+const ENGINE = `${readEngine("engine.ts")}\n${readEngine("models.ts")}`;
 const NATIVE = { text: "string", integer: "number", number: "number", boolean: "boolean", object: "Record<string, unknown>", array: "unknown[]", any: "unknown" };
 
 /** A TS literal for a JSON value. JSON text is valid TS, so every backslash survives. */
@@ -41,12 +42,16 @@ const ERRORS: Readonly<Record<string, string>> = ${lit(meta.errors)};
 ${tables}
 ${names}
 
-/** Every type by name, plus \`get\` (name or alias) and \`all\`. */
+/** Every type by name, plus \`get\` (name or alias), \`all\` and \`models\`. */
 export const scalars = {
 ${table}
     /** Find a type by name or alias; spacing, hyphens and case are forgiven. Nothing found gives undefined. */
     get(word: Name | (string & {})): Scalar<unknown> | undefined {
         return find(word, scalars.all);
+    },
+    /** Loads a models file (parsed JSON, never a path). Returns its Models, or throws ModelsError listing every problem, sorted. */
+    models(data: unknown): Models {
+        return loadModels(data);
     },
     /** Every type, in catalogue order. */
     get all(): readonly Scalar<unknown>[] {

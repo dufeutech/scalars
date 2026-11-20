@@ -49,7 +49,7 @@ export function normalize(t, value) {
 const gs1 = (s) => { let t = 0; for (let i = 0; i < s.length; i++) t += (s.charCodeAt(s.length - 1 - i) - 48) * (i % 2 ? 3 : 1); return t % 10 === 0; };
 const mod97 = (s) => { let r = 0; for (const c of s) { const v = parseInt(c, 36); r = (v > 9 ? r * 100 + v : r * 10 + v) % 97; } return r === 1; };
 const isbn10 = (s) => { let t = 0; for (let i = 0; i < 10; i++) t += (s[i] === "X" || s[i] === "x" ? 10 : s.charCodeAt(i) - 48) * (10 - i); return t % 11 === 0; };
-const mod11_2 = (s) => { s = s.replaceAll("-", ""); let t = 0; for (let i = 0; i < s.length - 1; i++) t = (t + s.charCodeAt(i) - 48) * 2; const r = (12 - t % 11) % 11; return s.at(-1) === (r === 10 ? "X" : String(r)); };
+const mod11_2 = (s) => { s = s.replaceAll("-", ""); let t = 0; for (let i = 0; i < s.length - 1; i++) t = ((t + s.charCodeAt(i) - 48) * 2) % 11; const r = (12 - t % 11) % 11; return s.at(-1) === (r === 10 ? "X" : String(r)); };
 /** Digits compared as text: leading zeros dropped, then fewer digits is smaller and equal counts compare as text. O(n). */
 const atMost = (digits, max) => { let i = 0; while (i < digits.length - 1 && digits[i] === "0") i++; const d = digits.slice(i); return d.length < max.length || (d.length === max.length && d <= max); };
 export const CHECKS = {

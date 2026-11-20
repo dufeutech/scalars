@@ -82,7 +82,7 @@ func (k checkKind) passes(s string) bool {
 		t := 0
 		for i := 0; i < len(s)-1; i++ {
 			if s[i] != '-' {
-				t = (t + int(s[i]) - '0') * 2
+				t = (t + int(s[i]) - '0') * 2 % 11 // reduced each step: exact at any length
 			}
 		}
 		r := (12 - t%11) % 11

@@ -58,3 +58,14 @@ test("reference object kind accepts plain objects only", () => {
     assert.deepEqual([ok({}), ok(Object.create(null)), ok([]), ok(new Date()), ok(new Map()), ok(null), ok("x")],
         [true, true, false, false, false, false, false]);
 });
+
+test("iso7064_mod11_2 holds on input far longer than orcid", async () => {
+    const { CHECKS } = await import("../lib/reference.mjs");
+    // A BigInt oracle builds a valid 70-digit value; the check must not lose precision on it.
+    const body = "1234567890".repeat(7).slice(0, 69);
+    let t = 0n;
+    for (const c of body) t = (t + BigInt(c)) * 2n;
+    const r = Number((12n - (t % 11n)) % 11n);
+    const value = body + (r === 10 ? "X" : String(r));
+    assert.equal(CHECKS.iso7064_mod11_2(value), true);
+});

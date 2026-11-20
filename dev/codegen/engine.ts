@@ -67,7 +67,7 @@ function isbn(s: string): boolean {
 
 function mod11_2(s: string): boolean {
     let t = 0;
-    for (let i = 0; i < s.length - 1; i++) if (s[i] !== "-") t = (t + digit(s, i)) * 2;
+    for (let i = 0; i < s.length - 1; i++) if (s[i] !== "-") t = ((t + digit(s, i)) * 2) % 11; // reduced each step: exact at any length
     const r = (12 - (t % 11)) % 11;
     return s[s.length - 1] === (r === 10 ? "X" : String(r));
 }

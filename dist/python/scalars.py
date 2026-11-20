@@ -106,7 +106,7 @@ def _mod11_2(s: str) -> bool:
     t = 0
     for c in s[:-1]:
         if c != "-":
-            t = (t + _b.ord(c) - 48) * 2
+            t = (t + _b.ord(c) - 48) * 2 % 11  # reduced each step: linear at any length
     r = (12 - t % 11) % 11
     return s[-1] == ("X" if r == 10 else _b.str(r))
 

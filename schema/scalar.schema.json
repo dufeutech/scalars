@@ -107,7 +107,7 @@
                 },
                 {
                     "const": "iso7064_mod11_2",
-                    "description": "ISO 7064 MOD 11-2 (ORCID, ISNI). Skip hyphens. With t = 0, for each digit but the last, t = (t + digit) * 2; the check value is (12 - t mod 11) mod 11, written X when 10; valid when the last character is the check value."
+                    "description": "ISO 7064 MOD 11-2 (ORCID, ISNI). Skip hyphens. With t = 0, for each digit but the last, t = ((t + digit) * 2) mod 11; the check value is (12 - t mod 11) mod 11, written X when 10; valid when the last character is the check value."
                 },
                 {
                     "const": "int64_range",

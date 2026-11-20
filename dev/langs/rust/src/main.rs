@@ -3,9 +3,9 @@
 #[path = "../../../../dist/rust/scalars.rs"]
 mod scalars;
 
-use scalars::{Kind, Meta, Step, Text};
-use serde_json::Value;
-use std::{borrow::Cow, fs, process, ptr, time::Instant};
+use scalars::{Kind, Meta, Model, ModelError, Models, ModelsError, Problem, Step, Text};
+use serde_json::{json, Map, Value};
+use std::{borrow::Cow, collections::HashMap, fs, process, ptr, thread, time::Instant};
 
 fn load(path: &str) -> Value {
     let text = fs::read_to_string(path).unwrap_or_else(|e| {
@@ -139,6 +139,231 @@ fn steps(names: &[&str], fails: &mut Vec<String>) -> Vec<Step> {
             s
         })
         .collect()
+}
+
+/// Problems as the cases write them.
+fn problems_json(problems: &[Problem]) -> Value {
+    problems.iter().map(|p| json!({"pointer": p.pointer, "code": p.code, "params": p.params, "message": p.message})).collect()
+}
+
+/// The error text must be each problem's `pointer: message`, joined with "; ", and it must be a std error.
+fn check_text(what: &str, problems: &[Problem], e: &dyn std::error::Error, fails: &mut Vec<String>) {
+    let joined = problems.iter().map(|p| format!("{}: {}", p.pointer, p.message)).collect::<Vec<_>>().join("; ");
+    if e.to_string() != joined {
+        fails.push(format!("{what}: error text {:?} does not join its problems", e.to_string()));
+    }
+}
+
+fn assert_send_sync<T: Send + Sync>() {}
+
+/// The hostile payloads, built exactly as the Task 3 report describes.
+fn hostile_payload(kind: &str, n: usize) -> Option<Value> {
+    let address = || json!({"street": "a", "country": "US"});
+    Some(match kind {
+        "wide_list" => {
+            let items: Vec<Value> = (0..n).map(|_| json!({"sku": "0614141000036", "qty": 1})).collect();
+            json!({"bill_to": address(), "items": items, "status": "draft"})
+        }
+        "many_unknown" => {
+            let mut p = address();
+            let obj = p.as_object_mut().unwrap();
+            for i in 0..n {
+                obj.insert(format!("k{i}"), json!(1));
+            }
+            p
+        }
+        "long_decimal" => json!({"to": address(), "status": "draft", "total": format!("1{}", "0".repeat(n))}),
+        "ref_chain" => Value::Object((0..n).map(|i| (format!("f{i}"), json!("a"))).collect()),
+        _ => return None,
+    })
+}
+
+/// The hostile models files built from the count, for the kinds without a load case.
+fn hostile_models(kind: &str, n: usize) -> Option<Value> {
+    match kind {
+        "ref_chain" => {
+            let mut c: Map<String, Value> = (0..n - 1).map(|i| (format!("f{i}"), json!(format!("c.f{}", i + 1)))).collect();
+            c.insert(format!("f{}", n - 1), json!("string"));
+            Some(json!({"app": {"c": c}}))
+        }
+        _ => None,
+    }
+}
+
+/// Runs cases.models. Returns the slowest hostile case's time and kind.
+fn check_models(cases: &Value, fails: &mut Vec<String>) -> (f64, String) {
+    assert_send_sync::<Models>();
+    assert_send_sync::<Model>();
+    assert_send_sync::<ModelError>();
+    assert_send_sync::<ModelsError>();
+    let section = &cases["models"];
+    let mut load_data: HashMap<&str, &Value> = HashMap::new();
+    for c in section["load"].as_array().unwrap() {
+        let name = c["name"].as_str().unwrap();
+        load_data.insert(name, &c["data"]);
+        let what = format!("models.load {name}");
+        match (scalars::models(&c["data"]), c["ok"].as_bool().unwrap()) {
+            (Ok(set), true) => {
+                if json!(set.all()) != c["all"] {
+                    fails.push(format!("{what}: all {:?}, want {}", set.all(), c["all"]));
+                }
+            }
+            (Ok(_), false) => fails.push(format!("{what}: loaded, want problems {}", c["problems"])),
+            (Err(e), true) => fails.push(format!("{what}: refused: {e}")),
+            (Err(e), false) => {
+                let got = problems_json(&e.problems);
+                if got != c["problems"] {
+                    fails.push(format!("{what}: problems {got}, want {}", c["problems"]));
+                }
+                check_text(&what, &e.problems, &e, fails);
+            }
+        }
+    }
+
+    let loaded: HashMap<&str, Result<Models, ModelsError>> = load_data.iter().map(|(&k, &v)| (k, scalars::models(v))).collect();
+    for c in section["validate"].as_array().unwrap() {
+        let what = format!("models.validate {}", c["name"].as_str().unwrap());
+        let (load, name) = (c["load"].as_str().unwrap(), c["model"].as_str().unwrap());
+        let Some(Ok(set)) = loaded.get(load) else {
+            fails.push(format!("{what}: load case {load:?} must load"));
+            continue;
+        };
+        let Some(m) = set.get(name) else {
+            fails.push(format!("{what}: no model {name:?}"));
+            continue;
+        };
+        if m.name() != name {
+            fails.push(format!("{what}: model name {:?}", m.name()));
+        }
+        let ok = c["ok"].as_bool().unwrap();
+        match m.validate(&c["in"]) {
+            Ok(out) if ok => {
+                if out != c["out"] {
+                    fails.push(format!("{what}: out {out}, want {}", c["out"]));
+                }
+                // An int field puts an integer in the output.
+                if c["name"] == "int_shapes_float" && out["qty"].as_i64() != Some(3) {
+                    fails.push(format!("{what}: qty is {}, want the integer 3", out["qty"]));
+                }
+            }
+            Ok(_) => fails.push(format!("{what}: passed, want problems {}", c["problems"])),
+            Err(e) if ok => fails.push(format!("{what}: refused: {e}")),
+            Err(e) => {
+                let got = problems_json(&e.problems);
+                if got != c["problems"] {
+                    fails.push(format!("{what}: problems {got}, want {}", c["problems"]));
+                }
+                check_text(&what, &e.problems, &e, fails);
+            }
+        }
+        if m.is_valid(&c["in"]) != ok {
+            fails.push(format!("{what}: is_valid disagrees with ok"));
+        }
+    }
+
+    // A number field returns the number as given: a whole number stays an integer (not 3.0).
+    if let Some(Ok(set)) = loaded.get("scalar_kinds") {
+        let out = set.get("app:k").map(|m| m.validate(&json!({"n": 3, "b": true, "o": {}, "y": 0})));
+        if !matches!(&out, Some(Ok(v)) if v["n"].is_u64()) {
+            fails.push(format!("models: a float64 field gave {out:?} for 3, want the integer 3"));
+        }
+    }
+
+    // get takes the exact full name only.
+    if let Some(Ok(spec)) = loaded.get("ok_spec_example") {
+        for name in ["order", "shop:Order", "constructor", "__proto__", "toString", ""] {
+            if spec.get(name).is_some() {
+                fails.push(format!("models get({name:?}) found a model"));
+            }
+        }
+        // One shared Model, validated from several threads at once.
+        if let Some(order) = spec.get("billing:address") {
+            let (good, bad) = (json!({"street": "a", "country": "us"}), json!({"street": 5, "x": 1}));
+            thread::scope(|s| {
+                let runs: Vec<_> = (0..8)
+                    .map(|_| s.spawn(|| (0..200).all(|_| order.is_valid(&good) && order.validate(&bad).map_err(|e| e.problems.len()) == Err(3))))
+                    .collect();
+                if !runs.into_iter().all(|r| r.join().unwrap()) {
+                    fails.push("models: a shared Model gave other results across threads".into());
+                }
+            });
+        }
+    }
+    // The loaded settings never alias the caller's data.
+    let mut owned = json!({"app": {"a": {"s": {"type": "enum", "values": ["x", "y"]}}}});
+    match scalars::models(&owned) {
+        Ok(set) => {
+            owned["app"]["a"]["s"]["values"][0] = json!("w");
+            let m = set.get("app:a").unwrap();
+            if !m.is_valid(&json!({"s": "x"})) || m.is_valid(&json!({"s": "w"})) {
+                fails.push("loaded settings alias the caller's values".into());
+            }
+        }
+        Err(e) => fails.push(format!("models owned: refused: {e}")),
+    }
+
+    let (mut slowest, mut slowest_kind) = (0.0, String::new());
+    for c in section["hostile"].as_array().unwrap() {
+        let kind = c["kind"].as_str().unwrap();
+        let what = format!("models.hostile {kind}");
+        let count = c["count"].as_u64().unwrap() as usize;
+        let Some(payload) = hostile_payload(kind, count) else {
+            fails.push(format!("{what}: unknown kind"));
+            continue;
+        };
+        let built;
+        let data = match c["load"].as_str() {
+            Some(load) => match load_data.get(load) {
+                Some(&data) => data,
+                None => {
+                    fails.push(format!("{what}: no load case {load:?}"));
+                    continue;
+                }
+            },
+            None => match hostile_models(kind, count) {
+                Some(data) => {
+                    built = data;
+                    &built
+                }
+                None => {
+                    fails.push(format!("{what}: no load case and no models builder"));
+                    continue;
+                }
+            },
+        };
+        let start = Instant::now(); // load and validate
+        let set = match scalars::models(data) {
+            Ok(set) => set,
+            Err(e) => {
+                fails.push(format!("{what}: refused at load: {:.200}", e.to_string()));
+                continue;
+            }
+        };
+        let Some(m) = set.get(c["model"].as_str().unwrap()) else {
+            fails.push(format!("{what}: no model {}", c["model"]));
+            continue;
+        };
+        let result = m.validate(&payload);
+        let ms = start.elapsed().as_secs_f64() * 1000.0;
+        if ms > slowest {
+            (slowest, slowest_kind) = (ms, kind.to_string());
+        }
+        match (result, c["ok"].as_bool().unwrap()) {
+            (Ok(_), true) => {}
+            (Ok(_), false) => fails.push(format!("{what}: passed, want problems")),
+            (Err(e), true) => fails.push(format!("{what}: refused: {:.200}", e.to_string())),
+            (Err(e), false) => {
+                let first = e.problems.first();
+                if json!(e.problems.len()) != c["problem_count"] || first.map(|p| p.code) != c["code"].as_str() || first.map(|p| p.pointer.as_str()) != c["pointer"].as_str() {
+                    fails.push(format!("{what}: {} problems, first {:?}", e.problems.len(), first.map(|p| (p.code, &p.pointer))));
+                }
+            }
+        }
+        if ms >= 2000.0 {
+            fails.push(format!("{what} took {ms:.0} ms"));
+        }
+    }
+    (slowest, slowest_kind)
 }
 
 fn main() {
@@ -333,9 +558,14 @@ fn main() {
         }
     }
 
+    let (models_slowest, models_slowest_kind) = check_models(&cases, &mut fails);
+
     if !fails.is_empty() {
         println!("{}", fails.join("\n"));
         process::exit(1);
     }
-    println!("rust: ok, {} types, slowest hostile {slowest_type} {slowest:.1} ms", types.len());
+    println!(
+        "rust: ok, {} types, slowest hostile {slowest_type} {slowest:.1} ms, slowest models hostile {models_slowest_kind} {models_slowest:.1} ms",
+        types.len()
+    );
 }

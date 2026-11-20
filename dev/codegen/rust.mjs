@@ -1,14 +1,20 @@
-// Emits dist/rust/scalars.rs: the hand-written engine.rs followed by one generated static per type.
+// Emits dist/rust/scalars.rs: the hand-written engine (engine.rs, then models.rs) followed by one generated static per type.
 // Everything is written rustfmt-clean, and every static is a plain constant expression, so nothing runs at load.
 import { header, int64, noLoneSurrogate, readEngine } from "./common.mjs";
 import { engineNames, identifiers, metaFields, paramRules } from "./model.mjs";
 
-/** Upper-case names the engine defines and the statics it uses, so no type may take them. */
-export const RESERVED_RUST = ["META", "ALL", "INDEX", "WS", "Kind", "lookup"];
+/** Names the engine defines and the statics it uses, so no type may take them (only upper-case ones can meet a type). */
+export const RESERVED_RUST = [
+    "META", "ALL", "INDEX", "WS", "PARAM_RULES", "ERRORS", "MAX_DEPTH", "Kind", "lookup",
+    "models", "Models", "Model", "ModelError", "ModelsError", "Problem",
+];
 
 const REGEX_VERSION = "1.13.1"; // the regex crate, the version the runner tests with
+const SERDE_JSON_VERSION = "1.0.154"; // the serde_json crate, from dev/langs/rust/Cargo.lock
 const RUST_VERSION = "1.97.0";
-const ENGINE = readEngine("engine.rs");
+/** The hand-written engine: the scalars, then the models (which read `PARAM_RULES` and `ERRORS`, emitted below). */
+const ENGINE = `${readEngine("engine.rs")}
+${readEngine("models.rs")}`;
 const SHAPES = new Set(["object", "array", "any"]);
 
 /** Each used check and step name mapped to its engine.rs enum variant (PascalCase), which must exist. */
@@ -113,12 +119,10 @@ function tables(meta) {
         return one.length - 4 <= 60 ? `${one},\n` : `    (\n        ${str(code)},\n        ${str(text)},\n    ),\n`;
     });
     return `/// The limits of each setting in $meta.params.
-#[allow(dead_code)]
 static PARAM_RULES: &[ParamRule] = &[
 ${rules.join("")}];
 
 /// The message template of each error code in $meta.errors.
-#[allow(dead_code)]
 static ERRORS: &[(&str, &str)] = &[
 ${errors.join("")}];
 `;
@@ -130,7 +134,7 @@ export function emitRust(models, version, meta) {
     const engine = engineIds(models, meta);
     const top = header({
         file: "scalars.rs", source: "rust.mjs", version,
-        requires: `Requires Rust >= 1.80 (edition 2021) and the regex crate (tested with regex ${REGEX_VERSION} on Rust ${RUST_VERSION}).`,
+        requires: `Requires Rust >= 1.80 (edition 2021) and the regex and serde_json crates (tested with regex ${REGEX_VERSION} and serde_json ${SERDE_JSON_VERSION} on Rust ${RUST_VERSION}).`,
     });
     const table = models.map((m) => record(m, id(m), engine)).join("\n");
     const every = models.map((m) => `    &${id(m)}${SHAPES.has(m.kind) ? "" : ".meta"},\n`).join("");

@@ -818,11 +818,33 @@ Any number, like 3.14
 
 The default floating-point number: measurements, ratios, scores. Never money or exact quantities - use decimal for anything where digits must be exact."""
 
+gln: Final[Scalar[str]] = Scalar(
+    name="gln",
+    label="Location number (GLN)",
+    hint="13 digits",
+    error="Please check the number: 13 digits, like 0614141000012.",
+    details="A GS1 GLN identifying a party or place: a company, a warehouse, a store, a dock door. Use gtin for the products themselves and lei for legal entities in finance.",
+    level="domain",
+    primitive="string",
+    aliases=("location_number", "global_location_number"),
+    examples={"valid": ("0614141000012", "4000001000005"), "invalid": ("061414100001", "06141410000123")},
+    kind="text",
+    steps=("remove_spaces", "remove_hyphens"),
+    pattern="^[0-9]{13}$",
+    min_len=13,
+    max_len=13,
+)
+"""Location number (GLN)
+
+13 digits
+
+A GS1 GLN identifying a party or place: a company, a warehouse, a store, a dock door. Use gtin for the products themselves and lei for legal entities in finance."""
+
 gtin: Final[Scalar[str]] = Scalar(
     name="gtin",
     label="Barcode number",
     hint="8, 12, 13 or 14 digits",
-    error="Please use 8, 12, 13 or 14 digits, like 0614141000036.",
+    error="Please check the number: 8, 12, 13 or 14 digits, like 0614141000036.",
     details="A GS1 GTIN (UPC/EAN family) identifying a retail product. Prefer isbn when the domain is specifically books.",
     level="domain",
     primitive="string",
@@ -905,7 +927,7 @@ iban: Final[Scalar[str]] = Scalar(
     name="iban",
     label="Bank account (IBAN)",
     hint="Country code, 2 digits, then account",
-    error="Please use capitals and digits, no spaces, like DE89370400440532013000.",
+    error="Please check the account: capitals and digits, no spaces, like DE89370400440532013000.",
     details="An International Bank Account Number: identifying accounts for payments. Pair with bic for cross-border routing and treat as sensitive data.",
     level="domain",
     primitive="string",
@@ -1003,12 +1025,12 @@ int64: Final[Scalar[str]] = Scalar(
     name="int64",
     label="Big whole number",
     hint="A very big number with no decimal point",
-    error="Please use only digits, like 9007199254740993.",
+    error="Please use a whole number that fits in 64 bits, digits only, like 9007199254740993.",
     details="Signed 64-bit integers: database keys, byte sizes, high-resolution counters. Values beyond 2^53 lose precision as JSON numbers, so they travel as strings; storage is still a native 64-bit integer.",
     level="core",
     primitive="int64",
     aliases=("bigint", "long"),
-    examples={"valid": ("9007199254740993", "-42", "0"), "invalid": ("12.5", 123)},
+    examples={"valid": ("9007199254740993", "-42", "0", "9223372036854775807", "-9223372036854775808"), "invalid": ("12.5", 123)},
     kind="text",
     pattern="^-?[0-9]+$",
     min_len=1,
@@ -1157,12 +1179,12 @@ isbn: Final[Scalar[str]] = Scalar(
     name="isbn",
     label="Book number (ISBN)",
     hint="10 or 13 digits",
-    error="Please use 10 or 13 digits, no dashes, like 9780306406157.",
+    error="Please check the number: 10 or 13 digits, no dashes, like 9780306406157.",
     details="An ISBN identifying a book edition. Prefer gtin for general retail products; every ISBN-13 is a GTIN, but not the reverse.",
     level="domain",
     primitive="string",
     aliases=("isbn13", "isbn10"),
-    examples={"valid": ("9780306406157", "030640615X"), "invalid": ("978030640615", "0306406152XX")},
+    examples={"valid": ("9780306406157", "080442957X", "0306406152"), "invalid": ("978030640615", "0306406152XX")},
     kind="text",
     steps=("remove_spaces", "remove_hyphens"),
     pattern="^([0-9]{9}[0-9Xx]|97[89][0-9]{10})$",
@@ -1239,7 +1261,7 @@ lei: Final[Scalar[str]] = Scalar(
     name="lei",
     label="Legal Entity ID",
     hint="20 capital letters and digits",
-    error="Please use 20 capital letters and digits, like 5493001KJTIIGC8Y1R12.",
+    error="Please check the ID: 20 capital letters and digits, like 5493001KJTIIGC8Y1R12.",
     details="A Legal Entity Identifier: organizations in financial and regulatory contexts. Identity, not routing - prefer bic for payment routing.",
     level="domain",
     primitive="string",
@@ -1360,7 +1382,7 @@ orcid: Final[Scalar[str]] = Scalar(
     name="orcid",
     label="ORCID iD",
     hint="Four groups of four digits",
-    error="Please use four groups of 4 with dashes, like 0000-0002-1825-0097.",
+    error="Please check the iD: four groups of 4 with dashes, like 0000-0002-1825-0097.",
     details="An ORCID iD identifying a researcher. Prefer lei for organizations and wikidata_qid for entities outside scholarly identity.",
     level="domain",
     primitive="string",
@@ -1814,7 +1836,7 @@ uint64: Final[Scalar[str]] = Scalar(
     name="uint64",
     label="Huge count",
     hint="Digits only, no minus sign",
-    error="Please use only digits, like 18446744073709551615.",
+    error="Please use only digits, up to 18446744073709551615.",
     details="The full unsigned 64-bit range: hashes and foreign systems' identifiers. Most languages and JSON cannot represent the upper half natively, so values travel as strings; prefer int64 unless the source really uses all 64 bits.",
     level="advanced",
     primitive="int64",
@@ -2007,6 +2029,6 @@ Q and a number, like Q42
 
 A Wikidata entity ID (Q42): linking records to globally known entities. Prefer the domain registry when one exists - doi, orcid, lei, isbn."""
 
-Name = Literal["any", "array", "base64", "base64url", "bic", "binary", "boolean", "char", "cidr", "color", "commonmark", "country", "country_alpha3", "cron", "css_color", "currency", "date", "date_time", "date_time_local", "decimal", "decimal128", "doi", "double_int", "duration", "email", "enum", "float32", "float64", "gtin", "hostname", "html", "http_date", "iban", "idn_email", "idn_hostname", "int16", "int32", "int64", "int8", "ipv4", "ipv4_cidr", "ipv6", "ipv6_cidr", "iri", "iri_reference", "isbn", "json_pointer", "jwt", "language", "lei", "locale", "mac_address", "media_range", "media_type", "object", "orcid", "phone", "port", "regex", "relative_json_pointer", "secret", "semver", "sf_binary", "sf_boolean", "sf_decimal", "sf_integer", "sf_string", "sf_token", "sha256", "slug", "string", "subdivision", "text", "time", "time_local", "timezone", "uint16", "uint32", "uint64", "uint8", "ulid", "unix_time", "uri", "uri_reference", "uri_template", "uuid", "uuid_v7", "wikidata_qid"]
+Name = Literal["any", "array", "base64", "base64url", "bic", "binary", "boolean", "char", "cidr", "color", "commonmark", "country", "country_alpha3", "cron", "css_color", "currency", "date", "date_time", "date_time_local", "decimal", "decimal128", "doi", "double_int", "duration", "email", "enum", "float32", "float64", "gln", "gtin", "hostname", "html", "http_date", "iban", "idn_email", "idn_hostname", "int16", "int32", "int64", "int8", "ipv4", "ipv4_cidr", "ipv6", "ipv6_cidr", "iri", "iri_reference", "isbn", "json_pointer", "jwt", "language", "lei", "locale", "mac_address", "media_range", "media_type", "object", "orcid", "phone", "port", "regex", "relative_json_pointer", "secret", "semver", "sf_binary", "sf_boolean", "sf_decimal", "sf_integer", "sf_string", "sf_token", "sha256", "slug", "string", "subdivision", "text", "time", "time_local", "timezone", "uint16", "uint32", "uint64", "uint8", "ulid", "unix_time", "uri", "uri_reference", "uri_template", "uuid", "uuid_v7", "wikidata_qid"]
 
-all: Final[tuple[Scalar[_Any], ...]] = (any, array, base64, base64url, bic, binary, boolean, char, cidr, color, commonmark, country, country_alpha3, cron, css_color, currency, date, date_time, date_time_local, decimal, decimal128, doi, double_int, duration, email, enum, float32, float64, gtin, hostname, html, http_date, iban, idn_email, idn_hostname, int16, int32, int64, int8, ipv4, ipv4_cidr, ipv6, ipv6_cidr, iri, iri_reference, isbn, json_pointer, jwt, language, lei, locale, mac_address, media_range, media_type, object, orcid, phone, port, regex, relative_json_pointer, secret, semver, sf_binary, sf_boolean, sf_decimal, sf_integer, sf_string, sf_token, sha256, slug, string, subdivision, text, time, time_local, timezone, uint16, uint32, uint64, uint8, ulid, unix_time, uri, uri_reference, uri_template, uuid, uuid_v7, wikidata_qid,)
+all: Final[tuple[Scalar[_Any], ...]] = (any, array, base64, base64url, bic, binary, boolean, char, cidr, color, commonmark, country, country_alpha3, cron, css_color, currency, date, date_time, date_time_local, decimal, decimal128, doi, double_int, duration, email, enum, float32, float64, gln, gtin, hostname, html, http_date, iban, idn_email, idn_hostname, int16, int32, int64, int8, ipv4, ipv4_cidr, ipv6, ipv6_cidr, iri, iri_reference, isbn, json_pointer, jwt, language, lei, locale, mac_address, media_range, media_type, object, orcid, phone, port, regex, relative_json_pointer, secret, semver, sf_binary, sf_boolean, sf_decimal, sf_integer, sf_string, sf_token, sha256, slug, string, subdivision, text, time, time_local, timezone, uint16, uint32, uint64, uint8, ulid, unix_time, uri, uri_reference, uri_template, uuid, uuid_v7, wikidata_qid,)

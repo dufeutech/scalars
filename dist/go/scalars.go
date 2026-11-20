@@ -1014,6 +1014,30 @@ var scalarFloat64 = NumberScalar{
 	maximum: math.MaxFloat64,
 }
 
+// Gln is Location number (GLN): 13 digits.
+//
+// A GS1 GLN identifying a party or place: a company, a warehouse, a store, a dock door. Use gtin for the products themselves and lei for legal entities in finance.
+var Gln = &scalarGln
+
+var scalarGln = TextScalar{
+	Meta: Meta{
+		Name:      "gln",
+		Label:     "Location number (GLN)",
+		Hint:      "13 digits",
+		Error:     "Please check the number: 13 digits, like 0614141000012.",
+		Details:   "A GS1 GLN identifying a party or place: a company, a warehouse, a store, a dock door. Use gtin for the products themselves and lei for legal entities in finance.",
+		Level:     "domain",
+		Primitive: "string",
+		Aliases:   []string{"location_number", "global_location_number"},
+		Valid:     []any{"0614141000012", "4000001000005"},
+		Invalid:   []any{"061414100001", "06141410000123"},
+	},
+	steps:   []step{stepRemoveSpaces, stepRemoveHyphens},
+	pattern: `^[0-9]{13}$`,
+	minLen:  13,
+	maxLen:  13,
+}
+
 // Gtin is Barcode number: 8, 12, 13 or 14 digits.
 //
 // A GS1 GTIN (UPC/EAN family) identifying a retail product. Prefer isbn when the domain is specifically books.
@@ -1024,7 +1048,7 @@ var scalarGtin = TextScalar{
 		Name:      "gtin",
 		Label:     "Barcode number",
 		Hint:      "8, 12, 13 or 14 digits",
-		Error:     "Please use 8, 12, 13 or 14 digits, like 0614141000036.",
+		Error:     "Please check the number: 8, 12, 13 or 14 digits, like 0614141000036.",
 		Details:   "A GS1 GTIN (UPC/EAN family) identifying a retail product. Prefer isbn when the domain is specifically books.",
 		Level:     "domain",
 		Primitive: "string",
@@ -1120,7 +1144,7 @@ var scalarIban = TextScalar{
 		Name:      "iban",
 		Label:     "Bank account (IBAN)",
 		Hint:      "Country code, 2 digits, then account",
-		Error:     "Please use capitals and digits, no spaces, like DE89370400440532013000.",
+		Error:     "Please check the account: capitals and digits, no spaces, like DE89370400440532013000.",
 		Details:   "An International Bank Account Number: identifying accounts for payments. Pair with bic for cross-border routing and treat as sensitive data.",
 		Level:     "domain",
 		Primitive: "string",
@@ -1236,12 +1260,12 @@ var scalarInt64 = TextScalar{
 		Name:      "int64",
 		Label:     "Big whole number",
 		Hint:      "A very big number with no decimal point",
-		Error:     "Please use only digits, like 9007199254740993.",
+		Error:     "Please use a whole number that fits in 64 bits, digits only, like 9007199254740993.",
 		Details:   "Signed 64-bit integers: database keys, byte sizes, high-resolution counters. Values beyond 2^53 lose precision as JSON numbers, so they travel as strings; storage is still a native 64-bit integer.",
 		Level:     "core",
 		Primitive: "int64",
 		Aliases:   []string{"bigint", "long"},
-		Valid:     []any{"9007199254740993", "-42", "0"},
+		Valid:     []any{"9007199254740993", "-42", "0", "9223372036854775807", "-9223372036854775808"},
 		Invalid:   []any{"12.5", 123.0},
 	},
 	steps:   []step{},
@@ -1426,12 +1450,12 @@ var scalarIsbn = TextScalar{
 		Name:      "isbn",
 		Label:     "Book number (ISBN)",
 		Hint:      "10 or 13 digits",
-		Error:     "Please use 10 or 13 digits, no dashes, like 9780306406157.",
+		Error:     "Please check the number: 10 or 13 digits, no dashes, like 9780306406157.",
 		Details:   "An ISBN identifying a book edition. Prefer gtin for general retail products; every ISBN-13 is a GTIN, but not the reverse.",
 		Level:     "domain",
 		Primitive: "string",
 		Aliases:   []string{"isbn13", "isbn10"},
-		Valid:     []any{"9780306406157", "030640615X"},
+		Valid:     []any{"9780306406157", "080442957X", "0306406152"},
 		Invalid:   []any{"978030640615", "0306406152XX"},
 	},
 	steps:   []step{stepRemoveSpaces, stepRemoveHyphens},
@@ -1522,7 +1546,7 @@ var scalarLei = TextScalar{
 		Name:      "lei",
 		Label:     "Legal Entity ID",
 		Hint:      "20 capital letters and digits",
-		Error:     "Please use 20 capital letters and digits, like 5493001KJTIIGC8Y1R12.",
+		Error:     "Please check the ID: 20 capital letters and digits, like 5493001KJTIIGC8Y1R12.",
 		Details:   "A Legal Entity Identifier: organizations in financial and regulatory contexts. Identity, not routing - prefer bic for payment routing.",
 		Level:     "domain",
 		Primitive: "string",
@@ -1662,7 +1686,7 @@ var scalarOrcid = TextScalar{
 		Name:      "orcid",
 		Label:     "ORCID iD",
 		Hint:      "Four groups of four digits",
-		Error:     "Please use four groups of 4 with dashes, like 0000-0002-1825-0097.",
+		Error:     "Please check the iD: four groups of 4 with dashes, like 0000-0002-1825-0097.",
 		Details:   "An ORCID iD identifying a researcher. Prefer lei for organizations and wikidata_qid for entities outside scholarly identity.",
 		Level:     "domain",
 		Primitive: "string",
@@ -2200,7 +2224,7 @@ var scalarUint64 = TextScalar{
 		Name:      "uint64",
 		Label:     "Huge count",
 		Hint:      "Digits only, no minus sign",
-		Error:     "Please use only digits, like 18446744073709551615.",
+		Error:     "Please use only digits, up to 18446744073709551615.",
 		Details:   "The full unsigned 64-bit range: hashes and foreign systems' identifiers. Most languages and JSON cannot represent the upper half natively, so values travel as strings; prefer int64 unless the source really uses all 64 bits.",
 		Level:     "advanced",
 		Primitive: "int64",
@@ -2456,6 +2480,7 @@ var All = []*Meta{
 	&scalarEnum.Meta,
 	&scalarFloat32.Meta,
 	&scalarFloat64.Meta,
+	&scalarGln.Meta,
 	&scalarGtin.Meta,
 	&scalarHostname.Meta,
 	&scalarHtml.Meta,
@@ -2577,6 +2602,8 @@ func Lookup(name string) any {
 		return Float32
 	case "float64":
 		return Float64
+	case "gln":
+		return Gln
 	case "gtin":
 		return Gtin
 	case "hostname":

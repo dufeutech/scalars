@@ -44,6 +44,24 @@ export function normalize(t, value) {
     return s;
 }
 
+// The checks, exactly as schema/scalar.schema.json $defs.check describes them. Each takes the normalized,
+// pattern-matched value, so it is ASCII of the pattern's shape.
+const gs1 = (s) => { let t = 0; for (let i = 0; i < s.length; i++) t += (s.charCodeAt(s.length - 1 - i) - 48) * (i % 2 ? 3 : 1); return t % 10 === 0; };
+const mod97 = (s) => { let r = 0; for (const c of s) { const v = parseInt(c, 36); r = (v > 9 ? r * 100 + v : r * 10 + v) % 97; } return r === 1; };
+const isbn10 = (s) => { let t = 0; for (let i = 0; i < 10; i++) t += (s[i] === "X" || s[i] === "x" ? 10 : s.charCodeAt(i) - 48) * (10 - i); return t % 11 === 0; };
+const mod11_2 = (s) => { s = s.replaceAll("-", ""); let t = 0; for (let i = 0; i < s.length - 1; i++) t = (t + s.charCodeAt(i) - 48) * 2; const r = (12 - t % 11) % 11; return s.at(-1) === (r === 10 ? "X" : String(r)); };
+/** Digits compared as text: leading zeros dropped, then fewer digits is smaller and equal counts compare as text. O(n). */
+const atMost = (digits, max) => { let i = 0; while (i < digits.length - 1 && digits[i] === "0") i++; const d = digits.slice(i); return d.length < max.length || (d.length === max.length && d <= max); };
+export const CHECKS = {
+    gs1_mod10: gs1,
+    iso7064_mod97_10: mod97,
+    iban: (s) => mod97(s.slice(4) + s.slice(0, 4)),
+    isbn: (s) => (s.length === 13 ? gs1(s) : isbn10(s)),
+    iso7064_mod11_2: mod11_2,
+    int64_range: (s) => (s[0] === "-" ? atMost(s.slice(1), "9223372036854775808") : atMost(s, "9223372036854775807")),
+    uint64_range: (s) => atMost(s, "18446744073709551615"),
+};
+
 const models = new WeakMap();
 const codePoints = (s) => { let n = 0; for (let i = 0; i < s.length; i++) { n++; if (s.charCodeAt(i) >= 0xd800 && s.charCodeAt(i) < 0xdc00) i++; } return n; };
 
@@ -84,6 +102,7 @@ export function validate(t, v) {
             const n = codePoints(s);
             if (n < m.minLen || (m.maxLen !== null && n > m.maxLen)) return fail;
             if (re && !re.test(s)) return fail;
+            if (t.check && !CHECKS[t.check](s)) return fail;
             return { ok: true, value: s };
         }
         case "integer":

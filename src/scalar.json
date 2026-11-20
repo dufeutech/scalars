@@ -52,7 +52,8 @@
             "iso13616": "https://www.iso.org/standard/81090.html",
             "iso9362": "https://www.iso.org/standard/60390.html",
             "isbn": "https://www.isbn-international.org/",
-            "gs1_gtin": "https://www.gs1.org/standards/id-keys/gtin"
+            "gs1_gtin": "https://www.gs1.org/standards/id-keys/gtin",
+            "gs1_gln": "https://www.gs1.org/standards/id-keys/gln"
         },
         "params": {
             "length": {
@@ -221,22 +222,32 @@
         "level": "core",
         "label": "Big whole number",
         "hint": "A very big number with no decimal point",
-        "error": "Please use only digits, like 9007199254740993.",
+        "error": "Please use a whole number that fits in 64 bits, digits only, like 9007199254740993.",
         "aliases": [
             "bigint",
             "long"
         ],
         "format": "int64",
         "pattern": "^-?[0-9]+$",
+        "check": "int64_range",
         "examples": {
             "valid": [
                 "9007199254740993",
                 "-42",
-                "0"
+                "0",
+                "9223372036854775807",
+                "-9223372036854775808"
             ],
             "invalid": [
                 "12.5",
                 123
+            ],
+            "check_invalid": [
+                "9223372036854775808",
+                "-9223372036854775809"
+            ],
+            "db_invalid": [
+                "9223372036854775808"
             ]
         },
         "standard": "OpenAPI Format Registry",
@@ -1208,12 +1219,13 @@
         "level": "advanced",
         "label": "Huge count",
         "hint": "Digits only, no minus sign",
-        "error": "Please use only digits, like 18446744073709551615.",
+        "error": "Please use only digits, up to 18446744073709551615.",
         "aliases": [
             "ulong"
         ],
         "format": "uint64",
         "pattern": "^[0-9]+$",
+        "check": "uint64_range",
         "params": [
             "precision",
             "scale"
@@ -1229,6 +1241,10 @@
             ],
             "db_invalid": [
                 "18446744073709551616"
+            ],
+            "check_invalid": [
+                "18446744073709551616",
+                "99999999999999999999"
             ]
         },
         "standard": "OpenAPI Format Registry",
@@ -2118,11 +2134,12 @@
         "level": "domain",
         "label": "ORCID iD",
         "hint": "Four groups of four digits",
-        "error": "Please use four groups of 4 with dashes, like 0000-0002-1825-0097.",
+        "error": "Please check the iD: four groups of 4 with dashes, like 0000-0002-1825-0097.",
         "aliases": [
             "orcid_id"
         ],
         "pattern": "^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{3}[0-9X]$",
+        "check": "iso7064_mod11_2",
         "examples": {
             "valid": [
                 "0000-0002-1825-0097",
@@ -2131,6 +2148,10 @@
             "invalid": [
                 "0000-0002-1825-009",
                 "0000000218250097"
+            ],
+            "check_invalid": [
+                "0000-0002-1825-0098",
+                "0000-0002-9079-5930"
             ]
         },
         "standard": "ORCID iD (ISO 27729 ISNI block)",
@@ -2142,11 +2163,12 @@
         "level": "domain",
         "label": "Legal Entity ID",
         "hint": "20 capital letters and digits",
-        "error": "Please use 20 capital letters and digits, like 5493001KJTIIGC8Y1R12.",
+        "error": "Please check the ID: 20 capital letters and digits, like 5493001KJTIIGC8Y1R12.",
         "aliases": [
             "legal_entity_identifier"
         ],
         "pattern": "^[A-Z0-9]{18}[0-9]{2}$",
+        "check": "iso7064_mod97_10",
         "examples": {
             "valid": [
                 "5493001KJTIIGC8Y1R12",
@@ -2155,6 +2177,10 @@
             "invalid": [
                 "5493001KJTIIGC8Y1R1",
                 "5493001kjtiigc8y1r12"
+            ],
+            "check_invalid": [
+                "5493001KJTIIGC8Y1R13",
+                "529900T8BM49AURSDO56"
             ]
         },
         "standard": "ISO 17442 (Legal Entity Identifier)",
@@ -2357,7 +2383,7 @@
         "level": "domain",
         "label": "Bank account (IBAN)",
         "hint": "Country code, 2 digits, then account",
-        "error": "Please use capitals and digits, no spaces, like DE89370400440532013000.",
+        "error": "Please check the account: capitals and digits, no spaces, like DE89370400440532013000.",
         "aliases": [
             "bank_account"
         ],
@@ -2367,6 +2393,7 @@
             "remove_spaces",
             "uppercase"
         ],
+        "check": "iban",
         "examples": {
             "valid": [
                 "DE89370400440532013000",
@@ -2375,6 +2402,10 @@
             "invalid": [
                 "de89370400440532013000",
                 "DE89 3704 0044 0532 0130 00"
+            ],
+            "check_invalid": [
+                "DE89370400440532013001",
+                "GB82WEST12345698765433"
             ]
         },
         "standard": "ISO 13616 (IBAN)",
@@ -2415,7 +2446,7 @@
         "level": "domain",
         "label": "Book number (ISBN)",
         "hint": "10 or 13 digits",
-        "error": "Please use 10 or 13 digits, no dashes, like 9780306406157.",
+        "error": "Please check the number: 10 or 13 digits, no dashes, like 9780306406157.",
         "aliases": [
             "isbn13",
             "isbn10"
@@ -2425,14 +2456,20 @@
             "remove_spaces",
             "remove_hyphens"
         ],
+        "check": "isbn",
         "examples": {
             "valid": [
                 "9780306406157",
-                "030640615X"
+                "080442957X",
+                "0306406152"
             ],
             "invalid": [
                 "978030640615",
                 "0306406152XX"
+            ],
+            "check_invalid": [
+                "9780306406158",
+                "0306406153"
             ]
         },
         "standard": "ISO 2108 (ISBN-10 / ISBN-13)",
@@ -2444,7 +2481,7 @@
         "level": "domain",
         "label": "Barcode number",
         "hint": "8, 12, 13 or 14 digits",
-        "error": "Please use 8, 12, 13 or 14 digits, like 0614141000036.",
+        "error": "Please check the number: 8, 12, 13 or 14 digits, like 0614141000036.",
         "aliases": [
             "barcode",
             "ean",
@@ -2455,6 +2492,7 @@
             "remove_spaces",
             "remove_hyphens"
         ],
+        "check": "gs1_mod10",
         "examples": {
             "valid": [
                 "0614141000036",
@@ -2463,10 +2501,48 @@
             "invalid": [
                 "123456789",
                 "0614141000036A"
+            ],
+            "check_invalid": [
+                "0614141000037",
+                "96385075"
             ]
         },
         "standard": "GS1 GTIN (ISO/IEC 15459 family)",
         "docs": "gs1_gtin",
         "details": "A GS1 GTIN (UPC/EAN family) identifying a retail product. Prefer isbn when the domain is specifically books."
+    },
+    "gln": {
+        "base": "_token",
+        "level": "domain",
+        "label": "Location number (GLN)",
+        "hint": "13 digits",
+        "error": "Please check the number: 13 digits, like 0614141000012.",
+        "aliases": [
+            "location_number",
+            "global_location_number"
+        ],
+        "pattern": "^[0-9]{13}$",
+        "normalize": [
+            "remove_spaces",
+            "remove_hyphens"
+        ],
+        "check": "gs1_mod10",
+        "examples": {
+            "valid": [
+                "0614141000012",
+                "4000001000005"
+            ],
+            "invalid": [
+                "061414100001",
+                "06141410000123"
+            ],
+            "check_invalid": [
+                "0614141000013",
+                "4000001000006"
+            ]
+        },
+        "standard": "GS1 GLN (Global Location Number)",
+        "docs": "gs1_gln",
+        "details": "A GS1 GLN identifying a party or place: a company, a warehouse, a store, a dock door. Use gtin for the products themselves and lei for legal entities in finance."
     }
 }

@@ -938,6 +938,27 @@ pub static FLOAT64: Number = Number {
     maximum: f64::MAX,
 };
 
+/// Location number (GLN): 13 digits.
+///
+/// A GS1 GLN identifying a party or place: a company, a warehouse, a store, a dock door. Use gtin for the products themselves and lei for legal entities in finance.
+pub static GLN: Text = Text {
+    meta: Meta {
+        name: "gln",
+        label: "Location number (GLN)",
+        hint: "13 digits",
+        error: "Please check the number: 13 digits, like 0614141000012.",
+        details: "A GS1 GLN identifying a party or place: a company, a warehouse, a store, a dock door. Use gtin for the products themselves and lei for legal entities in finance.",
+        level: "domain",
+        primitive: "string",
+        aliases: &["location_number", "global_location_number"],
+    },
+    steps: &[Step::RemoveSpaces, Step::RemoveHyphens],
+    pattern: Some(r"^[0-9]{13}$"),
+    min_len: 13,
+    max_len: 13,
+    re: OnceLock::new(),
+};
+
 /// Barcode number: 8, 12, 13 or 14 digits.
 ///
 /// A GS1 GTIN (UPC/EAN family) identifying a retail product. Prefer isbn when the domain is specifically books.
@@ -946,7 +967,7 @@ pub static GTIN: Text = Text {
         name: "gtin",
         label: "Barcode number",
         hint: "8, 12, 13 or 14 digits",
-        error: "Please use 8, 12, 13 or 14 digits, like 0614141000036.",
+        error: "Please check the number: 8, 12, 13 or 14 digits, like 0614141000036.",
         details: "A GS1 GTIN (UPC/EAN family) identifying a retail product. Prefer isbn when the domain is specifically books.",
         level: "domain",
         primitive: "string",
@@ -1034,7 +1055,7 @@ pub static IBAN: Text = Text {
         name: "iban",
         label: "Bank account (IBAN)",
         hint: "Country code, 2 digits, then account",
-        error: "Please use capitals and digits, no spaces, like DE89370400440532013000.",
+        error: "Please check the account: capitals and digits, no spaces, like DE89370400440532013000.",
         details: "An International Bank Account Number: identifying accounts for payments. Pair with bic for cross-border routing and treat as sensitive data.",
         level: "domain",
         primitive: "string",
@@ -1133,7 +1154,7 @@ pub static INT64: Text = Text {
         name: "int64",
         label: "Big whole number",
         hint: "A very big number with no decimal point",
-        error: "Please use only digits, like 9007199254740993.",
+        error: "Please use a whole number that fits in 64 bits, digits only, like 9007199254740993.",
         details: "Signed 64-bit integers: database keys, byte sizes, high-resolution counters. Values beyond 2^53 lose precision as JSON numbers, so they travel as strings; storage is still a native 64-bit integer.",
         level: "core",
         primitive: "int64",
@@ -1302,7 +1323,7 @@ pub static ISBN: Text = Text {
         name: "isbn",
         label: "Book number (ISBN)",
         hint: "10 or 13 digits",
-        error: "Please use 10 or 13 digits, no dashes, like 9780306406157.",
+        error: "Please check the number: 10 or 13 digits, no dashes, like 9780306406157.",
         details: "An ISBN identifying a book edition. Prefer gtin for general retail products; every ISBN-13 is a GTIN, but not the reverse.",
         level: "domain",
         primitive: "string",
@@ -1386,7 +1407,7 @@ pub static LEI: Text = Text {
         name: "lei",
         label: "Legal Entity ID",
         hint: "20 capital letters and digits",
-        error: "Please use 20 capital letters and digits, like 5493001KJTIIGC8Y1R12.",
+        error: "Please check the ID: 20 capital letters and digits, like 5493001KJTIIGC8Y1R12.",
         details: "A Legal Entity Identifier: organizations in financial and regulatory contexts. Identity, not routing - prefer bic for payment routing.",
         level: "domain",
         primitive: "string",
@@ -1507,7 +1528,7 @@ pub static ORCID: Text = Text {
         name: "orcid",
         label: "ORCID iD",
         hint: "Four groups of four digits",
-        error: "Please use four groups of 4 with dashes, like 0000-0002-1825-0097.",
+        error: "Please check the iD: four groups of 4 with dashes, like 0000-0002-1825-0097.",
         details: "An ORCID iD identifying a researcher. Prefer lei for organizations and wikidata_qid for entities outside scholarly identity.",
         level: "domain",
         primitive: "string",
@@ -1972,7 +1993,7 @@ pub static UINT64: Text = Text {
         name: "uint64",
         label: "Huge count",
         hint: "Digits only, no minus sign",
-        error: "Please use only digits, like 18446744073709551615.",
+        error: "Please use only digits, up to 18446744073709551615.",
         details: "The full unsigned 64-bit range: hashes and foreign systems' identifiers. Most languages and JSON cannot represent the upper half natively, so values travel as strings; prefer int64 unless the source really uses all 64 bits.",
         level: "advanced",
         primitive: "int64",
@@ -2200,6 +2221,7 @@ pub static ALL: &[&Meta] = &[
     &ENUM.meta,
     &FLOAT32.meta,
     &FLOAT64.meta,
+    &GLN.meta,
     &GTIN.meta,
     &HOSTNAME.meta,
     &HTML.meta,
@@ -2293,6 +2315,7 @@ pub fn lookup(name: &str) -> Option<Kind> {
         "enum" => Kind::Text(&ENUM),
         "float32" => Kind::Number(&FLOAT32),
         "float64" => Kind::Number(&FLOAT64),
+        "gln" => Kind::Text(&GLN),
         "gtin" => Kind::Text(&GTIN),
         "hostname" => Kind::Text(&HOSTNAME),
         "html" => Kind::Text(&HTML),

@@ -58,7 +58,15 @@
         { "type": "text", "in": "x\udbff", "ok": false, "malformed": "surrogate" },
         { "type": "email", "in": "\udc00a@b.co", "ok": false, "malformed": "surrogate" },
         { "type": "email", "in": " a@b.co\ud800 ", "ok": false, "malformed": "surrogate" },
-        { "type": "char", "in": "\ud800", "ok": false, "malformed": "surrogate" }
+        { "type": "char", "in": "\ud800", "ok": false, "malformed": "surrogate" },
+        { "type": "gln", "in": "0614 1410 0001 2", "ok": true, "out": "0614141000012" },
+        { "type": "isbn", "in": "0-306-40615-2", "ok": true, "out": "0306406152" },
+        { "type": "isbn", "in": "080442957x", "ok": true, "out": "080442957x" },
+        { "type": "iban", "in": " de89 3704 0044 0532 0130 00 ", "ok": true, "out": "DE89370400440532013000" },
+        { "type": "gtin", "in": "0614141000037", "ok": false },
+        { "type": "int64", "in": "000000000000000000000001", "ok": true, "out": "000000000000000000000001" },
+        { "type": "int64", "in": "-0009223372036854775808", "ok": true, "out": "-0009223372036854775808" },
+        { "type": "uint64", "in": "18446744073709551616", "ok": false }
     ],
     "hostile": [
         { "type": "email", "prefix": "a@", "repeat": ".", "count": 200000, "suffix": "@", "ok": false },
@@ -89,11 +97,13 @@
         { "type": "time", "prefix": "14:30:00.", "repeat": "1", "count": 200000, "suffix": "+05:3", "ok": false },
         { "type": "time_local", "prefix": "14:30:00.", "repeat": "1", "count": 200000, "suffix": "", "ok": true },
         { "type": "timezone", "prefix": "America/", "repeat": "a", "count": 200000, "suffix": "/", "ok": false },
-        { "type": "uint64", "prefix": "", "repeat": "9", "count": 200000, "suffix": "", "ok": true },
+        { "type": "uint64", "prefix": "", "repeat": "0", "count": 200000, "suffix": "1", "ok": true },
         { "type": "wikidata_qid", "prefix": "Q1", "repeat": "0", "count": 200000, "suffix": "!", "ok": false },
         { "type": "string", "prefix": "", "repeat": "é", "count": 200000, "suffix": "\ud800", "ok": false, "malformed": "surrogate" },
         { "type": "char", "prefix": "", "repeat": "é", "count": 200000, "suffix": "\ud800", "ok": false, "malformed": "surrogate" },
         { "type": "country", "prefix": "", "repeat": " ", "count": 200000, "suffix": "US", "ok": true },
-        { "type": "char", "prefix": "", "repeat": "é", "count": 200000, "suffix": "", "ok": false }
+        { "type": "char", "prefix": "", "repeat": "é", "count": 200000, "suffix": "", "ok": false },
+        { "type": "gln", "prefix": "", "repeat": "1", "count": 100000, "suffix": "", "ok": false },
+        { "type": "int64", "prefix": "", "repeat": "1", "count": 100000, "suffix": "", "ok": false }
     ]
 }

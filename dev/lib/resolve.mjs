@@ -7,9 +7,12 @@ import { applyGenerated } from "./derive.mjs";
 export const PRIMITIVES = new Set(JSON.parse(fs.readFileSync(new URL("../../schema/dist.schema.json", import.meta.url), "utf8"))
     .$defs.type.properties.primitive.enum);
 export const TARGETS = ["html", "postgres"];
+/** Every check name a type may give, read from the source schema so it is written in one place. */
+export const CHECK_NAMES = new Set(JSON.parse(fs.readFileSync(new URL("../../schema/scalar.schema.json", import.meta.url), "utf8"))
+    .$defs.check.oneOf.map((c) => c.const));
 
 /** Core keys a child takes from its base unless it overrides them (null deletes). */
-const INHERITED = ["type", "format", "pattern", "minLength", "maxLength", "minimum", "maximum", "contentEncoding", "normalize"];
+const INHERITED = ["type", "format", "pattern", "minLength", "maxLength", "minimum", "maximum", "contentEncoding", "normalize", "check"];
 // Not inherited, so each type lists its own: `params`.
 /** Source-only keys that never appear in resolved output. */
 const SOURCE_ONLY = new Set(["base", "abstract", "anchor", "docs"]);
@@ -102,6 +105,7 @@ export function resolve({ core, targets }) {
             t.docs_link = url + (def.anchor ?? "");
         }
 
+        if (t.check !== undefined && !CHECK_NAMES.has(t.check)) throw new Error(`Type "${name}" names unknown check "${t.check}"`);
         for (const p of t.params ?? []) {
             if (!params[p]) throw new Error(`Type "${name}" names unknown param "${p}"`);
         }

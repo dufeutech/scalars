@@ -6,8 +6,9 @@ import { fileURLToPath } from "node:url";
 import Ajv2020 from "ajv/dist/2020.js";
 import { PGlite } from "@electric-sql/pglite";
 import { loadSources, resolve } from "../lib/resolve.mjs";
-import { sqlString, toJsonSchema } from "../lib/derive.mjs";
+import { groupSchema, sqlString, toJsonSchema } from "../lib/derive.mjs";
 import { pgLiteral } from "./helpers/pg.mjs";
+import { CHECKS, validate as refValidate } from "../lib/reference.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const types = resolve(loadSources(path.join(root, "src")));
@@ -27,11 +28,20 @@ test("types with a rule have at least 2 invalid examples", () => {
     assert.deepEqual(missing, []);
 });
 
+test("types with a check have at least 2 check_invalid examples, other types none", () => {
+    const wrong = Object.values(types)
+        .filter((t) => (t.check ? (t.examples?.check_invalid?.length ?? 0) < 2 : t.examples?.check_invalid !== undefined))
+        .map((t) => t.name);
+    assert.deepEqual(wrong, []);
+});
+
 for (const t of Object.values(types)) {
     test(`conformance: ${t.name}`, async () => {
         const ex = t.examples ?? {};
         assert.ok(ex.valid?.length >= 1, "has a valid example");
         const validate = ajv.compile(toJsonSchema(t));
+        // The reference reads the dist shape, where the rule sits under schema.
+        const distT = groupSchema(structuredClone(t));
         const htmlRe = t.html?.attrs?.pattern ? new RegExp(`^(?:${t.html.attrs.pattern})$`, "v") : null;
         const a = t.html?.attrs ?? {};
         const [minlength, maxlength] = [Number(a.minlength ?? 0), Number(a.maxlength ?? Infinity)];
@@ -58,6 +68,15 @@ for (const t of Object.values(types)) {
         for (const v of ex.invalid ?? []) {
             assert.equal(validate(v), false, `JSON accepts invalid ${JSON.stringify(v)}`);
             if (html && typeof v === "string") assert.equal(html.test(v), false, `HTML pattern accepts invalid ${JSON.stringify(v)}`);
+        }
+        for (const v of ex.check_invalid ?? []) {
+            // Passes every pattern-only layer; only the check (in the reference and the languages) rejects it.
+            assert.ok(validate(v), `JSON rejects check_invalid ${JSON.stringify(v)}: ${ajv.errorsText(validate.errors)}`);
+            if (html) assert.ok(html.test(v), `HTML pattern rejects check_invalid ${JSON.stringify(v)}`);
+            assert.equal(refValidate(distT, v).ok, false, `reference accepts check_invalid ${JSON.stringify(v)}`);
+        }
+        if (t.check) {
+            for (const v of ex.valid) assert.ok(CHECKS[t.check](refValidate(distT, v).value), `check ${t.check} rejects valid ${JSON.stringify(v)}`);
         }
         for (const v of ex.db_invalid ?? []) {
             assert.ok(validate(v), `db_invalid ${JSON.stringify(v)} should pass JSON (only the database rejects it)`);

@@ -10,8 +10,13 @@
         "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
         "$meta": {
             "type": "object",
-            "required": ["lookup", "normalize_steps", "params", "postgres_attrs"],
+            "required": ["checks", "lookup", "normalize_steps", "params", "postgres_attrs"],
             "properties": {
+                "checks": {
+                    "type": "object",
+                    "description": "Every check a type's check may name, with its exact meaning. A check runs on the normalized value after the pattern matched.",
+                    "additionalProperties": { "type": "string" }
+                },
                 "lookup": { "type": "string", "description": "How to find a type from a word a person typed." },
                 "normalize_steps": {
                     "type": "object",
@@ -70,6 +75,7 @@
                     "additionalProperties": false
                 },
                 "normalize": { "type": "array", "items": { "type": "string" } },
+                "check": { "type": "string", "description": "A name from $meta.checks: a rule beyond the pattern, like a check digit or a 64-bit range. JSON Schema, HTML and Postgres do not run it." },
                 "params": { "type": "array", "items": { "type": "string" }, "description": "Names from $meta.params that a field of this type can set." },
                 "examples": {
                     "type": "object",
@@ -77,7 +83,8 @@
                     "properties": {
                         "valid": { "type": "array", "minItems": 1 },
                         "invalid": { "type": "array" },
-                        "db_invalid": { "type": "array" }
+                        "db_invalid": { "type": "array" },
+                        "check_invalid": { "type": "array", "description": "Values that pass the pattern but fail the type's check." }
                     },
                     "additionalProperties": false
                 },

@@ -86,6 +86,39 @@
                 }
             ]
         },
+        "check": {
+            "description": "One rule beyond the pattern, run on the normalized value after the pattern matched.",
+            "oneOf": [
+                {
+                    "const": "gs1_mod10",
+                    "description": "GS1 check digit. Digits only. From the right, the last digit has weight 1, then weights alternate 3, 1, 3, ...; the weighted sum is a multiple of 10."
+                },
+                {
+                    "const": "iso7064_mod97_10",
+                    "description": "ISO 7064 MOD 97-10. Read left to right with r = 0: a digit d sets r = (r * 10 + d) mod 97, a letter A-Z (A = 10 ... Z = 35) sets r = (r * 100 + value) mod 97; valid when r = 1."
+                },
+                {
+                    "const": "iban",
+                    "description": "ISO 13616: move the first four characters to the end, then iso7064_mod97_10."
+                },
+                {
+                    "const": "isbn",
+                    "description": "ISO 2108: 13 characters use gs1_mod10. 10 characters: the value at position i (0-based) times (10 - i), with X or x = 10; the sum is a multiple of 11."
+                },
+                {
+                    "const": "iso7064_mod11_2",
+                    "description": "ISO 7064 MOD 11-2 (ORCID, ISNI). Skip hyphens. With t = 0, for each digit but the last, t = (t + digit) * 2; the check value is (12 - t mod 11) mod 11, written X when 10; valid when the last character is the check value."
+                },
+                {
+                    "const": "int64_range",
+                    "description": "An optional - then digits, leading zeros ignored, between -9223372036854775808 and 9223372036854775807. Compare digit by digit, not by converting: drop leading zeros, then fewer digits is smaller and equal counts compare as text."
+                },
+                {
+                    "const": "uint64_range",
+                    "description": "Digits, leading zeros ignored, at most 18446744073709551615. Compared as int64_range is."
+                }
+            ]
+        },
         "nullable_string": {
             "type": [
                 "string",
@@ -106,7 +139,7 @@
             "properties": {
                 "base": {
                     "type": "string",
-                    "description": "The type this one is built on. Inherits type, format, pattern, minimum, maximum, contentEncoding and normalize; null in a child deletes an inherited value."
+                    "description": "The type this one is built on. Inherits type, format, pattern, minimum, maximum, contentEncoding, normalize and check; null in a child deletes an inherited value."
                 },
                 "abstract": {
                     "const": true,
@@ -194,6 +227,16 @@
                         "$ref": "#/$defs/normalize_step"
                     }
                 },
+                "check": {
+                    "oneOf": [
+                        {
+                            "$ref": "#/$defs/check"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                },
                 "examples": {
                     "type": "object",
                     "properties": {
@@ -205,6 +248,9 @@
                             "$ref": "#/$defs/examples"
                         },
                         "db_invalid": {
+                            "$ref": "#/$defs/examples"
+                        },
+                        "check_invalid": {
                             "$ref": "#/$defs/examples"
                         }
                     },

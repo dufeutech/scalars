@@ -160,3 +160,20 @@ test("repo root is pure JSON", () => {
     walk(root);
     assert.deepEqual(bad, []);
 });
+
+test("check is inherited, and null deletes it", () => {
+    const r = resolve(patched({
+        digits: { base: "string", level: "core", pattern: "^[0-9]+$", check: "gs1_mod10" },
+        more: { base: "digits", level: "advanced" },
+        loose: { base: "digits", level: "advanced", check: null },
+    }));
+    assert.equal(r.more.check, "gs1_mod10");
+    assert.equal(r.loose.check, undefined);
+});
+
+test("unknown check fails the build", () => {
+    assert.throws(
+        () => resolve(patched({ slug: { base: "string", level: "core", check: "nope" } })),
+        /unknown check "nope"/,
+    );
+});

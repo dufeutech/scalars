@@ -40,6 +40,32 @@ test("model: catalogue order", () => {
     assert.deepEqual(names, Object.keys(JSON.parse(serialize(scalars)).types));
 });
 
+/**
+ * Package-level Go vars initialised with a map literal or make(...), code that would run at program start: a single
+ * `var x = map...` or `var x map[K]V = map...`, or a `name ... = map...` line inside a `var ( ... )` block.
+ */
+function packageMaps(go) {
+    const found = [];
+    const builds = /=\s*(?:map\[|make\()/;
+    let inBlock = false;
+    for (const line of go.split("\n")) {
+        if (inBlock) {
+            if (line === ")") inBlock = false;
+            else if (/^\t\w+\b/.test(line) && builds.test(line)) found.push(line);
+        } else if (line === "var (") inBlock = true;
+        else if (/^var \w+\b/.test(line) && builds.test(line)) found.push(line);
+    }
+    return found;
+}
+
+test("go: the package-level map guard sees every form", () => {
+    for (const plant of ["var x = map[string]int{}", "var x map[string]int = map[string]int{}", "var (\n\ty = 1\n\tx = map[string]int{}\n)",
+        "var (\n\tx map[string]int = make(map[string]int)\n)"]) {
+        assert.equal(packageMaps(`package p\n\n${plant}\n`).length, 1, plant);
+    }
+    assert.deepEqual(packageMaps("package p\n\nvar (\n\tx map[string]int\n)\n\nfunc f() {\n\tm := map[string]int{}\n\t_ = m\n}\n"), []);
+});
+
 test("go: patterns, reserved names, static table", () => {
     const go = emitGo(toModel(scalars), scalars.version, scalars.$meta)["go/scalars.go"];
     assert.match(go, /^\/\/ Code generated .* DO NOT EDIT\.$/m);
@@ -48,8 +74,10 @@ test("go: patterns, reserved names, static table", () => {
     assert.ok(go.includes(`\tpattern: \`${scalars.types.email.schema.pattern}\`,\n`), "other patterns are raw strings");
     assert.ok(go.includes("\tsteps:   []step{stepTrim, stepLowercase},\n"), "steps are constants");
     // The engine builds maps inside functions; the generated tables after it, and every package-level var, don't.
-    assert.ok(!go.slice(go.indexOf("\nvar paramRules")).includes("map[string]any{"), "no map literal in the table");
-    assert.ok(!/^var \w+ += map/m.test(go), "no package-level map literal");
+    const tables = go.indexOf("\nvar paramRules");
+    assert.ok(tables >= 0, "the generated tables start at var paramRules");
+    assert.ok(!go.slice(tables).includes("map[string]any{"), "no map literal in the table");
+    assert.deepEqual(packageMaps(go), [], "no package-level map built at program start");
     const snake = (id) => id.replace(/[A-Z]/g, (c, i) => (i ? "_" : "") + c.toLowerCase()); // "ScalarError" -> "scalar_error"
     for (const id of RESERVED_GO) assert.throws(() => identifiers([{ name: snake(id) }], "go", RESERVED_GO), /reserved/);
 });

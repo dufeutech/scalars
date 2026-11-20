@@ -6,6 +6,7 @@
 package scalars
 
 import (
+	"fmt"
 	"math"
 	"regexp"
 	"slices"
@@ -749,6 +750,8 @@ func check(t any, v any) (any, bool) {
 		}
 	case *ShapeScalar[any]:
 		return v, true
+	default:
+		panic(fmt.Sprintf("scalars: no models check for scalar type %T", t))
 	}
 	return nil, false
 }

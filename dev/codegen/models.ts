@@ -245,7 +245,8 @@ class Loader {
             if (!rx.test(d)) { this.report([d], "bad_name"); continue; }
             if (!isObject(domain)) { this.report([d], "not_object"); continue; }
             for (const [m, fields] of Object.entries(domain)) {
-                if (!rx.test(m) || typeNamed(m) !== undefined) { this.report([d, m], "bad_name"); continue; }
+                if (!rx.test(m)) { this.report([d, m], "bad_name"); continue; }
+                if (typeNamed(m) !== undefined) { this.report([d, m], "type_name"); continue; }
                 if (!isObject(fields)) { this.report([d, m], "not_object"); continue; }
                 const node = new ModelNode(`${d}:${m}`);
                 this.nodes.set(node.name, node);

@@ -884,8 +884,12 @@ func (l *loader) names(data map[string]any) {
 			continue
 		}
 		for m, raw := range models {
-			if _, isType := catalogue.types[m]; !isName(m) || isType {
+			if !isName(m) {
 				l.report([]segment{key(d), key(m)}, "bad_name", nil)
+				continue
+			}
+			if _, isType := catalogue.types[m]; isType {
+				l.report([]segment{key(d), key(m)}, "type_name", nil)
 				continue
 			}
 			fields, ok := raw.(map[string]any)
@@ -1595,6 +1599,7 @@ var errorTemplates = [...]errorTemplate{
 	{"not_allowed", "Must be one of: {values}."},
 	{"too_many_digits", "Too many digits for precision {precision}, scale {scale}."},
 	{"bad_name", "Names are lowercase letters, digits and underscores, starting with a letter."},
+	{"type_name", "A model can't take a type's name."},
 	{"unresolved", "No type or model by this name."},
 	{"alias", "This is an alias; write \"{canonical}\"."},
 	{"unknown_setting", "This type takes no such setting."},

@@ -564,8 +564,11 @@ class _Loader:
                 self.report([d], "not_object")
                 continue
             for m, fields in domain.items():
-                if not self.named(m) or _type_named(m) is not None:
+                if not self.named(m):
                     self.report([d, m], "bad_name")
+                    continue
+                if _type_named(m) is not None:
+                    self.report([d, m], "type_name")
                     continue
                 if not _b.isinstance(fields, _b.dict):
                     self.report([d, m], "not_object")
@@ -1043,7 +1046,7 @@ def models(data: _Obj) -> Models:
 
 
 _PARAM_RULES: Final = {"length": {"kind": "integer", "minimum": 1, "maximum": 10485760, "minItems": None}, "precision": {"kind": "integer", "minimum": 1, "maximum": 1000, "minItems": None}, "scale": {"kind": "integer", "minimum": -1000, "maximum": 1000, "minItems": None}, "fractional_seconds": {"kind": "integer", "minimum": 0, "maximum": 6, "minItems": None}, "values": {"kind": "array", "minimum": None, "maximum": None, "minItems": 1}, "nullable": {"kind": "boolean", "minimum": None, "maximum": None, "minItems": None}}
-_ERRORS: Final = {"required": "Required.", "unknown_field": "Not a field of this model.", "not_object": "Must be an object.", "not_list": "Must be a list.", "too_long": "At most {max} characters.", "not_allowed": "Must be one of: {values}.", "too_many_digits": "Too many digits for precision {precision}, scale {scale}.", "bad_name": "Names are lowercase letters, digits and underscores, starting with a letter.", "unresolved": "No type or model by this name.", "alias": "This is an alias; write \"{canonical}\".", "unknown_setting": "This type takes no such setting.", "bad_setting": "This setting's value is out of range or the wrong kind.", "missing_setting": "This type needs \"{setting}\".", "cycle": "This reference leads back to itself.", "too_deep": "Models nest more than {max} levels deep."}
+_ERRORS: Final = {"required": "Required.", "unknown_field": "Not a field of this model.", "not_object": "Must be an object.", "not_list": "Must be a list.", "too_long": "At most {max} characters.", "not_allowed": "Must be one of: {values}.", "too_many_digits": "Too many digits for precision {precision}, scale {scale}.", "bad_name": "Names are lowercase letters, digits and underscores, starting with a letter.", "type_name": "A model can't take a type's name.", "unresolved": "No type or model by this name.", "alias": "This is an alias; write \"{canonical}\".", "unknown_setting": "This type takes no such setting.", "bad_setting": "This setting's value is out of range or the wrong kind.", "missing_setting": "This type needs \"{setting}\".", "cycle": "This reference leads back to itself.", "too_deep": "Models nest more than {max} levels deep."}
 
 any: Final[Scalar[_Any]] = Scalar(
     name="any",

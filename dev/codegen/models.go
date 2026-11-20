@@ -417,8 +417,12 @@ func (l *loader) names(data map[string]any) {
 			continue
 		}
 		for m, raw := range models {
-			if _, isType := catalogue.types[m]; !isName(m) || isType {
+			if !isName(m) {
 				l.report([]segment{key(d), key(m)}, "bad_name", nil)
+				continue
+			}
+			if _, isType := catalogue.types[m]; isType {
+				l.report([]segment{key(d), key(m)}, "type_name", nil)
 				continue
 			}
 			fields, ok := raw.(map[string]any)

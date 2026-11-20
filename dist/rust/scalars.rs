@@ -1061,8 +1061,12 @@ impl<'a> Loader<'a> {
                 continue;
             };
             for (m, fields) in models {
-                if !is_name(m) || lookup(m).is_some() {
+                if !is_name(m) {
                     self.report(vec![key(d), key(m)], "bad_name", Map::new());
+                    continue;
+                }
+                if lookup(m).is_some() {
+                    self.report(vec![key(d), key(m)], "type_name", Map::new());
                     continue;
                 }
                 let Some(fields) = fields.as_object() else {
@@ -1808,6 +1812,7 @@ static ERRORS: &[(&str, &str)] = &[
         "bad_name",
         "Names are lowercase letters, digits and underscores, starting with a letter.",
     ),
+    ("type_name", "A model can't take a type's name."),
     ("unresolved", "No type or model by this name."),
     ("alias", "This is an alias; write \"{canonical}\"."),
     ("unknown_setting", "This type takes no such setting."),

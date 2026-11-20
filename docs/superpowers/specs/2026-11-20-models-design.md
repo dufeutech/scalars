@@ -148,7 +148,7 @@ Every error has a fixed code, so programs can branch on it and translators can k
 | `not_allowed` | `values` | `Must be one of: {values}.` (`values` joined with `, ` in the message; a list in `params`) |
 | `too_many_digits` | `precision`, `scale` | `Too many digits for precision {precision}, scale {scale}.` |
 
-**Models file codes (`ModelsError`):** `not_object`, `bad_name`, `unresolved`, `alias` (params `canonical`), `unknown_setting`, `bad_setting`, `missing_setting` (params `setting`), `cycle`, `too_deep` (params `max`). Their templates follow the same pattern.
+**Models file codes (`ModelsError`):** `not_object`, `bad_name`, `type_name` (a model named like a type), `unresolved`, `alias` (params `canonical`), `unknown_setting`, `bad_setting`, `missing_setting` (params `setting`), `cycle`, `too_deep` (params `max`). Their templates follow the same pattern.
 
 - **The templates are data:** a new `$meta.errors` table in `dist/scalars.json`, code → template, with placeholders in ICU MessageFormat syntax (`{max}`), which translation tools read. Adding to `$meta` is an addition, so the stable shape holds. Each language's engine is generated from that table, and a translator copies it.
 - Each type's existing `error` text stays where it is. `invalid` carries the `type`, so a translation can be keyed by type.

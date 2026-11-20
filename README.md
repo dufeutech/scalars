@@ -197,7 +197,7 @@ Each problem is `{ pointer, code, params, message }`: an RFC 6901 JSON Pointer i
 | `not_allowed`     | `values`             | `Must be one of: {values}.`                              |
 | `too_many_digits` | `precision`, `scale` | `Too many digits for precision {precision}, scale {scale}.` |
 
-A bad models file raises `ModelsError` with the same shape, pointing into the file (`/billing/invoice/total/precision`). Its codes are `not_object`, `bad_name`, `unresolved`, `alias`, `unknown_setting`, `bad_setting`, `missing_setting` and `cycle`, plus `too_deep` for nesting past 64 levels. All the templates are in `$meta.errors` in `dist/scalars.json`.
+A bad models file raises `ModelsError` with the same shape, pointing into the file (`/billing/invoice/total/precision`). Its codes are `not_object`, `bad_name`, `type_name` (a model named like a type), `unresolved`, `alias`, `unknown_setting`, `bad_setting`, `missing_setting` and `cycle`, plus `too_deep` for nesting past 64 levels. All the templates are in `$meta.errors` in `dist/scalars.json`.
 
 **Translating:** key a catalogue by `code` and fill in the `{params}`; for `invalid`, key by `params.type`. Problems drop into an [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) response unchanged:
 

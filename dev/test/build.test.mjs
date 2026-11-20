@@ -43,7 +43,7 @@ test("meta carries the error templates", () => {
     assert.equal(e.too_long, "At most {max} characters.");
     assert.deepEqual(Object.keys(e).sort(), [
         "alias", "bad_name", "bad_setting", "cycle", "missing_setting", "not_allowed", "not_list", "not_object",
-        "required", "too_deep", "too_long", "too_many_digits", "unknown_field", "unknown_setting", "unresolved",
+        "required", "too_deep", "too_long", "too_many_digits", "type_name", "unknown_field", "unknown_setting", "unresolved",
     ]);
 });
 

@@ -114,7 +114,7 @@
             {"name":"model_not_object","data":{"app":{"user":"string"}},"ok":false,"problems":[{"pointer":"/app/user","code":"not_object","params":{},"message":"Must be an object."}]},
             {"name":"bad_domain_name","data":{"Billing":{}},"ok":false,"problems":[{"pointer":"/Billing","code":"bad_name","params":{},"message":"Names are lowercase letters, digits and underscores, starting with a letter."}]},
             {"name":"dollar_key","data":{"$id":"x"},"ok":false,"problems":[{"pointer":"/$id","code":"bad_name","params":{},"message":"Names are lowercase letters, digits and underscores, starting with a letter."}]},
-            {"name":"model_named_like_type","data":{"app":{"email":{}}},"ok":false,"problems":[{"pointer":"/app/email","code":"bad_name","params":{},"message":"Names are lowercase letters, digits and underscores, starting with a letter."}]},
+            {"name":"model_named_like_type","data":{"app":{"email":{}}},"ok":false,"problems":[{"pointer":"/app/email","code":"type_name","params":{},"message":"A model can't take a type's name."}]},
             {"name":"bad_field_name","data":{"app":{"user":{"Name":"string"}}},"ok":false,"problems":[{"pointer":"/app/user/Name","code":"bad_name","params":{},"message":"Names are lowercase letters, digits and underscores, starting with a letter."}]},
             {"name":"field_wrong_kind","data":{"app":{"user":{"x":3}}},"ok":false,"problems":[{"pointer":"/app/user/x","code":"bad_setting","params":{},"message":"This setting's value is out of range or the wrong kind."}]},
             {"name":"unresolved","data":{"app":{"user":{"x":"nope"}}},"ok":false,"problems":[{"pointer":"/app/user/x","code":"unresolved","params":{},"message":"No type or model by this name."}]},

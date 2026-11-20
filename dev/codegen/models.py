@@ -225,8 +225,11 @@ class _Loader:
                 self.report([d], "not_object")
                 continue
             for m, fields in domain.items():
-                if not self.named(m) or _type_named(m) is not None:
+                if not self.named(m):
                     self.report([d, m], "bad_name")
+                    continue
+                if _type_named(m) is not None:
+                    self.report([d, m], "type_name")
                     continue
                 if not _b.isinstance(fields, _b.dict):
                     self.report([d, m], "not_object")

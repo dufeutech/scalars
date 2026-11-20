@@ -579,8 +579,12 @@ impl<'a> Loader<'a> {
                 continue;
             };
             for (m, fields) in models {
-                if !is_name(m) || lookup(m).is_some() {
+                if !is_name(m) {
                     self.report(vec![key(d), key(m)], "bad_name", Map::new());
+                    continue;
+                }
+                if lookup(m).is_some() {
+                    self.report(vec![key(d), key(m)], "type_name", Map::new());
                     continue;
                 }
                 let Some(fields) = fields.as_object() else {

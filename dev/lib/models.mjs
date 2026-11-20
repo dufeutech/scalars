@@ -126,7 +126,8 @@ export function loadModels(data, scalars) {
         if (!NAME.test(d)) { report([d], "bad_name"); continue; }
         if (!isObject(domain)) { report([d], "not_object"); continue; }
         for (const [m, fields] of Object.entries(domain)) {
-            if (!NAME.test(m) || Object.hasOwn(types, m)) { report([d, m], "bad_name"); continue; }
+            if (!NAME.test(m)) { report([d, m], "bad_name"); continue; }
+            if (Object.hasOwn(types, m)) { report([d, m], "type_name"); continue; }
             if (!isObject(fields)) { report([d, m], "not_object"); continue; }
             const model = { isModel: true, name: `${d}:${m}`, fields: new Map(), list: [] };
             models.set(model.name, model);

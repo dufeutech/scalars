@@ -9,6 +9,9 @@
 - `schema/models.schema.json`, a JSON Schema for models files.
 - **Rust now needs `serde_json`** (as well as `regex`) for models data and payloads.
 
+### Changed
+- **Rust**: the public `Check` enum variants are renamed `Mod97` → `Iso7064Mod9710` and `Mod11_2` → `Iso7064Mod112`, and `Meta` gained a required `params` field.
+
 ## 0.4.0 — 2026-11-20
 
 ### Fixed

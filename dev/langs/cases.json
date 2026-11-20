@@ -205,8 +205,8 @@
         ],
         "hostile": [
             {"kind":"wide_list","load":"ok_spec_example","model":"shop:order","count":200000,"ok":true},
-            {"kind":"many_unknown","load":"ok_spec_example","model":"billing:address","count":100000,"ok":false,"problems":100000},
-            {"kind":"long_decimal","load":"ok_spec_example","model":"billing:invoice","count":1000000,"ok":false,"problems":1},
+            {"kind":"many_unknown","load":"ok_spec_example","model":"billing:address","count":100000,"ok":false,"problem_count":100000,"code":"unknown_field","pointer":"/k0"},
+            {"kind":"long_decimal","load":"ok_spec_example","model":"billing:invoice","count":1000000,"ok":false,"problem_count":1,"code":"too_many_digits","pointer":"/total"},
             {"kind":"ref_chain","model":"app:c","count":5000,"ok":true}
         ]
     }

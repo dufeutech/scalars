@@ -140,6 +140,17 @@ test("a payload __proto__ key never reaches the output, and a field named constr
     assert.equal({}.polluted, undefined);
 });
 
+test("loaded settings don't alias the caller's data", () => {
+    const data = { app: { a: { s: { type: "enum", values: ["x", "y"] } } } };
+    const { models } = loadModels(data, scalars);
+    data.app.a.s.values.push("z");
+    data.app.a.s.values[0] = "w";
+    const m = models.get("app:a");
+    assert.deepEqual(m.fields.get("s").settings.values, ["x", "y"]);
+    assert.equal(validateModel(m, { s: "x" }).ok, true);
+    assert.equal(validateModel(m, { s: "z" }).ok, false);
+});
+
 /** The hostile model payloads, built as every runner builds them from a case's kind and count. */
 const ADDRESS = { street: "a", country: "US" };
 const HOSTILE = {
@@ -165,7 +176,10 @@ test("hostile model cases", async (t) => {
             const r = validateModel(loaded.models.get(c.model), payload);
             const ms = performance.now() - start;
             assert.equal(r.ok, c.ok, c.kind);
-            if (!c.ok) assert.equal(r.problems.length, c.problems);
+            if (!c.ok) {
+                assert.equal(r.problems.length, c.problem_count);
+                assert.deepEqual([r.problems[0].code, r.problems[0].pointer], [c.code, c.pointer]);
+            }
             assert.ok(ms < 2000, `${c.kind} took ${Math.round(ms)} ms`);
         });
     }

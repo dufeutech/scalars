@@ -254,7 +254,8 @@ export function loadModels(data, scalars) {
             if (key === "nullable") { if (checkSetting(null, v, key)) nullable = written[key]; }
             else if (!allowed.includes(key)) report(pathOf(v, key), "unknown_setting");
             else if (key === "items") { if (v.items.failed) failed = true; else items = v.items.field; }
-            else if (checkSetting(type, v, key)) settings[key] = written[key];
+            // A list setting (`values`) is copied, so the loaded models never alias the caller's data.
+            else if (checkSetting(type, v, key)) settings[key] = Array.isArray(written[key]) ? [...written[key]] : written[key];
         }
         // A written setting counts as present even when its value was refused, so it isn't also reported missing.
         const has = (key) => Object.hasOwn(written, key) || (settings !== null && Object.hasOwn(base.settings, key));
@@ -350,6 +351,8 @@ export function loadModels(data, scalars) {
     for (const m of models.values()) {
         const model = { name: m.name, fields: new Map([...m.fields].map(([f, def]) => [f, def.field])) };
         Object.defineProperty(model, "context", { value: context });
+        // [name, field] in declared order, built once here rather than per payload object.
+        Object.defineProperty(model, "entries", { value: [...model.fields] });
         byName.set(m.name, model);
     }
     const all = [...byName.keys()].sort(compareText);
@@ -428,15 +431,14 @@ function run(model, payload, first) {
         }
         if (field.kind === "model") {
             if (!isObject(value)) { report(at, "not_object"); continue; }
-            const { fields } = get(field.model);
+            const { fields, entries } = get(field.model);
             const obj = {};
             put(out, key, obj);
             for (const k of Object.keys(value)) if (!fields.has(k)) report({ up: at, seg: k }, "unknown_field");
             // Pushed in reverse, so fields are visited in declared order.
-            const names = [...fields.keys()];
-            for (let i = names.length - 1; i >= 0; i--) {
-                const name = names[i];
-                pending.push({ field: fields.get(name), value: Object.hasOwn(value, name) ? value[name] : undefined, at: { up: at, seg: name }, out: obj, key: name });
+            for (let i = entries.length - 1; i >= 0; i--) {
+                const [name, f] = entries[i];
+                pending.push({ field: f, value: Object.hasOwn(value, name) ? value[name] : undefined, at: { up: at, seg: name }, out: obj, key: name });
             }
         } else if (field.kind === "array") {
             if (!Array.isArray(value)) { report(at, "not_list"); continue; }

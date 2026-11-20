@@ -9,6 +9,7 @@ export const RESERVED_RUST = ["META", "ALL", "INDEX", "WS", "Kind", "lookup"];
 const REGEX_VERSION = "1.13.1"; // the regex crate, the version the runner tests with
 const RUST_VERSION = "1.97.0";
 const ENGINE = fs.readFileSync(new URL("./engine.rs", import.meta.url), "utf8").replaceAll("\r\n", "\n");
+const CHECK = { gs1_mod10: "Gs1Mod10", iso7064_mod97_10: "Mod97", iban: "Iban", isbn: "Isbn", iso7064_mod11_2: "Mod11_2", int64_range: "Int64Range", uint64_range: "Uint64Range" };
 const STEP = { trim: "Trim", lowercase: "Lowercase", uppercase: "Uppercase", remove_spaces: "RemoveSpaces", remove_hyphens: "RemoveHyphens" };
 const SHAPES = new Set(["object", "array", "any"]);
 
@@ -64,6 +65,7 @@ function rules(m) {
                 ["pattern", m.pattern === null ? "None" : some(pattern(m.pattern))],
                 ["min_len", String(m.minLen)],
                 ["max_len", m.maxLen === null ? "usize::MAX" : String(m.maxLen)],
+                ["rule", m.check === null ? "None" : `Some(Check::${CHECK[m.check] ?? fail(`${m.name}: unknown check "${m.check}"`)})`],
                 ["re", "OnceLock::new()"],
             ]];
         case "integer":
@@ -100,6 +102,7 @@ function record(m, id) {
         ["name", str(m.name)], ["label", str(m.label)], ["hint", str(m.hint)], ["error", str(m.error)],
         ["details", str(m.details)], ["level", str(m.level)], ["primitive", str(m.primitive)],
         ["aliases", aliases(m.aliases, inner)],
+        ["check", m.check === null ? "None" : `Some(${str(m.check)})`],
     ], inner);
     const body = more === null ? meta : `    meta: Meta {\n${meta}\n    },${more.length ? `\n${fields(more, "    ")}` : ""}`;
     return `${doc(m)}\npub static ${id}: ${struct} = ${struct} {\n${body}\n};\n`;

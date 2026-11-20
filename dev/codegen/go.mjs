@@ -17,6 +17,7 @@ const STRUCT = {
     array: "ShapeScalar[[]any]",
     any: "ShapeScalar[any]",
 };
+const CHECK = { gs1_mod10: "checkGS1Mod10", iso7064_mod97_10: "checkMod97", iban: "checkIBAN", isbn: "checkISBN", iso7064_mod11_2: "checkMod11_2", int64_range: "checkInt64Range", uint64_range: "checkUint64Range" };
 const STEP = { trim: "stepTrim", lowercase: "stepLowercase", uppercase: "stepUppercase", remove_spaces: "stepRemoveSpaces", remove_hyphens: "stepRemoveHyphens" };
 
 /** A Go interpreted string literal. JSON escapes are valid Go escapes; Go forbids a BOM in source and lone surrogates. */
@@ -74,6 +75,7 @@ function rules(m) {
                 ["pattern", m.pattern === null ? `""` : pattern(m.pattern)],
                 ["minLen", String(m.minLen)],
                 ["maxLen", m.maxLen === null ? "noMax" : String(m.maxLen)],
+                ...(m.check === null ? [] : [["rule", CHECK[m.check] ?? fail(`${m.name}: unknown check "${m.check}"`)]]),
             ];
         case "integer":
             return [["minimum", int64(m.minimum, m.name, "math.MinInt64")], ["maximum", int64(m.maximum, m.name, "math.MaxInt64")]];
@@ -99,6 +101,7 @@ function record(m, id) {
         ["Details", str(m.details)], ["Level", str(m.level)], ["Primitive", str(m.primitive)],
         ["Aliases", `[]string{${m.aliases.map(str).join(", ")}}`],
         ["Valid", examples(m.examples.valid)], ["Invalid", examples(m.examples.invalid)],
+        ...(m.check === null ? [] : [["Check", str(m.check)]]),
     ], "\t\t");
     const more = rules(m);
     const tail = more.length ? `\n${fields(more, "\t")}` : "";

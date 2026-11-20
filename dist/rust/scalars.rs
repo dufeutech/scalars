@@ -24,6 +24,8 @@ pub struct Meta {
     pub level: &'static str,
     pub primitive: &'static str,
     pub aliases: &'static [&'static str],
+    /// The rule beyond the pattern ($meta.checks), if any.
+    pub check: Option<&'static str>,
 }
 
 /// A value that failed a type's rule. It displays as the type's error text.
@@ -50,6 +52,94 @@ pub enum Step {
     RemoveHyphens,
 }
 
+/// One rule of $meta.checks. The generator writes each type's rule as these variants.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Check {
+    Gs1Mod10,
+    Mod97,
+    Iban,
+    Isbn,
+    Mod11_2,
+    Int64Range,
+    Uint64Range,
+}
+
+impl Check {
+    /// Runs the rule on normalized text that matched the pattern, so it reads ASCII bytes of the pattern's
+    /// shape: digits where the pattern put digits. Every rule is O(n).
+    fn passes(self, s: &str) -> bool {
+        let b = s.as_bytes();
+        match self {
+            Check::Gs1Mod10 => gs1_mod10(b),
+            Check::Mod97 => mod97(b, 0),
+            Check::Iban => mod97(b, 4),
+            Check::Isbn => {
+                if b.len() == 13 {
+                    return gs1_mod10(b);
+                }
+                let t: usize = (0..10)
+                    .map(|i| {
+                        let d = if b[i] == b'X' || b[i] == b'x' {
+                            10
+                        } else {
+                            usize::from(b[i] - b'0')
+                        };
+                        d * (10 - i)
+                    })
+                    .sum();
+                t % 11 == 0
+            }
+            Check::Mod11_2 => {
+                let (last, body) = b.split_last().expect("the pattern makes it non-empty");
+                let t = body
+                    .iter()
+                    .filter(|&&c| c != b'-')
+                    .fold(0usize, |t, &c| (t + usize::from(c - b'0')) * 2 % 11);
+                let r = (12 - t % 11) % 11;
+                *last == if r == 10 { b'X' } else { b'0' + r as u8 }
+            }
+            Check::Int64Range => match b.split_first() {
+                Some((b'-', rest)) => at_most(rest, b"9223372036854775808"),
+                _ => at_most(b, b"9223372036854775807"),
+            },
+            Check::Uint64Range => at_most(b, b"18446744073709551615"),
+        }
+    }
+}
+
+fn gs1_mod10(b: &[u8]) -> bool {
+    let t: usize = b
+        .iter()
+        .rev()
+        .enumerate()
+        .map(|(i, &c)| usize::from(c - b'0') * if i % 2 == 1 { 3 } else { 1 })
+        .sum();
+    t % 10 == 0
+}
+
+/// ISO 7064 MOD 97-10 over `b[from..]` then `b[..from]`: one pass, no rotated copy.
+fn mod97(b: &[u8], from: usize) -> bool {
+    let r = b[from..].iter().chain(&b[..from]).fold(0usize, |r, &c| {
+        if c >= b'A' {
+            (r * 100 + usize::from(c - b'A') + 10) % 97 // A-Z are 10-35
+        } else {
+            (r * 10 + usize::from(c - b'0')) % 97
+        }
+    });
+    r == 1
+}
+
+/// Digits compared with `max` as text: leading zeros skipped, then fewer digits is smaller.
+fn at_most(digits: &[u8], max: &[u8]) -> bool {
+    let zeros = digits
+        .iter()
+        .take(digits.len().saturating_sub(1))
+        .take_while(|&&c| c == b'0')
+        .count();
+    let d = &digits[zeros..];
+    d.len() < max.len() || (d.len() == max.len() && d <= max)
+}
+
 /// A type whose values are text. Its regex is compiled on first use.
 #[derive(Debug)]
 pub struct Text {
@@ -58,17 +148,19 @@ pub struct Text {
     pattern: Option<&'static str>,
     min_len: usize, // shortest length in code points
     max_len: usize, // longest length in code points, usize::MAX when unbounded
+    rule: Option<Check>,
     re: OnceLock<Regex>,
 }
 
 impl Text {
-    /// A text type with these steps, pattern and lengths in code points (`usize::MAX` for no limit).
+    /// A text type with these steps, pattern, lengths in code points (`usize::MAX` for no limit) and check.
     pub const fn new(
         meta: Meta,
         steps: &'static [Step],
         pattern: Option<&'static str>,
         min_len: usize,
         max_len: usize,
+        rule: Option<Check>,
     ) -> Text {
         Text {
             meta,
@@ -76,6 +168,7 @@ impl Text {
             pattern,
             min_len,
             max_len,
+            rule,
             re: OnceLock::new(),
         }
     }
@@ -129,6 +222,9 @@ impl Text {
             if !re.is_match(&s) {
                 return None;
             }
+        }
+        if self.rule.is_some_and(|r| !r.passes(&s)) {
+            return None;
         }
         Some(s)
     }
@@ -384,6 +480,7 @@ pub static ANY: Meta = Meta {
     level: "core",
     primitive: "any",
     aliases: &["json", "jsonb"],
+    check: None,
 };
 
 /// List: Several values in order.
@@ -398,6 +495,7 @@ pub static ARRAY: Meta = Meta {
     level: "core",
     primitive: "array",
     aliases: &["list"],
+    check: None,
 };
 
 /// Base64 data: Bytes written as letters, + and /.
@@ -413,11 +511,13 @@ pub static BASE64: Text = Text {
         level: "advanced",
         primitive: "binary",
         aliases: &["b64"],
+        check: None,
     },
     steps: &[],
     pattern: Some(r"^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$"),
     min_len: 0,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -434,11 +534,13 @@ pub static BASE64URL: Text = Text {
         level: "advanced",
         primitive: "binary",
         aliases: &["b64url"],
+        check: None,
     },
     steps: &[],
     pattern: Some(r"^[A-Za-z0-9_-]*={0,2}$"),
     min_len: 0,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -455,11 +557,13 @@ pub static BIC: Text = Text {
         level: "domain",
         primitive: "string",
         aliases: &["swift", "swift_code"],
+        check: None,
     },
     steps: &[Step::Trim, Step::Uppercase],
     pattern: Some(r"^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$"),
     min_len: 8,
     max_len: 11,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -476,11 +580,13 @@ pub static BINARY: Text = Text {
         level: "core",
         primitive: "binary",
         aliases: &["bytes", "file", "blob"],
+        check: None,
     },
     steps: &[],
     pattern: None,
     min_len: 0,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -497,6 +603,7 @@ pub static BOOLEAN: Bool = Bool {
         level: "core",
         primitive: "boolean",
         aliases: &["bool", "yes_no"],
+        check: None,
     },
 };
 
@@ -513,11 +620,13 @@ pub static CHAR: Text = Text {
         level: "advanced",
         primitive: "string",
         aliases: &["character", "letter"],
+        check: None,
     },
     steps: &[],
     pattern: None,
     min_len: 1,
     max_len: 1,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -534,11 +643,13 @@ pub static CIDR: Text = Text {
         level: "core",
         primitive: "string",
         aliases: &["subnet", "network"],
+        check: None,
     },
     steps: &[],
     pattern: None,
     min_len: 0,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -555,11 +666,13 @@ pub static COLOR: Text = Text {
         level: "core",
         primitive: "string",
         aliases: &["colour", "rgb", "hex_color"],
+        check: None,
     },
     steps: &[Step::Trim, Step::Lowercase],
     pattern: Some(r"^#[0-9a-f]{6}([0-9a-f]{2})?$"),
     min_len: 7,
     max_len: 9,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -576,11 +689,13 @@ pub static COMMONMARK: Text = Text {
         level: "advanced",
         primitive: "text",
         aliases: &["markdown", "md"],
+        check: None,
     },
     steps: &[],
     pattern: None,
     min_len: 0,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -597,11 +712,13 @@ pub static COUNTRY: Text = Text {
         level: "core",
         primitive: "string",
         aliases: &["country_code"],
+        check: None,
     },
     steps: &[Step::Trim, Step::Uppercase],
     pattern: Some(r"^[A-Z]{2}$"),
     min_len: 2,
     max_len: 2,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -618,11 +735,13 @@ pub static COUNTRY_ALPHA3: Text = Text {
         level: "advanced",
         primitive: "string",
         aliases: &["country_code3"],
+        check: None,
     },
     steps: &[Step::Trim, Step::Uppercase],
     pattern: Some(r"^[A-Z]{3}$"),
     min_len: 3,
     max_len: 3,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -639,11 +758,13 @@ pub static CRON: Text = Text {
         level: "advanced",
         primitive: "string",
         aliases: &["cron_expression", "crontab"],
+        check: None,
     },
     steps: &[],
     pattern: None,
     min_len: 0,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -660,6 +781,7 @@ pub static CSS_COLOR: Text = Text {
         level: "advanced",
         primitive: "string",
         aliases: &["css_colour"],
+        check: None,
     },
     steps: &[],
     pattern: Some(
@@ -667,6 +789,7 @@ pub static CSS_COLOR: Text = Text {
     ),
     min_len: 1,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -683,11 +806,13 @@ pub static CURRENCY: Text = Text {
         level: "core",
         primitive: "string",
         aliases: &["currency_code"],
+        check: None,
     },
     steps: &[Step::Trim, Step::Uppercase],
     pattern: Some(r"^[A-Z]{3}$"),
     min_len: 3,
     max_len: 3,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -704,11 +829,13 @@ pub static DATE: Text = Text {
         level: "core",
         primitive: "date",
         aliases: &["day"],
+        check: None,
     },
     steps: &[],
     pattern: Some(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$"),
     min_len: 10,
     max_len: 10,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -725,6 +852,7 @@ pub static DATE_TIME: Text = Text {
         level: "core",
         primitive: "date_time",
         aliases: &["datetime", "timestamp", "instant"],
+        check: None,
     },
     steps: &[],
     pattern: Some(
@@ -732,6 +860,7 @@ pub static DATE_TIME: Text = Text {
     ),
     min_len: 20,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -748,11 +877,13 @@ pub static DATE_TIME_LOCAL: Text = Text {
         level: "core",
         primitive: "date_time_local",
         aliases: &["local_datetime", "wall_time"],
+        check: None,
     },
     steps: &[],
     pattern: Some(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt][0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?$"),
     min_len: 19,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -769,11 +900,13 @@ pub static DECIMAL: Text = Text {
         level: "core",
         primitive: "decimal",
         aliases: &["money", "numeric"],
+        check: None,
     },
     steps: &[],
     pattern: Some(r"^-?[0-9]+(\.[0-9]+)?$"),
     min_len: 1,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -790,11 +923,13 @@ pub static DECIMAL128: Text = Text {
         level: "advanced",
         primitive: "decimal",
         aliases: &["dec128"],
+        check: None,
     },
     steps: &[],
     pattern: Some(r"^-?[0-9]+(\.[0-9]+)?$"),
     min_len: 1,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -811,11 +946,13 @@ pub static DOI: Text = Text {
         level: "domain",
         primitive: "string",
         aliases: &["doi_name"],
+        check: None,
     },
     steps: &[],
     pattern: Some(r"^10\.[0-9]{4,9}/[-._;()/:A-Za-z0-9]+$"),
     min_len: 9,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -832,6 +969,7 @@ pub static DOUBLE_INT: Int = Int {
         level: "advanced",
         primitive: "int32",
         aliases: &["safe_integer"],
+        check: None,
     },
     minimum: -9007199254740991,
     maximum: 9007199254740991,
@@ -850,6 +988,7 @@ pub static DURATION: Text = Text {
         level: "core",
         primitive: "duration",
         aliases: &["interval", "timespan"],
+        check: None,
     },
     steps: &[],
     pattern: Some(
@@ -857,6 +996,7 @@ pub static DURATION: Text = Text {
     ),
     min_len: 3,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -873,11 +1013,13 @@ pub static EMAIL: Text = Text {
         level: "core",
         primitive: "string",
         aliases: &["email_address", "mail"],
+        check: None,
     },
     steps: &[Step::Trim],
     pattern: Some(r"^[^@\x09-\x0D\x20]+@[^@\x09-\x0D\x20][^.@\x09-\x0D\x20]*\.[^@\x09-\x0D\x20]+$"),
     min_len: 5,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -894,11 +1036,13 @@ pub static ENUM: Text = Text {
         level: "core",
         primitive: "string",
         aliases: &["choice", "select"],
+        check: None,
     },
     steps: &[],
     pattern: None,
     min_len: 0,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -915,6 +1059,7 @@ pub static FLOAT32: Number = Number {
         level: "advanced",
         primitive: "float64",
         aliases: &["real", "single"],
+        check: None,
     },
     minimum: f64::MIN,
     maximum: f64::MAX,
@@ -933,6 +1078,7 @@ pub static FLOAT64: Number = Number {
         level: "core",
         primitive: "float64",
         aliases: &["number", "float", "double"],
+        check: None,
     },
     minimum: f64::MIN,
     maximum: f64::MAX,
@@ -951,11 +1097,13 @@ pub static GLN: Text = Text {
         level: "domain",
         primitive: "string",
         aliases: &["location_number", "global_location_number"],
+        check: Some("gs1_mod10"),
     },
     steps: &[Step::RemoveSpaces, Step::RemoveHyphens],
     pattern: Some(r"^[0-9]{13}$"),
     min_len: 13,
     max_len: 13,
+    rule: Some(Check::Gs1Mod10),
     re: OnceLock::new(),
 };
 
@@ -972,11 +1120,13 @@ pub static GTIN: Text = Text {
         level: "domain",
         primitive: "string",
         aliases: &["barcode", "ean", "upc"],
+        check: Some("gs1_mod10"),
     },
     steps: &[Step::RemoveSpaces, Step::RemoveHyphens],
     pattern: Some(r"^([0-9]{8}|[0-9]{12}|[0-9]{13}|[0-9]{14})$"),
     min_len: 8,
     max_len: 14,
+    rule: Some(Check::Gs1Mod10),
     re: OnceLock::new(),
 };
 
@@ -993,6 +1143,7 @@ pub static HOSTNAME: Text = Text {
         level: "core",
         primitive: "string",
         aliases: &["domain", "domain_name", "host"],
+        check: None,
     },
     steps: &[Step::Trim, Step::Lowercase],
     pattern: Some(
@@ -1000,6 +1151,7 @@ pub static HOSTNAME: Text = Text {
     ),
     min_len: 1,
     max_len: 253,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -1016,11 +1168,13 @@ pub static HTML: Text = Text {
         level: "advanced",
         primitive: "text",
         aliases: &["markup"],
+        check: None,
     },
     steps: &[],
     pattern: None,
     min_len: 0,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -1037,6 +1191,7 @@ pub static HTTP_DATE: Text = Text {
         level: "domain",
         primitive: "date_time",
         aliases: &["imf_fixdate"],
+        check: None,
     },
     steps: &[],
     pattern: Some(
@@ -1044,6 +1199,7 @@ pub static HTTP_DATE: Text = Text {
     ),
     min_len: 29,
     max_len: 29,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -1060,11 +1216,13 @@ pub static IBAN: Text = Text {
         level: "domain",
         primitive: "string",
         aliases: &["bank_account"],
+        check: Some("iban"),
     },
     steps: &[Step::Trim, Step::RemoveSpaces, Step::Uppercase],
     pattern: Some(r"^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$"),
     min_len: 15,
     max_len: 34,
+    rule: Some(Check::Iban),
     re: OnceLock::new(),
 };
 
@@ -1081,11 +1239,13 @@ pub static IDN_EMAIL: Text = Text {
         level: "advanced",
         primitive: "string",
         aliases: &["unicode_email"],
+        check: None,
     },
     steps: &[],
     pattern: None,
     min_len: 0,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -1102,11 +1262,13 @@ pub static IDN_HOSTNAME: Text = Text {
         level: "advanced",
         primitive: "string",
         aliases: &["unicode_domain"],
+        check: None,
     },
     steps: &[],
     pattern: None,
     min_len: 0,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -1123,6 +1285,7 @@ pub static INT16: Int = Int {
         level: "advanced",
         primitive: "int32",
         aliases: &["smallint", "short"],
+        check: None,
     },
     minimum: -32768,
     maximum: 32767,
@@ -1141,6 +1304,7 @@ pub static INT32: Int = Int {
         level: "core",
         primitive: "int32",
         aliases: &["int", "integer"],
+        check: None,
     },
     minimum: -2147483648,
     maximum: 2147483647,
@@ -1159,11 +1323,13 @@ pub static INT64: Text = Text {
         level: "core",
         primitive: "int64",
         aliases: &["bigint", "long"],
+        check: Some("int64_range"),
     },
     steps: &[],
     pattern: Some(r"^-?[0-9]+$"),
     min_len: 1,
     max_len: usize::MAX,
+    rule: Some(Check::Int64Range),
     re: OnceLock::new(),
 };
 
@@ -1180,6 +1346,7 @@ pub static INT8: Int = Int {
         level: "advanced",
         primitive: "int32",
         aliases: &["tinyint", "byte"],
+        check: None,
     },
     minimum: -128,
     maximum: 127,
@@ -1198,6 +1365,7 @@ pub static IPV4: Text = Text {
         level: "core",
         primitive: "string",
         aliases: &["ip", "ip_address"],
+        check: None,
     },
     steps: &[],
     pattern: Some(
@@ -1205,6 +1373,7 @@ pub static IPV4: Text = Text {
     ),
     min_len: 7,
     max_len: 15,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -1221,6 +1390,7 @@ pub static IPV4_CIDR: Text = Text {
         level: "advanced",
         primitive: "string",
         aliases: &["ipv4_subnet"],
+        check: None,
     },
     steps: &[],
     pattern: Some(
@@ -1228,6 +1398,7 @@ pub static IPV4_CIDR: Text = Text {
     ),
     min_len: 9,
     max_len: 18,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -1244,11 +1415,13 @@ pub static IPV6: Text = Text {
         level: "core",
         primitive: "string",
         aliases: &["ipv6_address"],
+        check: None,
     },
     steps: &[],
     pattern: None,
     min_len: 0,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -1265,11 +1438,13 @@ pub static IPV6_CIDR: Text = Text {
         level: "advanced",
         primitive: "string",
         aliases: &["ipv6_subnet"],
+        check: None,
     },
     steps: &[],
     pattern: None,
     min_len: 0,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -1286,11 +1461,13 @@ pub static IRI: Text = Text {
         level: "advanced",
         primitive: "string",
         aliases: &["unicode_url"],
+        check: None,
     },
     steps: &[],
     pattern: None,
     min_len: 0,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -1307,11 +1484,13 @@ pub static IRI_REFERENCE: Text = Text {
         level: "advanced",
         primitive: "string",
         aliases: &["unicode_href"],
+        check: None,
     },
     steps: &[],
     pattern: None,
     min_len: 0,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -1328,11 +1507,13 @@ pub static ISBN: Text = Text {
         level: "domain",
         primitive: "string",
         aliases: &["isbn13", "isbn10"],
+        check: Some("isbn"),
     },
     steps: &[Step::RemoveSpaces, Step::RemoveHyphens],
     pattern: Some(r"^([0-9]{9}[0-9Xx]|97[89][0-9]{10})$"),
     min_len: 10,
     max_len: 13,
+    rule: Some(Check::Isbn),
     re: OnceLock::new(),
 };
 
@@ -1349,11 +1530,13 @@ pub static JSON_POINTER: Text = Text {
         level: "advanced",
         primitive: "string",
         aliases: &["pointer"],
+        check: None,
     },
     steps: &[],
     pattern: Some(r"^(/([^~/]|~[01])*)*$"),
     min_len: 0,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -1370,11 +1553,13 @@ pub static JWT: Text = Text {
         level: "advanced",
         primitive: "string",
         aliases: &["json_web_token", "bearer_token"],
+        check: None,
     },
     steps: &[],
     pattern: Some(r"^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]*$"),
     min_len: 4,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -1391,11 +1576,13 @@ pub static LANGUAGE: Text = Text {
         level: "advanced",
         primitive: "string",
         aliases: &["language_code"],
+        check: None,
     },
     steps: &[],
     pattern: Some(r"^[a-z]{2,3}$"),
     min_len: 2,
     max_len: 3,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -1412,11 +1599,13 @@ pub static LEI: Text = Text {
         level: "domain",
         primitive: "string",
         aliases: &["legal_entity_identifier"],
+        check: Some("iso7064_mod97_10"),
     },
     steps: &[],
     pattern: Some(r"^[A-Z0-9]{18}[0-9]{2}$"),
     min_len: 20,
     max_len: 20,
+    rule: Some(Check::Mod97),
     re: OnceLock::new(),
 };
 
@@ -1433,11 +1622,13 @@ pub static LOCALE: Text = Text {
         level: "core",
         primitive: "string",
         aliases: &["language_tag", "lang"],
+        check: None,
     },
     steps: &[],
     pattern: Some(r"^[a-zA-Z]{2,3}(-[a-zA-Z]{4})?(-([a-zA-Z]{2}|[0-9]{3}))?$"),
     min_len: 2,
     max_len: 12,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -1454,11 +1645,13 @@ pub static MAC_ADDRESS: Text = Text {
         level: "advanced",
         primitive: "string",
         aliases: &["mac", "mac_addr"],
+        check: None,
     },
     steps: &[],
     pattern: Some(r"^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$"),
     min_len: 17,
     max_len: 17,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -1475,6 +1668,7 @@ pub static MEDIA_RANGE: Text = Text {
         level: "domain",
         primitive: "string",
         aliases: &["accept"],
+        check: None,
     },
     steps: &[],
     pattern: Some(
@@ -1482,6 +1676,7 @@ pub static MEDIA_RANGE: Text = Text {
     ),
     min_len: 3,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -1498,11 +1693,13 @@ pub static MEDIA_TYPE: Text = Text {
         level: "core",
         primitive: "string",
         aliases: &["mime_type", "content_type"],
+        check: None,
     },
     steps: &[],
     pattern: Some(r"^[A-Za-z0-9!#$&^_.+-]+/[A-Za-z0-9!#$&^_.+-]+(;[^\x00-\x1F\x7F]*)?$"),
     min_len: 3,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -1518,6 +1715,7 @@ pub static OBJECT: Meta = Meta {
     level: "core",
     primitive: "object",
     aliases: &["map", "dict", "record"],
+    check: None,
 };
 
 /// ORCID iD: Four groups of four digits.
@@ -1533,11 +1731,13 @@ pub static ORCID: Text = Text {
         level: "domain",
         primitive: "string",
         aliases: &["orcid_id"],
+        check: Some("iso7064_mod11_2"),
     },
     steps: &[],
     pattern: Some(r"^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{3}[0-9X]$"),
     min_len: 19,
     max_len: 19,
+    rule: Some(Check::Mod11_2),
     re: OnceLock::new(),
 };
 
@@ -1554,11 +1754,13 @@ pub static PHONE: Text = Text {
         level: "core",
         primitive: "string",
         aliases: &["tel", "telephone", "mobile", "phone_number"],
+        check: None,
     },
     steps: &[Step::Trim, Step::RemoveSpaces, Step::RemoveHyphens],
     pattern: Some(r"^\+[1-9][0-9]{1,14}$"),
     min_len: 3,
     max_len: 16,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -1575,6 +1777,7 @@ pub static PORT: Int = Int {
         level: "advanced",
         primitive: "int32",
         aliases: &["port_number"],
+        check: None,
     },
     minimum: 0,
     maximum: 65535,
@@ -1593,11 +1796,13 @@ pub static REGEX: Text = Text {
         level: "advanced",
         primitive: "string",
         aliases: &["regexp", "regular_expression"],
+        check: None,
     },
     steps: &[],
     pattern: None,
     min_len: 0,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -1614,11 +1819,13 @@ pub static RELATIVE_JSON_POINTER: Text = Text {
         level: "advanced",
         primitive: "string",
         aliases: &["relative_pointer"],
+        check: None,
     },
     steps: &[],
     pattern: Some(r"^(0|[1-9][0-9]*)(#|(/([^~/]|~[01])*)*)$"),
     min_len: 1,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -1635,11 +1842,13 @@ pub static SECRET: Text = Text {
         level: "core",
         primitive: "string",
         aliases: &["password", "api_key"],
+        check: None,
     },
     steps: &[],
     pattern: None,
     min_len: 0,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -1656,6 +1865,7 @@ pub static SEMVER: Text = Text {
         level: "advanced",
         primitive: "string",
         aliases: &["version", "semantic_version"],
+        check: None,
     },
     steps: &[],
     pattern: Some(
@@ -1663,6 +1873,7 @@ pub static SEMVER: Text = Text {
     ),
     min_len: 5,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -1679,11 +1890,13 @@ pub static SF_BINARY: Text = Text {
         level: "domain",
         primitive: "binary",
         aliases: &["structured_binary"],
+        check: None,
     },
     steps: &[],
     pattern: Some(r"^:[A-Za-z0-9+/]*={0,2}:$"),
     min_len: 2,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -1700,6 +1913,7 @@ pub static SF_BOOLEAN: Bool = Bool {
         level: "domain",
         primitive: "boolean",
         aliases: &["structured_boolean"],
+        check: None,
     },
 };
 
@@ -1716,6 +1930,7 @@ pub static SF_DECIMAL: Number = Number {
         level: "domain",
         primitive: "float64",
         aliases: &["structured_decimal"],
+        check: None,
     },
     minimum: f64::MIN,
     maximum: f64::MAX,
@@ -1734,6 +1949,7 @@ pub static SF_INTEGER: Int = Int {
         level: "domain",
         primitive: "int32",
         aliases: &["structured_integer"],
+        check: None,
     },
     minimum: -999999999999999,
     maximum: 999999999999999,
@@ -1752,11 +1968,13 @@ pub static SF_STRING: Text = Text {
         level: "domain",
         primitive: "string",
         aliases: &["structured_string"],
+        check: None,
     },
     steps: &[],
     pattern: Some(r"^[\x20-\x7E]*$"),
     min_len: 0,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -1773,11 +1991,13 @@ pub static SF_TOKEN: Text = Text {
         level: "domain",
         primitive: "string",
         aliases: &["structured_token"],
+        check: None,
     },
     steps: &[],
     pattern: Some(r"^[A-Za-z*][A-Za-z0-9:/!#$%&'*+\-.^_`|~]*$"),
     min_len: 1,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -1794,11 +2014,13 @@ pub static SHA256: Text = Text {
         level: "advanced",
         primitive: "string",
         aliases: &["hash", "digest"],
+        check: None,
     },
     steps: &[],
     pattern: Some(r"^[A-Fa-f0-9]{64}$"),
     min_len: 64,
     max_len: 64,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -1815,11 +2037,13 @@ pub static SLUG: Text = Text {
         level: "core",
         primitive: "string",
         aliases: &["permalink", "url_name"],
+        check: None,
     },
     steps: &[Step::Trim, Step::Lowercase],
     pattern: Some(r"^[a-z0-9]+(-[a-z0-9]+)*$"),
     min_len: 1,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -1836,11 +2060,13 @@ pub static STRING: Text = Text {
         level: "core",
         primitive: "string",
         aliases: &["short_text", "varchar"],
+        check: None,
     },
     steps: &[],
     pattern: None,
     min_len: 0,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -1857,11 +2083,13 @@ pub static SUBDIVISION: Text = Text {
         level: "advanced",
         primitive: "string",
         aliases: &["region", "state", "province"],
+        check: None,
     },
     steps: &[Step::Trim, Step::Uppercase],
     pattern: Some(r"^[A-Z]{2}-[A-Z0-9]{1,3}$"),
     min_len: 4,
     max_len: 6,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -1878,11 +2106,13 @@ pub static TEXT: Text = Text {
         level: "core",
         primitive: "text",
         aliases: &["long_text", "paragraph"],
+        check: None,
     },
     steps: &[],
     pattern: None,
     min_len: 0,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -1899,11 +2129,13 @@ pub static TIME: Text = Text {
         level: "advanced",
         primitive: "time_local",
         aliases: &["timetz", "offset_time"],
+        check: None,
     },
     steps: &[],
     pattern: Some(r"^[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?([Zz]|[+-][0-9]{2}:[0-9]{2})$"),
     min_len: 9,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -1920,11 +2152,13 @@ pub static TIME_LOCAL: Text = Text {
         level: "core",
         primitive: "time_local",
         aliases: &["time_of_day", "local_time"],
+        check: None,
     },
     steps: &[],
     pattern: Some(r"^[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?$"),
     min_len: 8,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -1941,11 +2175,13 @@ pub static TIMEZONE: Text = Text {
         level: "core",
         primitive: "string",
         aliases: &["tz", "time_zone"],
+        check: None,
     },
     steps: &[],
     pattern: Some(r"^(UTC|[A-Za-z_]+/[A-Za-z0-9_+-]+(/[A-Za-z0-9_+-]+)?)$"),
     min_len: 3,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -1962,6 +2198,7 @@ pub static UINT16: Int = Int {
         level: "advanced",
         primitive: "int32",
         aliases: &["ushort"],
+        check: None,
     },
     minimum: 0,
     maximum: 65535,
@@ -1980,6 +2217,7 @@ pub static UINT32: Int = Int {
         level: "advanced",
         primitive: "int32",
         aliases: &["uint", "unsigned"],
+        check: None,
     },
     minimum: 0,
     maximum: 4294967295,
@@ -1998,11 +2236,13 @@ pub static UINT64: Text = Text {
         level: "advanced",
         primitive: "int64",
         aliases: &["ulong"],
+        check: Some("uint64_range"),
     },
     steps: &[],
     pattern: Some(r"^[0-9]+$"),
     min_len: 1,
     max_len: usize::MAX,
+    rule: Some(Check::Uint64Range),
     re: OnceLock::new(),
 };
 
@@ -2019,6 +2259,7 @@ pub static UINT8: Int = Int {
         level: "advanced",
         primitive: "int32",
         aliases: &["ubyte"],
+        check: None,
     },
     minimum: 0,
     maximum: 255,
@@ -2037,11 +2278,13 @@ pub static ULID: Text = Text {
         level: "advanced",
         primitive: "string",
         aliases: &["sortable_id"],
+        check: None,
     },
     steps: &[],
     pattern: Some(r"^[0-7][0-9A-HJKMNP-TV-Z]{25}$"),
     min_len: 26,
     max_len: 26,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -2058,6 +2301,7 @@ pub static UNIX_TIME: Int = Int {
         level: "advanced",
         primitive: "int32",
         aliases: &["epoch", "epoch_seconds"],
+        check: None,
     },
     minimum: i64::MIN,
     maximum: i64::MAX,
@@ -2076,11 +2320,13 @@ pub static URI: Text = Text {
         level: "core",
         primitive: "string",
         aliases: &["url", "link", "website"],
+        check: None,
     },
     steps: &[],
     pattern: None,
     min_len: 0,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -2097,11 +2343,13 @@ pub static URI_REFERENCE: Text = Text {
         level: "advanced",
         primitive: "string",
         aliases: &["relative_url", "href"],
+        check: None,
     },
     steps: &[],
     pattern: None,
     min_len: 0,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -2118,11 +2366,13 @@ pub static URI_TEMPLATE: Text = Text {
         level: "advanced",
         primitive: "string",
         aliases: &["url_template"],
+        check: None,
     },
     steps: &[],
     pattern: None,
     min_len: 0,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -2139,11 +2389,13 @@ pub static UUID: Text = Text {
         level: "core",
         primitive: "string",
         aliases: &["guid", "unique_id"],
+        check: None,
     },
     steps: &[Step::Trim, Step::Lowercase],
     pattern: Some(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"),
     min_len: 36,
     max_len: 36,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -2160,6 +2412,7 @@ pub static UUID_V7: Text = Text {
         level: "advanced",
         primitive: "string",
         aliases: &["uuidv7"],
+        check: None,
     },
     steps: &[Step::Trim, Step::Lowercase],
     pattern: Some(
@@ -2167,6 +2420,7 @@ pub static UUID_V7: Text = Text {
     ),
     min_len: 36,
     max_len: 36,
+    rule: None,
     re: OnceLock::new(),
 };
 
@@ -2183,11 +2437,13 @@ pub static WIKIDATA_QID: Text = Text {
         level: "domain",
         primitive: "string",
         aliases: &["qid"],
+        check: None,
     },
     steps: &[],
     pattern: Some(r"^Q[1-9][0-9]*$"),
     min_len: 2,
     max_len: usize::MAX,
+    rule: None,
     re: OnceLock::new(),
 };
 

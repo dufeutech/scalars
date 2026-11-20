@@ -20,6 +20,8 @@ pub struct Meta {
     pub level: &'static str,
     pub primitive: &'static str,
     pub aliases: &'static [&'static str],
+    /// The rule beyond the pattern ($meta.checks), if any.
+    pub check: Option<&'static str>,
 }
 
 /// A value that failed a type's rule. It displays as the type's error text.
@@ -46,6 +48,94 @@ pub enum Step {
     RemoveHyphens,
 }
 
+/// One rule of $meta.checks. The generator writes each type's rule as these variants.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Check {
+    Gs1Mod10,
+    Mod97,
+    Iban,
+    Isbn,
+    Mod11_2,
+    Int64Range,
+    Uint64Range,
+}
+
+impl Check {
+    /// Runs the rule on normalized text that matched the pattern, so it reads ASCII bytes of the pattern's
+    /// shape: digits where the pattern put digits. Every rule is O(n).
+    fn passes(self, s: &str) -> bool {
+        let b = s.as_bytes();
+        match self {
+            Check::Gs1Mod10 => gs1_mod10(b),
+            Check::Mod97 => mod97(b, 0),
+            Check::Iban => mod97(b, 4),
+            Check::Isbn => {
+                if b.len() == 13 {
+                    return gs1_mod10(b);
+                }
+                let t: usize = (0..10)
+                    .map(|i| {
+                        let d = if b[i] == b'X' || b[i] == b'x' {
+                            10
+                        } else {
+                            usize::from(b[i] - b'0')
+                        };
+                        d * (10 - i)
+                    })
+                    .sum();
+                t % 11 == 0
+            }
+            Check::Mod11_2 => {
+                let (last, body) = b.split_last().expect("the pattern makes it non-empty");
+                let t = body
+                    .iter()
+                    .filter(|&&c| c != b'-')
+                    .fold(0usize, |t, &c| (t + usize::from(c - b'0')) * 2 % 11);
+                let r = (12 - t % 11) % 11;
+                *last == if r == 10 { b'X' } else { b'0' + r as u8 }
+            }
+            Check::Int64Range => match b.split_first() {
+                Some((b'-', rest)) => at_most(rest, b"9223372036854775808"),
+                _ => at_most(b, b"9223372036854775807"),
+            },
+            Check::Uint64Range => at_most(b, b"18446744073709551615"),
+        }
+    }
+}
+
+fn gs1_mod10(b: &[u8]) -> bool {
+    let t: usize = b
+        .iter()
+        .rev()
+        .enumerate()
+        .map(|(i, &c)| usize::from(c - b'0') * if i % 2 == 1 { 3 } else { 1 })
+        .sum();
+    t % 10 == 0
+}
+
+/// ISO 7064 MOD 97-10 over `b[from..]` then `b[..from]`: one pass, no rotated copy.
+fn mod97(b: &[u8], from: usize) -> bool {
+    let r = b[from..].iter().chain(&b[..from]).fold(0usize, |r, &c| {
+        if c >= b'A' {
+            (r * 100 + usize::from(c - b'A') + 10) % 97 // A-Z are 10-35
+        } else {
+            (r * 10 + usize::from(c - b'0')) % 97
+        }
+    });
+    r == 1
+}
+
+/// Digits compared with `max` as text: leading zeros skipped, then fewer digits is smaller.
+fn at_most(digits: &[u8], max: &[u8]) -> bool {
+    let zeros = digits
+        .iter()
+        .take(digits.len().saturating_sub(1))
+        .take_while(|&&c| c == b'0')
+        .count();
+    let d = &digits[zeros..];
+    d.len() < max.len() || (d.len() == max.len() && d <= max)
+}
+
 /// A type whose values are text. Its regex is compiled on first use.
 #[derive(Debug)]
 pub struct Text {
@@ -54,17 +144,19 @@ pub struct Text {
     pattern: Option<&'static str>,
     min_len: usize, // shortest length in code points
     max_len: usize, // longest length in code points, usize::MAX when unbounded
+    rule: Option<Check>,
     re: OnceLock<Regex>,
 }
 
 impl Text {
-    /// A text type with these steps, pattern and lengths in code points (`usize::MAX` for no limit).
+    /// A text type with these steps, pattern, lengths in code points (`usize::MAX` for no limit) and check.
     pub const fn new(
         meta: Meta,
         steps: &'static [Step],
         pattern: Option<&'static str>,
         min_len: usize,
         max_len: usize,
+        rule: Option<Check>,
     ) -> Text {
         Text {
             meta,
@@ -72,6 +164,7 @@ impl Text {
             pattern,
             min_len,
             max_len,
+            rule,
             re: OnceLock::new(),
         }
     }
@@ -125,6 +218,9 @@ impl Text {
             if !re.is_match(&s) {
                 return None;
             }
+        }
+        if self.rule.is_some_and(|r| !r.passes(&s)) {
+            return None;
         }
         Some(s)
     }

@@ -26,9 +26,11 @@ type Type struct {
 	Primitive string   `json:"primitive"`
 	Aliases   []string `json:"aliases"`
 	Normalize []string `json:"normalize"`
+	Check     string   `json:"check"`
 	Examples  struct {
-		Valid   []any `json:"valid"`
-		Invalid []any `json:"invalid"`
+		Valid        []any `json:"valid"`
+		Invalid      []any `json:"invalid"`
+		CheckInvalid []any `json:"check_invalid"`
 	} `json:"examples"`
 }
 
@@ -245,8 +247,8 @@ func main() {
 		if got, ok := scalars.Get(name); !ok || got != m {
 			fail("Get(%q) is not Lookup(%q)", name, name)
 		}
-		if [7]string{m.Name, m.Label, m.Hint, m.Error, m.Details, m.Level, m.Primitive} !=
-			[7]string{name, spec.Label, spec.Hint, spec.Error, spec.Details, spec.Level, spec.Primitive} ||
+		if [8]string{m.Name, m.Label, m.Hint, m.Error, m.Details, m.Level, m.Primitive, m.Check} !=
+			[8]string{name, spec.Label, spec.Hint, spec.Error, spec.Details, spec.Level, spec.Primitive, spec.Check} ||
 			strings.Join(m.Aliases, "\x00") != strings.Join(spec.Aliases, "\x00") {
 			fail("%s metadata differs from dist", name)
 		}
@@ -282,6 +284,11 @@ func main() {
 			r := run(t, v)
 			if s, isText := v.(string); r.checked && r.ok && !(isText && t.(*scalars.TextScalar).Normalize(s) != s) {
 				fail("%s accepts invalid %#v", name, v)
+			}
+		}
+		for _, v := range spec.Examples.CheckInvalid {
+			if r := run(t, v); r.checked && r.ok {
+				fail("%s accepts check_invalid %#v", name, v)
 			}
 		}
 		for _, alias := range spec.Aliases {

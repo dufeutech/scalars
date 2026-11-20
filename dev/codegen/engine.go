@@ -20,6 +20,7 @@ type Meta struct {
 	Name, Label, Hint, Error, Details, Level, Primitive string
 	Aliases                                             []string
 	Valid, Invalid                                      []any
+	Check                                               string // the rule beyond the pattern ($meta.checks), or ""
 }
 
 // ScalarError is a value that failed a type's rule. Error returns the type's error text.
@@ -40,6 +41,106 @@ const (
 	stepRemoveHyphens
 )
 
+// checkKind is one rule of $meta.checks. The generator writes each type's rule as these constants.
+type checkKind uint8
+
+const (
+	checkNone checkKind = iota
+	checkGS1Mod10
+	checkMod97
+	checkIBAN
+	checkISBN
+	checkMod11_2
+	checkInt64Range
+	checkUint64Range
+)
+
+// passes runs the rule on normalized text that matched the pattern, so it reads ASCII bytes of the pattern's
+// shape: digits where the pattern put digits. Every rule is O(n).
+func (k checkKind) passes(s string) bool {
+	switch k {
+	case checkGS1Mod10:
+		return gs1Mod10(s)
+	case checkMod97:
+		return mod97(s, 0)
+	case checkIBAN:
+		return mod97(s, 4)
+	case checkISBN:
+		if len(s) == 13 {
+			return gs1Mod10(s)
+		}
+		t := 0
+		for i := 0; i < 10; i++ {
+			d := int(s[i]) - '0'
+			if s[i] == 'X' || s[i] == 'x' {
+				d = 10
+			}
+			t += d * (10 - i)
+		}
+		return t%11 == 0
+	case checkMod11_2:
+		t := 0
+		for i := 0; i < len(s)-1; i++ {
+			if s[i] != '-' {
+				t = (t + int(s[i]) - '0') * 2
+			}
+		}
+		r := (12 - t%11) % 11
+		want := byte('0' + r)
+		if r == 10 {
+			want = 'X'
+		}
+		return s[len(s)-1] == want
+	case checkInt64Range:
+		if s[0] == '-' {
+			return atMost(s[1:], "9223372036854775808")
+		}
+		return atMost(s, "9223372036854775807")
+	case checkUint64Range:
+		return atMost(s, "18446744073709551615")
+	}
+	return true
+}
+
+func gs1Mod10(s string) bool {
+	t := 0
+	for i := 0; i < len(s); i++ {
+		w := 1
+		if i%2 == 1 {
+			w = 3
+		}
+		t += (int(s[len(s)-1-i]) - '0') * w
+	}
+	return t%10 == 0
+}
+
+// mod97 is ISO 7064 MOD 97-10 over s[from:] then s[:from]: one pass, no rotated copy.
+func mod97(s string, from int) bool {
+	r := 0
+	for k := 0; k < len(s); k++ {
+		c := int(s[(from+k)%len(s)])
+		if c >= 'A' {
+			r = (r*100 + c - 'A' + 10) % 97 // A-Z are 10-35
+		} else {
+			r = (r*10 + c - '0') % 97
+		}
+	}
+	return r == 1
+}
+
+// atMost compares digits with max as text: leading zeros skipped, then fewer digits is smaller.
+func atMost(digits, max string) bool {
+	i := 0
+	for i < len(digits)-1 && digits[i] == '0' {
+		i++
+	}
+	d := digits[i:]
+	if len(d) != len(max) {
+		return len(d) < len(max)
+	}
+	return d <= max
+}
+
 // noMax is the longest length of a type with no limit.
 const noMax = int(^uint(0) >> 1)
 
@@ -50,6 +151,7 @@ type TextScalar struct {
 	pattern string // "" when the type has none
 	minLen  int    // shortest length in code points
 	maxLen  int    // longest length in code points, noMax when unbounded
+	rule    checkKind
 	once    sync.Once
 	re      *regexp.Regexp
 }
@@ -109,6 +211,9 @@ func (t *TextScalar) check(s string) (string, bool) {
 		if !t.re.MatchString(s) {
 			return "", false
 		}
+	}
+	if !t.rule.passes(s) {
+		return "", false
 	}
 	return s, true
 }

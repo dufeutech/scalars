@@ -89,6 +89,130 @@ That's it. Every type in the table below is there the same way: `scalars.uuid`, 
 
 Each type also carries its `label`, `hint` and `error` text, ready to show in a form.
 
+## Models: check a whole payload
+
+A form or request body has several fields, some with settings (`length`, `values`), some nested. Write them once as data, then check a payload against a model. Same file, same rules, same errors in all four languages. (Models are not in a release yet; they're in `dist/` on `main`.)
+
+Always three levels: domain → model → field. A field is a type name, another model, or `{ "type": …, ...settings }`.
+
+```json
+{
+  "billing": {
+    "address": { "street": { "type": "string", "length": 200 }, "country": "country" },
+    "invoice": {
+      "status": { "type": "enum", "values": ["draft", "sent", "paid"] },
+      "total":  { "type": "decimal", "precision": 12, "scale": 2 },
+      "note":   { "type": "text", "nullable": true }
+    }
+  },
+  "shop": {
+    "line_item": { "sku": "gtin", "qty": "int32" },
+    "order": {
+      "bill_to": "billing:address",
+      "items":   { "type": "array", "items": "line_item" },
+      "status":  "billing:invoice.status"
+    }
+  }
+}
+```
+
+Load it, get a model, validate. The three lines are the same everywhere; `payload` is a parsed JSON object like `{"bill_to": {"street": "1 Main St", "country": " us "}, "items": [{"sku": "4006381333931", "qty": 2}], "status": "sent"}`.
+
+```python
+models = scalars.models(data)            # raises ModelsError listing every problem in the file
+order = models.get("shop:order")         # None if there's no such model
+clean = order.validate(payload)          # the cleaned payload, or raises ModelError
+```
+
+```ts
+const models = scalars.models(data); // throws ModelsError
+const order = models.get("shop:order"); // undefined if there's no such model
+const clean = order!.validate(payload); // throws ModelError
+```
+
+```go
+models, err := scalars.Models(data)  // *ModelsError listing every problem in the file
+order, ok := models.Get("shop:order") // ok is false if there's no such model
+clean, err := order.Validate(payload) // *ModelError, or the cleaned payload
+```
+
+```rust
+let models = scalars::models(&data)?; // Err(ModelsError) listing every problem in the file
+let order = models.get("shop:order").unwrap(); // None if there's no such model
+let clean = order.validate(&payload)?; // Err(ModelError), or the cleaned payload
+```
+
+|                         | Python                  | TypeScript              | Go                         | Rust                      |
+| ----------------------- | ----------------------- | ----------------------- | -------------------------- | ------------------------- |
+| Load a file             | `scalars.models(data)`  | `scalars.models(data)`  | `scalars.Models(data)`     | `scalars::models(&data)`  |
+| Find a model            | `models.get(name)`      | `models.get(name)`      | `models.Get(name)`         | `models.get(name)`        |
+| Every model name        | `models.all`            | `models.all`            | `models.All`               | `models.all()`            |
+| Clean up, then check    | `m.validate(p)`         | `m.validate(p)`         | `m.Validate(p)`            | `m.validate(&p)`          |
+| Just check              | `m.is_valid(p)`         | `m.isValid(p)`          | `m.IsValid(p)`             | `m.is_valid(&p)`          |
+| Errors                  | `ModelsError`, `ModelError` (`.problems`) | same | `*ModelsError`, `*ModelError` (`.Problems`) | same (`.problems`) |
+
+- `data` is already-parsed JSON. The library never reads files, so write your models file in YAML or anything else and parse it yourself.
+- **Go:** payloads and models data must be what `encoding/json` produces: `map[string]any`, `[]any`, `float64`, `string`, `bool`, `nil`. A hand-built `int`, `[]string` or `map[string]string` is refused, and `json.Number` (`Decoder.UseNumber`) isn't supported.
+- **Rust:** `cargo add regex serde_json`. Data and payloads are `serde_json::Value`.
+- **Python** returns a float for number-kind fields (`3` → `3.0`), as it does for single scalars.
+- On success you get the cleaned payload: normalized values, no extra keys, missing nullable keys as `null`. A missing key and `null` are the same. Keys the model doesn't declare are errors.
+- Every bad field is reported, sorted by location. Limits: models nest at most 64 levels (models and `items` combined), and `get` takes the full `domain:model` name only.
+
+### References
+
+| Written as              | Means                                                            |
+| ----------------------- | ---------------------------------------------------------------- |
+| `email`                 | a built-in type (canonical name, no aliases), else a model in the same domain |
+| `invoice.total`         | a field of a model in the same domain (its type and settings, copied) |
+| `billing:address`       | a model in another domain                                        |
+| `billing:invoice.total` | a field of a model in another domain                             |
+
+Settings written next to a reference override the copied ones: `{ "type": "billing:invoice.note", "nullable": false }`. Names are lowercase snake_case. A model can't share a name with a type, and cycles are refused. A top-level `"$schema"` key is ignored, so an editor can check the file against [`schema/models.schema.json`](schema/models.schema.json).
+
+### Settings
+
+`validate` rejects what the matching Postgres column would refuse, no more.
+
+| Setting                | Rule                                                                              |
+| ---------------------- | --------------------------------------------------------------------------------- |
+| `length`               | At most this many characters (code points).                                       |
+| `values`               | Exactly one of the listed strings (required on `enum`).                           |
+| `precision`, `scale`   | Fits Postgres `numeric(p, s)`: extra fraction digits are fine (Postgres rounds), too many integer digits are not. The value comes back unchanged. |
+| `nullable`             | `null` or a missing key is accepted only when `true`.                             |
+| `items`                | On `array`: a field definition for each entry (required).                         |
+| `fractional_seconds`   | Accepted, not checked: Postgres rounds and never refuses.                         |
+
+### Errors
+
+Each problem is `{ pointer, code, params, message }`: an RFC 6901 JSON Pointer into the payload (`""` is the root), a fixed code, the facts the message needs, and the English text.
+
+| Code              | Params               | English message                                          |
+| ----------------- | -------------------- | -------------------------------------------------------- |
+| `required`        |                      | `Required.`                                              |
+| `unknown_field`   |                      | `Not a field of this model.`                             |
+| `not_object`      |                      | `Must be an object.`                                     |
+| `not_list`        |                      | `Must be a list.`                                        |
+| `invalid`         | `type`               | the type's own `error` text                              |
+| `too_long`        | `max`                | `At most {max} characters.`                              |
+| `not_allowed`     | `values`             | `Must be one of: {values}.`                              |
+| `too_many_digits` | `precision`, `scale` | `Too many digits for precision {precision}, scale {scale}.` |
+
+A bad models file raises `ModelsError` with the same shape, pointing into the file (`/billing/invoice/total/precision`). Its codes are `not_object`, `bad_name`, `unresolved`, `alias`, `unknown_setting`, `bad_setting`, `missing_setting` and `cycle`, plus `too_deep` for nesting past 64 levels. All the templates are in `$meta.errors` in `dist/scalars.json`.
+
+**Translating:** key a catalogue by `code` and fill in the `{params}`; for `invalid`, key by `params.type`. Problems drop into an [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) response unchanged:
+
+```json
+{
+  "type": "https://example.com/problems/validation",
+  "title": "Your order has errors",
+  "status": 422,
+  "errors": [
+    { "pointer": "/items/0/qty", "code": "invalid", "params": { "type": "int32" }, "message": "Please use a whole number, like 42." },
+    { "pointer": "/status", "code": "not_allowed", "params": { "values": ["draft", "sent", "paid"] }, "message": "Must be one of: draft, sent, paid." }
+  ]
+}
+```
+
 ## Pick a type
 
 Start with the **core** types below; they cover almost everything. Each one also has **aliases**, so if you think "url" or "money", that works too (`url` → `uri`, `money` → `decimal`).

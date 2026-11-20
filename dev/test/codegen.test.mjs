@@ -47,7 +47,9 @@ test("go: patterns, reserved names, static table", () => {
     assert.ok(token.includes("`") && go.includes(`\tpattern: ${JSON.stringify(token)},\n`), "sf_token's backtick forces an interpreted string");
     assert.ok(go.includes(`\tpattern: \`${scalars.types.email.schema.pattern}\`,\n`), "other patterns are raw strings");
     assert.ok(go.includes("\tsteps:   []step{stepTrim, stepLowercase},\n"), "steps are constants");
-    assert.ok(!go.includes("map[string]any{"), "no map literal in the table");
+    // The engine builds maps inside functions; the generated tables after it, and every package-level var, don't.
+    assert.ok(!go.slice(go.indexOf("\nvar paramRules")).includes("map[string]any{"), "no map literal in the table");
+    assert.ok(!/^var \w+ += map/m.test(go), "no package-level map literal");
     const snake = (id) => id.replace(/[A-Z]/g, (c, i) => (i ? "_" : "") + c.toLowerCase()); // "ScalarError" -> "scalar_error"
     for (const id of RESERVED_GO) assert.throws(() => identifiers([{ name: snake(id) }], "go", RESERVED_GO), /reserved/);
 });

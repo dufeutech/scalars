@@ -63,6 +63,34 @@ type Cases struct {
 		Ok                           bool
 		Malformed                    string
 	} `json:"hostile"`
+	Models struct {
+		Load []struct {
+			Name     string   `json:"name"`
+			Data     any      `json:"data"`
+			Ok       bool     `json:"ok"`
+			All      []string `json:"all"`
+			Problems any      `json:"problems"`
+		} `json:"load"`
+		Validate []struct {
+			Name     string `json:"name"`
+			Load     string `json:"load"`
+			Model    string `json:"model"`
+			In       any    `json:"in"`
+			Ok       bool   `json:"ok"`
+			Out      any    `json:"out"`
+			Problems any    `json:"problems"`
+		} `json:"validate"`
+		Hostile []struct {
+			Kind         string `json:"kind"`
+			Load         string `json:"load"`
+			Model        string `json:"model"`
+			Count        int    `json:"count"`
+			Ok           bool   `json:"ok"`
+			ProblemCount int    `json:"problem_count"`
+			Code         string `json:"code"`
+			Pointer      string `json:"pointer"`
+		} `json:"hostile"`
+	} `json:"models"`
 }
 
 var fails []string
@@ -420,9 +448,282 @@ func main() {
 		}
 	}
 
+	modelsSlowest, modelsSlowestKind := checkModels(&cases)
+
 	if len(fails) > 0 {
 		fmt.Println(strings.Join(fails, "\n"))
 		os.Exit(1)
 	}
-	fmt.Printf("go: ok, %d types, slowest hostile %s %.1f ms\n", len(types), slowestType, slowest)
+	fmt.Printf("go: ok, %d types, slowest hostile %s %.1f ms, slowest models hostile %s %.1f ms\n",
+		len(types), slowestType, slowest, modelsSlowestKind, modelsSlowest)
+}
+
+// canon is v as JSON text with sorted keys (encoding/json sorts map keys), so two shapes compare exactly whatever
+// their Go types: a Problem struct and the map cases.json decodes to give the same text.
+func canon(v any) string {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return "unmarshalable: " + err.Error()
+	}
+	var generic any
+	if err := json.Unmarshal(b, &generic); err != nil {
+		return "unparsable: " + err.Error()
+	}
+	b, _ = json.Marshal(generic)
+	return string(b)
+}
+
+func joined(problems []scalars.Problem) string {
+	parts := make([]string, len(problems))
+	for i, p := range problems {
+		parts[i] = p.Pointer + ": " + p.Message
+	}
+	return strings.Join(parts, "; ")
+}
+
+// checkProblems fails unless every problem has a non-nil Params and err's text joins its problems.
+func checkProblems(what string, problems []scalars.Problem, text string) {
+	for _, p := range problems {
+		if p.Params == nil {
+			fail("%s: problem at %q has nil Params", what, p.Pointer)
+		}
+	}
+	if text != joined(problems) {
+		fail("%s: error text %q does not join its problems", what, text)
+	}
+}
+
+// loadModels loads a models file: the set, or the *ModelsError it gave. Any other error is a bug.
+func loadModels(what string, data any) (*scalars.ModelSet, *scalars.ModelsError) {
+	set, err := scalars.Models(data)
+	if err == nil {
+		if set == nil {
+			fail("%s: Models gave neither a set nor an error", what)
+		}
+		return set, nil
+	}
+	var e *scalars.ModelsError
+	if !errors.As(err, &e) {
+		fail("%s: Models gave %T, not *ModelsError", what, err)
+		return nil, &scalars.ModelsError{}
+	}
+	return nil, e
+}
+
+// validateModel validates payload: the output, or the *ModelError it gave. Any other error is a bug.
+func validateModel(what string, m *scalars.Model, payload any) (map[string]any, *scalars.ModelError) {
+	out, err := m.Validate(payload)
+	if err == nil {
+		return out, nil
+	}
+	var e *scalars.ModelError
+	if !errors.As(err, &e) {
+		fail("%s: Validate gave %T, not *ModelError", what, err)
+		return nil, &scalars.ModelError{}
+	}
+	return nil, e
+}
+
+var address = map[string]any{"street": "a", "country": "US"}
+
+func copyMap(m map[string]any) map[string]any {
+	out := make(map[string]any, len(m))
+	for k, v := range m {
+		out[k] = v
+	}
+	return out
+}
+
+// hostilePayloads builds each models.hostile payload from its count, as the Task 3 report describes.
+var hostilePayloads = map[string]func(n int) any{
+	"wide_list": func(n int) any {
+		items := make([]any, n)
+		for i := range items {
+			items[i] = map[string]any{"sku": "0614141000036", "qty": 1.0}
+		}
+		return map[string]any{"bill_to": copyMap(address), "items": items, "status": "draft"}
+	},
+	"many_unknown": func(n int) any {
+		p := copyMap(address)
+		for i := 0; i < n; i++ {
+			p[fmt.Sprintf("k%d", i)] = 1.0
+		}
+		return p
+	},
+	"long_decimal": func(n int) any {
+		return map[string]any{"to": copyMap(address), "status": "draft", "total": "1" + strings.Repeat("0", n)}
+	},
+	"ref_chain": func(n int) any {
+		p := make(map[string]any, n)
+		for i := 0; i < n; i++ {
+			p[fmt.Sprintf("f%d", i)] = "a"
+		}
+		return p
+	},
+}
+
+// hostileModels builds the models file of a hostile case that names no load case.
+var hostileModels = map[string]func(n int) any{
+	"ref_chain": func(n int) any {
+		c := make(map[string]any, n)
+		for i := 0; i < n-1; i++ {
+			c[fmt.Sprintf("f%d", i)] = fmt.Sprintf("c.f%d", i+1)
+		}
+		c[fmt.Sprintf("f%d", n-1)] = "string"
+		return map[string]any{"app": map[string]any{"c": c}}
+	},
+}
+
+// checkModels runs cases.models and returns the slowest hostile case's time and kind.
+func checkModels(cases *Cases) (float64, string) {
+	loadData := map[string]any{}
+	for _, c := range cases.Models.Load {
+		loadData[c.Name] = c.Data
+		what := "models.load " + c.Name
+		set, e := loadModels(what, c.Data)
+		if e != nil {
+			if c.Ok {
+				fail("%s: refused: %v", what, e)
+			} else if canon(e.Problems) != canon(c.Problems) {
+				fail("%s: problems %s, want %s", what, canon(e.Problems), canon(c.Problems))
+			} else {
+				checkProblems(what, e.Problems, e.Error())
+			}
+			continue
+		}
+		if set == nil {
+			continue
+		}
+		if !c.Ok {
+			fail("%s: loaded, want problems %s", what, canon(c.Problems))
+		} else if canon(set.All) != canon(c.All) {
+			fail("%s: All %s, want %s", what, canon(set.All), canon(c.All))
+		}
+	}
+
+	modelOf := func(what, load, name string) *scalars.Model {
+		set, e := loadModels(what, loadData[load])
+		if e != nil || set == nil {
+			fail("%s: load case %q must load: %v", what, load, e)
+			return nil
+		}
+		m, ok := set.Get(name)
+		if !ok || m == nil {
+			fail("%s: no model %q", what, name)
+			return nil
+		}
+		if m.Name != name {
+			fail("%s: model name %q", what, m.Name)
+		}
+		return m
+	}
+
+	for _, c := range cases.Models.Validate {
+		what := "models.validate " + c.Name
+		m := modelOf(what, c.Load, c.Model)
+		if m == nil {
+			continue
+		}
+		out, e := validateModel(what, m, c.In)
+		if e == nil {
+			if !c.Ok {
+				fail("%s: passed, want problems %s", what, canon(c.Problems))
+			} else if canon(out) != canon(c.Out) {
+				fail("%s: out %s, want %s", what, canon(out), canon(c.Out))
+			}
+		} else if c.Ok {
+			fail("%s: refused: %v", what, e)
+		} else if canon(e.Problems) != canon(c.Problems) {
+			fail("%s: problems %s, want %s", what, canon(e.Problems), canon(c.Problems))
+		} else {
+			checkProblems(what, e.Problems, e.Error())
+		}
+		if m.IsValid(c.In) != c.Ok {
+			fail("%s: IsValid disagrees with ok", what)
+		}
+		// An int field puts an int64 in the output: canon can't tell 3 from 3.0.
+		if c.Name == "int_shapes_float" && out != nil {
+			if q, isInt := out["qty"].(int64); !isInt || q != 3 {
+				fail("%s: qty is %#v, want int64(3)", what, out["qty"])
+			}
+		}
+	}
+
+	// Get takes the exact full name only, and the loaded settings never alias the caller's data.
+	if spec, _ := loadModels("ok_spec_example", loadData["ok_spec_example"]); spec != nil {
+		for _, name := range []string{"order", "shop:Order", "constructor", "__proto__", "toString", ""} {
+			if m, ok := spec.Get(name); ok || m != nil {
+				fail("models Get(%q) found a model", name)
+			}
+		}
+		// A JSON number counts as an integer only when its value is integral (no shared case has a fraction).
+		if m, ok := spec.Get("shop:line_item"); ok {
+			_, e := validateModel("fraction", m, map[string]any{"sku": "0614141000036", "qty": 3.5})
+			if e == nil || len(e.Problems) != 1 || e.Problems[0].Code != "invalid" || e.Problems[0].Pointer != "/qty" {
+				fail("models: qty 3.5 for an int32 field is not one invalid at /qty: %v", e)
+			}
+		}
+	}
+	values := []any{"x", "y"}
+	if set, _ := loadModels("owned", map[string]any{"app": map[string]any{"a": map[string]any{"s": map[string]any{"type": "enum", "values": values}}}}); set != nil {
+		values[0] = "w"
+		m, _ := set.Get("app:a")
+		if !m.IsValid(map[string]any{"s": "x"}) || m.IsValid(map[string]any{"s": "w"}) {
+			fail("loaded settings alias the caller's values")
+		}
+	}
+
+	slowest, slowestKind := 0.0, ""
+	for _, c := range cases.Models.Hostile {
+		what := "models.hostile " + c.Kind
+		build, known := hostilePayloads[c.Kind]
+		if !known {
+			fail("models.hostile: unknown kind %q", c.Kind)
+			continue
+		}
+		data, hasLoad := loadData[c.Load]
+		if c.Load == "" {
+			builder, ok := hostileModels[c.Kind]
+			if !ok {
+				fail("%s: no load case and no models builder", what)
+				continue
+			}
+			data, hasLoad = builder(c.Count), true
+		}
+		if !hasLoad {
+			fail("%s: no load case %q", what, c.Load)
+			continue
+		}
+		payload := build(c.Count)
+		start := time.Now() // load and validate
+		set, e := loadModels(what, data)
+		if e != nil || set == nil {
+			fail("%s: refused at load: %.200s", what, e)
+			continue
+		}
+		m, ok := set.Get(c.Model)
+		if !ok {
+			fail("%s: no model %q", what, c.Model)
+			continue
+		}
+		_, ve := validateModel(what, m, payload)
+		ms := float64(time.Since(start).Microseconds()) / 1000
+		if ms > slowest {
+			slowest, slowestKind = ms, c.Kind
+		}
+		if (ve == nil) != c.Ok {
+			fail("%s: want ok %v", what, c.Ok)
+		} else if ve != nil && (len(ve.Problems) != c.ProblemCount || len(ve.Problems) == 0 ||
+			ve.Problems[0].Code != c.Code || ve.Problems[0].Pointer != c.Pointer) {
+			first := scalars.Problem{}
+			if len(ve.Problems) > 0 {
+				first = ve.Problems[0]
+			}
+			fail("%s: %d problems, first %s at %q", what, len(ve.Problems), first.Code, first.Pointer)
+		}
+		if ms >= 2000 {
+			fail("%s took %.0f ms", what, ms)
+		}
+	}
+	return slowest, slowestKind
 }

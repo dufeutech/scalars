@@ -1,13 +1,36 @@
-// Emits dist/go/scalars.go (the hand-written engine.go followed by one generated record per type) and its go.mod.
+// Emits dist/go/scalars.go (the hand-written engine.go and models.go, then one generated record per type) and its go.mod.
 // Everything is written already gofmt-clean, and the table is plain composite literals, so Go builds it statically.
-import { header, int64, noLoneSurrogate, readEngine } from "./common.mjs";
+import { fail, header, int64, noLoneSurrogate, readEngine } from "./common.mjs";
 import { engineNames, identifiers, metaFields, paramRules } from "./model.mjs";
 
 /** Names the engine exports, so no type may take them. */
-export const RESERVED_GO = ["Meta", "ScalarError", "TextScalar", "IntScalar", "NumberScalar", "BoolScalar", "ShapeScalar", "Get", "All", "Lookup"];
+export const RESERVED_GO = [
+    "Meta", "ScalarError", "TextScalar", "IntScalar", "NumberScalar", "BoolScalar", "ShapeScalar", "Get", "All", "Lookup",
+    "Models", "ModelSet", "Model", "ModelError", "ModelsError", "Problem",
+];
 
 const TEXT_VERSION = "v0.21.0"; // golang.org/x/text, the version the runner tests with
-const ENGINE = readEngine("engine.go");
+
+/**
+ * `main` followed by `extra`, a second file of the same package: its package clause and import block are dropped,
+ * and its imports (standard library only) join the first group of `main`'s import block, sorted as gofmt keeps them.
+ */
+function joinGo(main, extra, file) {
+    const block = /^import \(\n([^)]*)\n\)\n/m;
+    const mine = block.exec(main) ?? fail("engine.go has no import block");
+    const theirs = block.exec(extra) ?? fail(`${file} has no import block`);
+    const groups = mine[1].split("\n\n");
+    const std = new Set(groups[0].split("\n"));
+    for (const line of theirs[1].split("\n")) {
+        if (!/^\t"[a-z0-9/]+"$/.test(line)) fail(`${file} imports ${line.trim()}: only the standard library, one path per line`);
+        std.add(line);
+    }
+    groups[0] = [...std].sort().join("\n");
+    const body = extra.slice(theirs.index + theirs[0].length);
+    return `${main.slice(0, mine.index)}import (\n${groups.join("\n\n")}\n)\n${main.slice(mine.index + mine[0].length)}${body}`;
+}
+
+const ENGINE = joinGo(readEngine("engine.go"), readEngine("models.go"), "models.go");
 const STRUCT = {
     text: "TextScalar",
     integer: "IntScalar",

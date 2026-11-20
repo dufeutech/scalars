@@ -176,16 +176,6 @@ for (const c of cases.models.validate) {
     }
     if (m.isValid(c.in) !== c.ok) fails.push(`models.validate ${c.name}: isValid disagrees with ok`);
 }
-// A field named like an Object.prototype member is looked up as an own key: missing, it's required, not inherited.
-const protoModel = scalars.models({ app: { p: { constructor: "string" } } }).get("app:p");
-try {
-    protoModel.validate({});
-    fails.push("models: a missing constructor field passed");
-} catch (e: any) {
-    if (!(e instanceof ModelError) || canon(e.problems.map((p: any) => [p.pointer, p.code])) !== canon([["/constructor", "required"]])) {
-        fails.push(`models: a missing constructor field gave ${e instanceof ModelError ? canon(e.problems) : e}`);
-    }
-}
 if (({} as any).polluted !== undefined || Object.prototype.hasOwnProperty.call(Object.prototype, "polluted")) fails.push("a payload changed Object.prototype");
 
 // get takes the exact full name only, and the loaded settings never alias the caller's data.

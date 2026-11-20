@@ -2454,7 +2454,8 @@
         "pattern": "^([0-9]{9}[0-9Xx]|97[89][0-9]{10})$",
         "normalize": [
             "remove_spaces",
-            "remove_hyphens"
+            "remove_hyphens",
+            "uppercase"
         ],
         "check": "isbn",
         "examples": {

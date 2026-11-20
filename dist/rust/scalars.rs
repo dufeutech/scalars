@@ -1509,7 +1509,7 @@ pub static ISBN: Text = Text {
         aliases: &["isbn13", "isbn10"],
         check: Some("isbn"),
     },
-    steps: &[Step::RemoveSpaces, Step::RemoveHyphens],
+    steps: &[Step::RemoveSpaces, Step::RemoveHyphens, Step::Uppercase],
     pattern: Some(r"^([0-9]{9}[0-9Xx]|97[89][0-9]{10})$"),
     min_len: 10,
     max_len: 13,

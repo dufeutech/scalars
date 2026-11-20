@@ -1572,7 +1572,7 @@ var scalarIsbn = TextScalar{
 		Invalid:   []any{"978030640615", "0306406152XX"},
 		Check:     "isbn",
 	},
-	steps:   []step{stepRemoveSpaces, stepRemoveHyphens},
+	steps:   []step{stepRemoveSpaces, stepRemoveHyphens, stepUppercase},
 	pattern: `^([0-9]{9}[0-9Xx]|97[89][0-9]{10})$`,
 	minLen:  10,
 	maxLen:  13,

@@ -61,7 +61,7 @@
         { "type": "char", "in": "\ud800", "ok": false, "malformed": "surrogate" },
         { "type": "gln", "in": "0614 1410 0001 2", "ok": true, "out": "0614141000012" },
         { "type": "isbn", "in": "0-306-40615-2", "ok": true, "out": "0306406152" },
-        { "type": "isbn", "in": "080442957x", "ok": true, "out": "080442957x" },
+        { "type": "isbn", "in": "080442957x", "ok": true, "out": "080442957X" },
         { "type": "iban", "in": " de89 3704 0044 0532 0130 00 ", "ok": true, "out": "DE89370400440532013000" },
         { "type": "gtin", "in": "0614141000037", "ok": false },
         { "type": "int64", "in": "000000000000000000000001", "ok": true, "out": "000000000000000000000001" },

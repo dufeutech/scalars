@@ -22,7 +22,7 @@ Models add that layer, declared once as **data** (parsed JSON) and checked the s
 - A `relationships` section (foreign keys between stored records). That's a storage concern; checking a payload never needs it. It can be added later as a new key without changing anything here.
 - Models that contain themselves, directly or through others (comment threads, trees).
 - Array length limits (`min_items`, `max_items`), cross-field rules ("end after start"), defaults.
-- Translated error messages, and the `ScalarError` reason codes listed in HANDOFF.
+- Shipping translations. Codes and the `$meta.errors` table make them possible; the library ships English only.
 - Field documentation and mappings to outside standards (a `description`, or "this is GS1 `netContent`"). These would be new optional keys on a field object, so they're additive.
 - A version key for models files. Users version their own files; if one is ever needed it's another `$` key next to `$schema`, so it's additive.
 - Quantities (a value plus a UCUM unit). Models make them possible as a two-field model once a unit type exists; that type is separate work.
@@ -117,10 +117,42 @@ The principle, the same one as the 64-bit range fix: **`validate` rejects what t
 - Every declared field is required unless `nullable`. **A missing key and `null` are treated the same.**
 - Keys the model doesn't declare are errors.
 - Each value goes through its type's existing `validate` (normalize, then checks), then its settings. Model values recurse; arrays check each item.
-- All errors are collected, none short-circuit. **They're sorted by path**: segment by segment, names by code point, list indices numerically, a parent before its children. Go's `map[string]any` and Rust's default `serde_json::Value` don't keep key order, so input order can't be the contract. Sorting gives the same list in all four languages with no extra dependency, and costs O(k log k) for k errors. `ModelsError` problems are sorted the same way.
-- If the root value isn't an object, the single error has the empty path `""`.
+- All errors are collected, none short-circuit. **They're sorted by location**: segment by segment, names by code point, list indices numerically, a parent before its children. Go's `map[string]any` and Rust's default `serde_json::Value` don't keep key order, so input order can't be the contract. Sorting gives the same list in all four languages with no extra dependency, and costs O(k log k) for k errors. `ModelsError` problems are sorted the same way.
+- If the root value isn't an object, the single error is at the root pointer `""`.
 - On success, the result is the cleaned payload: same shape, normalized values, no extra keys. Missing nullable keys come back as `null`.
-- Paths use dots and brackets: `bill_to.country`, `items[2].qty`.
+
+## Errors
+
+Every error has a fixed code, so programs can branch on it and translators can key off it. The English sentence is only the default. The shape follows two standards: **RFC 6901 JSON Pointer** for the location, and **RFC 9457 Problem Details**, whose field-error list each error drops into unchanged.
+
+```json
+{ "pointer": "/items/2/qty", "code": "invalid", "params": { "type": "int32" },
+  "message": "Use a whole number between -2147483648 and 2147483647." }
+```
+
+- `pointer`: RFC 6901 (`~` → `~0`, `/` → `~1`), `""` for the root. Into the payload for `ModelError`, into the models file for `ModelsError` (`/billing/invoice/total/precision`).
+- `code`: one of the closed lists below. A new code is an addition, never a rename.
+- `params`: the facts the message needs, always an object (empty when none).
+- `message`: the English default, rendered from the template.
+
+**Payload codes (`ModelError`):**
+
+| Code | Params | English template |
+|---|---|---|
+| `required` | | `Required.` |
+| `unknown_field` | | `Not a field of this model.` |
+| `not_object` | | `Must be an object.` |
+| `not_list` | | `Must be a list.` |
+| `invalid` | `type` | the type's own `error` text |
+| `too_long` | `max` | `At most {max} characters.` |
+| `not_allowed` | `values` | `Must be one of: {values}.` (`values` joined with `, ` in the message; a list in `params`) |
+| `too_many_digits` | `precision`, `scale` | `Too many digits for precision {precision}, scale {scale}.` |
+
+**Models file codes (`ModelsError`):** `not_object`, `bad_name`, `unresolved`, `alias` (params `canonical`), `unknown_setting`, `bad_setting`, `missing_setting` (params `setting`), `cycle`, `too_deep` (params `max`). Their templates follow the same pattern.
+
+- **The templates are data:** a new `$meta.errors` table in `dist/scalars.json`, code → template, with placeholders in ICU MessageFormat syntax (`{max}`), which translation tools read. Adding to `$meta` is an addition, so the stable shape holds. Each language's engine is generated from that table, and a translator copies it.
+- Each type's existing `error` text stays where it is. `invalid` carries the `type`, so a translation can be keyed by type.
+- Deferred, additive: a `reason` param on `invalid` (pattern, check digit, encoding). It needs changes in all four existing validators.
 
 ## API
 
@@ -154,8 +186,7 @@ let clean = order.validate(&payload)?;
 - `data` is already-parsed JSON, never a path. The library doesn't touch the filesystem.
 - **`get` matches the existing `scalars.get`**: `None` / `undefined` / `(nil, false)` / `Option`. (This reverses an earlier "fail loudly" proposal from the conversation; matching the existing `get` is the one-way rule.)
 - `get` takes the full `domain:model` name only. No aliases, no case forgiving.
-- `ModelError` holds a list of `{path, message}`. `message` is the type's existing `error` text, or a fixed English text for "required", "unknown field", "not an object", "not a list", "too long", "not one of the allowed values", "too many digits".
-- `ModelsError` (the file is wrong) holds a list of `{path, message}` with paths into the file, like `shop:order.items`.
+- `ModelError` and `ModelsError` each hold a sorted list of problems, `{pointer, code, params, message}` (see Errors).
 - Each language's types and naming follow the existing engine conventions for that language.
 
 ## Constraints
@@ -163,7 +194,7 @@ let clean = order.validate(&payload)?;
 - **Field settings are data only.** There's no code API like `scalars.string.of(length=50)`; that would be a second way. (Also a change from the conversation, where it was proposed as step 1.)
 - **Rust gains a `serde_json` dependency** for the input and the models data. Every Rust user parsing JSON already uses it. Go uses the standard library (`map[string]any`, `[]any`). Python and TypeScript stay dependency-free.
 - Load is O(size of the models file) including reference resolution and cycle detection. Validate is O(size of input): each value is visited once and the models (not the input) bound recursion depth. Back this with a measurement on hostile input, as the existing runners do.
-- `dist/scalars.json` doesn't change shape. Models are a separate file the user writes.
+- `dist/scalars.json` doesn't change shape; it only gains `$meta.errors`. Models are a separate file the user writes.
 - Ship a JSON Schema for the models file at `schema/models.schema.json` so editors catch mistakes. It can check the shape and names; reference resolution and setting validity are checked at load.
 - The reference implementation in `dev/lib/reference.mjs` gets models too, and shared cases in `dev/langs/` run against it and all four languages, as today.
 

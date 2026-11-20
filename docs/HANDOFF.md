@@ -1,6 +1,6 @@
 # Handoff
 
-State of the project for whoever picks it up next. Last updated 2026-11-20, at release 0.4.0 (generated language files, checks, `gln`, CI).
+State of the project for whoever picks it up next. Last updated 2026-11-20, after release 0.4.0 and the models work (unreleased, on `main`).
 
 ## Where things stand
 
@@ -12,7 +12,9 @@ State of the project for whoever picks it up next. Last updated 2026-11-20, at r
 - **README is quick-start first:** one `curl` command and a short example per language, then a method table across the four, the core type table, the JSON files (forms, OpenAPI, Postgres), edge cases, and editing types last. Each quick start was run from scratch in a fresh project on 2026-11-13. The download links point at the release tag (`v0.4.0`); move them to the new tag with each release. Keep the method table and examples in step with `dev/codegen/` when the API changes.
 - **CI:** `.github/workflows/test.yml` runs `npm test`, `npm run check:langs` and `go test -race` on pushes to `main` and on pull requests. All green since its first run on 2026-11-20. It's the only place `go test -race` runs, since the dev machine has no C compiler.
 - **`tsc --strict` passes** on `dist/ts/scalars.ts` (TypeScript 5, checked by hand on 2026-11-20). It isn't in CI; the TS runner uses Node's type stripping, which doesn't type-check.
-- **Tests, all passing:** `cd dev && npm test` (188 tests: JSON Schema, the browser's regex engine, real Postgres via PGlite) and `npm run check:langs` (TypeScript, Python, Go, Rust).
+- **Models (unreleased, listed under "Unreleased" in the changelog):** users declare domains → models → fields as parsed JSON; every language has `models(data)`, `get("domain:model")`, `validate` and `is_valid`, reporting every bad field as `{pointer, code, params, message}`. The behaviour is defined by `dev/lib/models.mjs` and the shared `models` cases in `dev/langs/cases.json`; each language's hand-written engine is `dev/codegen/models.{py,ts,go,rs}`. Error templates live once in `src/scalar.json` `$defs.errors` (→ `$meta.errors`). Rust now also needs `serde_json`. The spec and plan are `docs/superpowers/specs/2026-11-20-models-design.md` and `docs/superpowers/plans/2026-11-20-models.md`.
+- **Tests, all passing:** `cd dev && npm test` (327 tests: JSON Schema, the browser's regex engine, real Postgres via PGlite, the models reference) and `npm run check:langs` (TypeScript, Python, Go, Rust, including the shared models cases).
+- **Adding to models:** a new behaviour goes into the reference first, with a shared case; then all four engines. Mutation tests during the build kept finding behaviours no shared case pinned, so when you change an engine, plant a bug and check a shared case catches it.
 
 ## How a type reads in dist (since 0.3.0)
 
@@ -50,19 +52,24 @@ State of the project for whoever picks it up next. Last updated 2026-11-20, at r
 
 ## Known follow-ups from the models branch (to fix)
 
-Minor findings from the per-task reviews of the `models` work (spec and plan: `docs/superpowers/specs/2026-11-20-models-design.md`, `docs/superpowers/plans/2026-11-20-models.md`). None blocks the feature; each is a known gap to close. The final whole-branch review may move some of these into "fix before merge".
+Findings from the per-task reviews and the final whole-branch review of the `models` work. The final review's must-fix items are done (smaller `wide_list`, the `type_name` code, the CHANGELOG Rust note, the README load rules). None of these blocks the feature; the first one matters most.
 
-- **64-bit integer edges (pre-existing, not models code):** the JS reference compares integer bounds as JS numbers (`Number(maxInt64)` is 2^63), so it may accept `9223372036854775808` where Go and Python refuse it. Rust accepts `-9223372036854775809`, because serde_json reads it as a float equal to -2^63. No shared case pins ±2^63 or values above 2^53. Add those cases to `dev/langs/cases.json` and make all five agree.
+- **The four languages disagree at the 64-bit edge for integer types with no bounds (`unix_time`), the most important follow-up.** It predates models: `unix_time` has no `minimum`/`maximum` in the catalogue. Python, TS and the reference accept 2^63, 1e19 and even 1e300 (Python returns a 301-digit int). Go and Rust refuse those, Go also refuses 9223372036854775807 (float64 rounds it up), and Go and Rust accept -9223372036854775809 as -2^63. Suggested fix: give `unix_time` exact ±(2^53−1) bounds like `double_int`, and add shared cases for ±2^63 and values above 2^53.
 - **Python returns a float for number fields** (`3` → `3.0`), on purpose (engine.py: "the native value of a number type is a float"). TS, Go and Rust return `3`. Numerically equal as JSON, but the text differs, so the shared cases use `1.5`. Decide whether Python should keep numbers as given.
 - **Alias collisions:** Python's `get` lets the first type with an alias win, the JS reference the last. Latent, since no two types share an alias today. Add a build-time check that aliases are unique.
 - **Public constructors:** TS `Model` / `Models` (and probably Python's) can be built by callers from internal maps, skipping load's checks. Make them internal or document "use `models()`".
 - **Models JSON Schema tests:** they check the setting keys against `$meta.params`, but not the ranges or types, and not that duplicate or non-string `values` are refused.
 - **Codegen tests:** the `metaFields` test covers only `email` (not the optional `params`, `check`, `maxLen`, `minimum`, `maximum`). `header()` quietly falls back to `//` for an unknown file extension. The engine-name regexes are loose (the compilers back them up). The Go helper `mod97` keeps its old name while the constant is now `checkIso7064Mod9710`.
 - **Pinned versions copied by hand:** `SERDE_JSON_VERSION` and `REGEX_VERSION` in `rust.mjs` are copies of `dev/langs/rust/Cargo.lock` and can drift. Read them from the lock file or test that they match.
-- **Not run anywhere:** Python 3.10 (header says ≥ 3.10; CI uses 3.12) and Rust 1.80 (header says ≥ 1.80; only 1.97 was run). Add them to CI, or raise the stated minimums.
-- **Hostile timing:** `wide_list` (200,000 items) takes ~1.0–1.6 s of its 2 s bound in Python and ~0.9 s in Rust's debug runner, mostly the existing `gtin` check. If CI flakes, halve the count: it still tells linear from quadratic.
-- **Python runner:** compares `out` with sorted keys, so declared key order isn't checked (not a spec requirement).
-- **README:** the Quick start Rust line says it needs only `regex` (true for the linked v0.4.0 file, wrong once models ship: `cargo add regex serde_json`). Fix it at the next release. "No extra keys" next to "undeclared keys are errors" reads as a contradiction; say "the cleaned payload has only declared keys". The Errors row of the method table is cramped.
+- **Not in CI:** Python 3.10 (header says ≥ 3.10; the final review ran it by hand and it passes; CI uses 3.12) and Rust 1.80 (header says ≥ 1.80; only 1.97 was run). Add them to CI, or raise the stated minimums.
+- **Rust `Problem` has no JSON conversion.** The README says problems drop into an RFC 9457 response unchanged; Go has JSON tags and Python `_asdict()`, but Rust users build each `Value` by hand. Add `impl From<&Problem> for Value`.
+- **Constants written out in five files:** `MAX_DEPTH` (64), the NAME and REF patterns, and the digit settings live in the reference and each engine. Only the schema is tied to NAME/REF by a test. Emit them like `PARAM_RULES` and `ERRORS`.
+- **Postgres enum limits:** enum `values` accept `""` and labels over 63 bytes, which `CREATE TYPE … AS ENUM` refuses.
+- **Two templates read oddly:** a missing `type` says `This type needs "type".`, and a field that's neither a string nor an object gets "This setting's value…". Codes are a contract once released, so fix these before the next release.
+- **No build check guards the digits rule's precondition:** nothing asserts that a type taking `precision` has a `-?[0-9]+(\.[0-9]+)?` pattern.
+- **Rust copies `any`/`object`/`array` values;** the other three return the input itself (their output shares objects with the input). Harmless, undocumented.
+- **Go `ModelSet.All` and `Model.Name` are exported, mutable fields.**
+- **README:** the Quick start Rust line says it needs only `regex` (true for the linked v0.4.0 file, wrong once models ship: `cargo add regex serde_json`). Fix it at the next release, when the links move to the new tag. "No extra keys" next to "undeclared keys are errors" reads as a contradiction; say "the cleaned payload has only declared keys". The Errors row of the method table is cramped.
 - **Go payloads** must be what `encoding/json` produces; hand-built `int`, `[]string` or `json.Number` are refused. That's the spec, and the README says so; revisit if Go users ask.
 
 ## Possible next steps (none promised)
@@ -79,6 +86,8 @@ Minor findings from the per-task reviews of the `models` work (spec and plan: `d
 - Deferred on purpose: units and quantities (UCUM, which needs two fields, so a schema), translated labels, hints and errors, and JSON-LD mappings.
 
 ## History
+
+- Models (2026-11-20, unreleased): domains → models → fields as data, settings enforced, references by name (`domain:model.field`), error codes with JSON Pointers and `$meta.errors` templates, `schema/models.schema.json`, all four languages, and a shared emitter layer (`dev/codegen/common.mjs`). Built task by task with a reviewer per task and a final whole-branch review; the final review cross-checked the digits rule against Postgres 16.4 on 4,000 random cases (0 differences) and ran Python 3.10.
 
 - 0.4.0 (2026-11-20): the generated language files and the checks below, tagged `v0.4.0` once CI passed. A release is: bump `version` in `src/scalar.json` and the two asserts in `dev/test/build.test.mjs`, `npm run build`, date the changelog's "Unreleased" heading, move the README links to the new tag, then tag and push.
 

@@ -182,6 +182,12 @@ Settings written next to a reference override the copied ones: `{ "type": "billi
 | `items`                | On `array`: a field definition for each entry (required).                         |
 | `fractional_seconds`   | Accepted, not checked: Postgres rounds and never refuses.                         |
 
+Loading the file refuses:
+
+- a setting the type doesn't list, like `length` on `text`; `precision` and `scale` on number-kind types like `sf_decimal`;
+- `scale` without `precision`;
+- `values` entries that aren't strings, repeat, or aren't already clean (the type must return each one unchanged).
+
 ### Errors
 
 Each problem is `{ pointer, code, params, message }`: an RFC 6901 JSON Pointer into the payload (`""` is the root), a fixed code, the facts the message needs, and the English text.

@@ -42,6 +42,8 @@ for t in scalars.all:
 
 if scalars._index is not None:
     fails.append("the lookup index was built at import")
+if scalars._catalogue is not None:
+    fails.append("the models catalogue was built at import")
 
 if len(scalars.all) != len(types):
     fails.append(f"all has {len(scalars.all)} types, dist has {len(types)}")
@@ -138,5 +140,121 @@ for c in cases["hostile"]:
     if ms >= 2000:
         fails.append(f"hostile {c['type']} took {ms:.0f} ms")
 
-print("\n".join(fails) if fails else f"python: ok, {len(types)} types, slowest hostile {slowest[1]} {slowest[0]:.1f} ms")
+
+def shape(problems):
+    """Problems as JSON text: json.dumps tells 3 from 3.0 and True from 1, which == does not."""
+    return json.dumps([p._asdict() for p in problems], sort_keys=True)
+
+
+def want(problems):
+    return json.dumps(problems, sort_keys=True)
+
+
+load_cases = {c["name"]: c for c in cases["models"]["load"]}
+for c in cases["models"]["load"]:
+    try:
+        loaded = scalars.models(c["data"])
+    except scalars.ModelsError as e:
+        if c["ok"]:
+            fails.append(f"models.load {c['name']}: refused: {e}")
+        elif shape(e.problems) != want(c["problems"]):
+            fails.append(f"models.load {c['name']}: problems {shape(e.problems)}, want {want(c['problems'])}")
+        elif not isinstance(e, ValueError) or not isinstance(e.problems, tuple):
+            fails.append(f"models.load {c['name']}: ModelsError is not a ValueError with a tuple of problems")
+        elif str(e) != "; ".join(f"{p.pointer}: {p.message}" for p in e.problems):
+            fails.append(f"models.load {c['name']}: str(ModelsError) is {str(e)!r}")
+        continue
+    if not c["ok"]:
+        fails.append(f"models.load {c['name']}: loaded, want problems {want(c['problems'])}")
+    elif loaded.all != tuple(c["all"]):
+        fails.append(f"models.load {c['name']}: all {loaded.all}, want {c['all']}")
+
+
+def model_of(c):
+    try:
+        m = scalars.models(load_cases[c["load"]]["data"]).get(c["model"])
+    except scalars.ModelsError as e:
+        fails.append(f"{c['name']}: load case {c['load']!r} must load: {e}")
+        return None
+    if m is None:
+        fails.append(f"{c['name']}: no model {c['model']!r}")
+    elif m.name != c["model"]:
+        fails.append(f"{c['name']}: model name {m.name!r}")
+    return m
+
+
+for c in cases["models"]["validate"]:
+    m = model_of(c)
+    if m is None:
+        continue
+    try:
+        out = m.validate(c["in"])
+    except scalars.ModelError as e:
+        if c["ok"]:
+            fails.append(f"models.validate {c['name']}: refused: {e}")
+        elif shape(e.problems) != want(c["problems"]):
+            fails.append(f"models.validate {c['name']}: problems {shape(e.problems)}, want {want(c['problems'])}")
+        elif not isinstance(e, ValueError) or str(e) != "; ".join(f"{p.pointer}: {p.message}" for p in e.problems):
+            fails.append(f"models.validate {c['name']}: ModelError is not a ValueError joining its problems")
+    else:
+        if not c["ok"]:
+            fails.append(f"models.validate {c['name']}: passed, want problems {want(c['problems'])}")
+        elif json.dumps(out, sort_keys=True) != json.dumps(c["out"], sort_keys=True):
+            fails.append(f"models.validate {c['name']}: out {json.dumps(out)}, want {json.dumps(c['out'])}")
+    if m.is_valid(c["in"]) != c["ok"]:
+        fails.append(f"models.validate {c['name']}: is_valid disagrees with ok")
+
+# get takes the exact full name only, and the loaded settings never alias the caller's data.
+spec_models = scalars.models(load_cases["ok_spec_example"]["data"])
+for name in ("order", "shop:Order", "constructor", 3, None):
+    if spec_models.get(name) is not None:
+        fails.append(f"models.get({name!r}) found a model")
+owned = {"app": {"a": {"s": {"type": "enum", "values": ["x", "y"]}}}}
+owned_model = scalars.models(owned).get("app:a")
+owned["app"]["a"]["s"]["values"][0] = "w"
+owned["app"]["a"]["s"]["values"].append("z")
+if not owned_model.is_valid({"s": "x"}) or owned_model.is_valid({"s": "z"}):
+    fails.append("loaded settings alias the caller's values")
+
+ADDRESS = {"street": "a", "country": "US"}
+HOSTILE = {
+    "wide_list": lambda n: {"bill_to": dict(ADDRESS), "items": [{"sku": "0614141000036", "qty": 1} for _ in range(n)], "status": "draft"},
+    "many_unknown": lambda n: {**ADDRESS, **{f"k{i}": 1 for i in range(n)}},
+    "long_decimal": lambda n: {"to": dict(ADDRESS), "status": "draft", "total": "1" + "0" * n},
+    "ref_chain": lambda n: {f"f{i}": "a" for i in range(n)},
+}
+HOSTILE_MODELS = {
+    "ref_chain": lambda n: {"app": {"c": {**{f"f{i}": f"c.f{i + 1}" for i in range(n - 1)}, f"f{n - 1}": "string"}}},
+}
+models_slowest = (0.0, "")
+for c in cases["models"]["hostile"]:
+    if c["kind"] not in HOSTILE:
+        fails.append(f"models.hostile: unknown kind {c['kind']!r}")
+        continue
+    data = load_cases[c["load"]]["data"] if "load" in c else HOSTILE_MODELS[c["kind"]](c["count"])
+    payload = HOSTILE[c["kind"]](c["count"])
+    start = time.perf_counter()  # load and validate
+    try:
+        m = scalars.models(data).get(c["model"])
+        try:
+            m.validate(payload)
+            problems = None
+        except scalars.ModelError as e:
+            problems = e.problems
+    except scalars.ModelsError as e:
+        fails.append(f"models.hostile {c['kind']}: refused at load: {e}")
+        continue
+    ms = (time.perf_counter() - start) * 1000
+    models_slowest = max(models_slowest, (ms, c["kind"]))
+    if (problems is None) != c["ok"]:
+        fails.append(f"models.hostile {c['kind']}: want ok {c['ok']}")
+    elif problems is not None and (len(problems), problems[0].code, problems[0].pointer) != (c["problem_count"], c["code"], c["pointer"]):
+        fails.append(f"models.hostile {c['kind']}: {len(problems)} problems, first {problems[0].code} at {problems[0].pointer!r}")
+    if ms >= 2000:
+        fails.append(f"models.hostile {c['kind']} took {ms:.0f} ms")
+
+print("\n".join(fails) if fails else (
+    f"python: ok, {len(types)} types, slowest hostile {slowest[1]} {slowest[0]:.1f} ms, "
+    f"slowest models hostile {models_slowest[1]} {models_slowest[0]:.1f} ms"
+))
 sys.exit(1 if fails else 0)

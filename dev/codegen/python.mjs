@@ -1,4 +1,4 @@
-// Emits dist/python/scalars.py: the hand-written engine (engine.py) followed by one generated record per type.
+// Emits dist/python/scalars.py: the hand-written engine (engine.py, then models.py) followed by one generated record per type.
 import { header, readEngine } from "./common.mjs";
 import { identifiers, metaFields, paramRules } from "./model.mjs";
 
@@ -15,11 +15,13 @@ const KEYWORDS_PY = [
  */
 export const RESERVED_PY = [
     "Scalar", "ScalarError", "Name", "get", "all", "Final", "Generic", "Literal", "TypeVar", "T",
+    "models", "Models", "Model", "ModelError", "ModelsError", "Problem",
     "str", "int", "float", "bool", "dict", "list", "tuple",
     ...KEYWORDS_PY,
 ];
 
-const ENGINE = readEngine("engine.py");
+/** The hand-written engine: the scalars, then the models (which read `_PARAM_RULES` and `_ERRORS`, emitted below). */
+const ENGINE = `${readEngine("engine.py")}\n\n${readEngine("models.py")}`;
 const NATIVE = { text: "str", integer: "int", number: "float", boolean: "bool", object: "dict[str, _Any]", array: "list[_Any]", any: "_Any" };
 
 /** A Python literal for a JSON value. JSON strings are valid Python strings, so every backslash survives. */

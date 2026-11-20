@@ -1,5 +1,5 @@
 // Code generated from dist/scalars.json by dev/codegen/rust.mjs. DO NOT EDIT.
-// scalars.rs, catalogue version 0.3.0. Run `npm run build` in dev/ to regenerate.
+// scalars.rs, catalogue version 0.4.0. Run `npm run build` in dev/ to regenerate.
 // Requires Rust >= 1.80 (edition 2021) and the regex crate (tested with regex 1.13.1 on Rust 1.97.0).
 
 // A catalogue: callers use a few of the types, so unused ones must not warn in their crate.

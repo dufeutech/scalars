@@ -63,7 +63,8 @@ export const CHECKS = {
 };
 
 const models = new WeakMap();
-const codePoints = (s) => { let n = 0; for (let i = 0; i < s.length; i++) { n++; if (s.charCodeAt(i) >= 0xd800 && s.charCodeAt(i) < 0xdc00) i++; } return n; };
+/** Length in code points (the library's length unit): a surrogate pair counts once. */
+export const codePoints = (s) => { let n = 0; for (let i = 0; i < s.length; i++) { n++; if (s.charCodeAt(i) >= 0xd800 && s.charCodeAt(i) < 0xdc00) i++; } return n; };
 
 /**
  * Validates a value against a type, following the spec: text is trimmed, length-gated at maxLen

@@ -2,14 +2,16 @@
 // Every language engine copies this behaviour; the shared cases are in dev/langs/cases.json under "models".
 // Load is O(file) and iterative: no recursion is driven by the input, so long reference chains can't overflow.
 import { modelOf, paramRules } from "../codegen/model.mjs";
-import { validate } from "./reference.mjs";
+import { codePoints, validate } from "./reference.mjs";
 
 const NAME = /^[a-z][a-z0-9_]*$/;
 const REF = /^(?:([a-z][a-z0-9_]*):)?([a-z][a-z0-9_]*)(?:\.([a-z][a-z0-9_]*))?$/;
-/** Model nesting deeper than this is refused at load (it bounds validation's recursion). */
+/** Model nesting deeper than this is refused at load (it bounds how deep models nest in a payload). */
 export const MAX_DEPTH = 64;
 /** Settings refused on number-kind types: float text differs by language, so digit counts can't agree. */
 const DIGIT_SETTINGS = ["precision", "scale"];
+/** A field's `values` array → its Set, built at load so validate looks a value up in O(1). */
+const valueSets = new WeakMap();
 
 const isObject = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
 const escape = (s) => String(s).replaceAll("~", "~0").replaceAll("/", "~1");
@@ -263,6 +265,8 @@ export function loadModels(data, scalars) {
         v.field = type ? { kind: "type", type: base.type, settings, nullable }
             : base.kind === "array" ? { kind: "array", items, nullable }
             : { kind: "model", model: base.model, nullable };
+        // Once per written `values`: copies share the array.
+        if (settings?.values && !valueSets.has(settings.values)) valueSets.set(settings.values, new Set(settings.values));
         // The model this field nests, through any `items`: an edge of the nesting graph below.
         v.leaf = ref.kind === "model" ? ref.target
             : base.kind === "array" ? (items === base.items ? ref.target.leaf : v.items.leaf)
@@ -329,7 +333,116 @@ export function loadModels(data, scalars) {
 
     if (problems.length) return { ok: false, problems: sortProblems(problems) };
     const byName = new Map();
-    for (const m of models.values()) byName.set(m.name, { name: m.name, fields: new Map([...m.fields].map(([f, def]) => [f, def.field])) });
+    const get = (name) => byName.get(name) ?? null;
+    // What validateModel needs besides the model: the types, the templates and the other models. Kept off the
+    // visible shape.
+    const context = { types, $meta, get };
+    for (const m of models.values()) {
+        const model = { name: m.name, fields: new Map([...m.fields].map(([f, def]) => [f, def.field])) };
+        Object.defineProperty(model, "context", { value: context });
+        byName.set(m.name, model);
+    }
     const all = [...byName.keys()].sort(compareText);
-    return { ok: true, models: { all, get: (name) => byName.get(name) ?? null } };
+    return { ok: true, models: { all, get } };
+}
+
+/**
+ * Rejects exactly what Postgres numeric(p, s) refuses, in one pass over the cleaned text `t`
+ * (`-?[0-9]+(\.[0-9]+)?`): R = round(|value| * 10^s), half away from zero, must have at most p digits.
+ */
+export function fitsNumeric(t, p, s) {
+    const start = t[0] === "-" ? 1 : 0;
+    const dot = t.indexOf(".", start);
+    const intLen = (dot < 0 ? t.length : dot) - start;
+    const n = t.length - start - (dot < 0 ? 0 : 1); // digits, the point left out
+    const digit = (i) => t.charCodeAt(start + i + (dot >= 0 && i >= intLen ? 1 : 0)) - 48;
+    const k = intLen + s; // digits of the value R keeps
+    if (k < 0) return true; // rounds to 0
+    let z = 0; // the first nonzero digit
+    while (z < n && digit(z) === 0) z++;
+    const kept = Math.min(k, n);
+    const width = z < kept ? k - z : 0; // digits of R before any carry (padding zeros count)
+    const carry = k < n && digit(k) >= 5;
+    let nines = k <= n; // padding zeros aren't 9s
+    for (let i = z; nines && i < kept; i++) if (digit(i) !== 9) nines = false;
+    return width + (carry && nines ? 1 : 0) <= p;
+}
+
+/**
+ * Validates a parsed JSON payload against a model from loadModels. Returns { ok: true, value } with the cleaned
+ * payload (declared keys only, normalized values, a missing nullable key as null), or { ok: false, problems },
+ * every problem, sorted.
+ */
+export function validateModel(model, payload) {
+    return run(model, payload, false);
+}
+
+/** Whether the payload is valid: validateModel's `ok`, stopping at the first problem. */
+export function isValidModel(model, payload) {
+    return run(model, payload, true).ok;
+}
+
+/**
+ * One loop over an explicit stack of pending values: each value is visited once, and no recursion is driven by
+ * the input or by the models (an `items` chain can be thousands deep). A value's output slot is made before its
+ * children are visited, which fill it in.
+ */
+function run(model, payload, first) {
+    const { types, $meta, get } = model.context;
+    const problems = [];
+    // A location is a link to its parent, so a deep value costs O(1); the segments are built only for a problem.
+    const segmentsOf = (at) => {
+        const s = [];
+        for (; at; at = at.up) s.push(at.seg);
+        return s.reverse();
+    };
+    const report = (at, code, params = {}, message) => problems.push(problem(segmentsOf(at), code, params, $meta, message));
+    if (!isObject(payload)) {
+        report(null, "not_object");
+        return { ok: false, problems };
+    }
+    const holder = [undefined];
+    const pending = [{ field: { kind: "model", model: model.name, nullable: false }, value: payload, at: null, out: holder, key: 0 }];
+    // A key is set as an own property, so even a key "__proto__" couldn't change the output's prototype.
+    const put = (out, key, value) => {
+        if (typeof key === "number") out[key] = value;
+        else Object.defineProperty(out, key, { value, writable: true, enumerable: true, configurable: true });
+    };
+    while (pending.length) {
+        if (first && problems.length) break;
+        const { field, value, at, out, key } = pending.pop();
+        if (value === null || value === undefined) {
+            if (field.nullable) put(out, key, null);
+            else report(at, "required");
+            continue;
+        }
+        if (field.kind === "model") {
+            if (!isObject(value)) { report(at, "not_object"); continue; }
+            const { fields } = get(field.model);
+            const obj = {};
+            put(out, key, obj);
+            for (const k of Object.keys(value)) if (!fields.has(k)) report({ up: at, seg: k }, "unknown_field");
+            // Pushed in reverse, so fields are visited in declared order.
+            const names = [...fields.keys()];
+            for (let i = names.length - 1; i >= 0; i--) {
+                const name = names[i];
+                pending.push({ field: fields.get(name), value: Object.hasOwn(value, name) ? value[name] : undefined, at: { up: at, seg: name }, out: obj, key: name });
+            }
+        } else if (field.kind === "array") {
+            if (!Array.isArray(value)) { report(at, "not_list"); continue; }
+            const list = new Array(value.length);
+            put(out, key, list);
+            for (let i = value.length - 1; i >= 0; i--) pending.push({ field: field.items, value: value[i], at: { up: at, seg: i }, out: list, key: i });
+        } else {
+            const type = types[field.type];
+            const r = validate(type, value);
+            if (!r.ok) { report(at, "invalid", { type: type.name }, type.error); continue; }
+            const { length, values, precision, scale = 0 } = field.settings;
+            if (length !== undefined && codePoints(r.value) > length) report(at, "too_long", { max: length });
+            if (values !== undefined && !valueSets.get(values).has(r.value)) report(at, "not_allowed", { values: [...values] });
+            if (precision !== undefined && !fitsNumeric(r.value, precision, scale)) report(at, "too_many_digits", { precision, scale });
+            put(out, key, r.value);
+        }
+    }
+    return problems.length ? { ok: false, problems: sortProblems(problems) } : { ok: true, value: holder[0] };
 }

@@ -4,7 +4,7 @@
 
 ### Fixed
 - **`int64`** and **`uint64`** reject values outside the 64-bit range. They used to accept any run of digits, so `validate` passed values Postgres refused.
-- **`isbn`**: the valid example `030640615X` had a wrong check digit; it is now `080442957X`, plus `0306406152`.
+- **`isbn`**: the valid example `030640615X` had a wrong check digit; it is now `080442957X`, plus `0306406152`. `isbn` also uppercases a final `x`, so each book has one spelling.
 - **`email`** pattern rewritten so it runs in linear time in backtracking engines (Python, JavaScript, browsers): the old one took seconds on long inputs. It accepts exactly the same values.
 
 ### Added

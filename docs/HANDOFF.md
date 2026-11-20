@@ -33,7 +33,7 @@ State of the project for whoever picks it up next. Last updated 2026-11-20, at r
 - **Lengths count code points** everywhere except the HTML `maxlength` attribute, which counts UTF-16 units.
 - **`params` is not inherited**: list it on every type that takes it. Every other core key is inherited from `base` (`null` deletes).
 - **Every type with a `check` needs at least 2 `check_invalid` examples, and no other type may have any.** They must pass JSON Schema and the HTML pattern. Range values that Postgres rejects also go in `db_invalid`, since `check_invalid` values are never inserted into Postgres.
-- **Adding a check touches six places:** `schema/scalar.schema.json` `$defs.check` (name and meaning), `CHECKS` in `dev/lib/reference.mjs`, each `engine.*`, and the name maps in `go.mjs` and `rust.mjs`. Port it over ASCII bytes or code units, reduce mod as you go (no big integers, no growing totals), and run it only after the pattern matched.
+- **Adding a check touches four places:** `schema/scalar.schema.json` `$defs.check` (name and meaning), `CHECKS` in `dev/lib/reference.mjs`, and each `engine.*`. In `engine.go` name the constant `check` + the PascalCase check name (`iso7064_mod11_2` → `checkIso7064Mod112`); in `engine.rs` name the `Check` variant the PascalCase name (`Iso7064Mod112`). The emitters derive those names and fail the build if the engine lacks them or two names collide. A new normalize step works the same way (`step` + PascalCase in Go, a PascalCase `Step` variant in Rust). Port a check over ASCII bytes or code units, reduce mod as you go (no big integers, no growing totals), and run it only after the pattern matched.
 - **`invalid` examples are raw-pattern rejects:** a few become valid after `normalize` (e.g. `country` "us"), and the runners accept that only when normalize changes the value.
 - **Generated files:** never edit `dist/python`, `dist/ts`, `dist/go` or `dist/rust` by hand. Change `dev/codegen/` and run `npm run build`. The hand-written parts are `dev/codegen/engine.{py,ts,go,rs}`.
 - **Source edits:** the Bash tool on this Windows machine collapses `\\` to `\`, even in quoted heredocs. Write scripts that touch patterns with a file editor, never with shell heredocs.
@@ -48,7 +48,26 @@ State of the project for whoever picks it up next. Last updated 2026-11-20, at r
 - `.github/workflows/test.yml`: CI.
 - `coding/`: the owner's own gitignored scratch folder. Leave it alone.
 
+## Known follow-ups from the models branch (to fix)
+
+Minor findings from the per-task reviews of the `models` work (spec and plan: `docs/superpowers/specs/2026-11-20-models-design.md`, `docs/superpowers/plans/2026-11-20-models.md`). None blocks the feature; each is a known gap to close. The final whole-branch review may move some of these into "fix before merge".
+
+- **64-bit integer edges (pre-existing, not models code):** the JS reference compares integer bounds as JS numbers (`Number(maxInt64)` is 2^63), so it may accept `9223372036854775808` where Go and Python refuse it. Rust accepts `-9223372036854775809`, because serde_json reads it as a float equal to -2^63. No shared case pins ±2^63 or values above 2^53. Add those cases to `dev/langs/cases.json` and make all five agree.
+- **Python returns a float for number fields** (`3` → `3.0`), on purpose (engine.py: "the native value of a number type is a float"). TS, Go and Rust return `3`. Numerically equal as JSON, but the text differs, so the shared cases use `1.5`. Decide whether Python should keep numbers as given.
+- **Alias collisions:** Python's `get` lets the first type with an alias win, the JS reference the last. Latent, since no two types share an alias today. Add a build-time check that aliases are unique.
+- **Public constructors:** TS `Model` / `Models` (and probably Python's) can be built by callers from internal maps, skipping load's checks. Make them internal or document "use `models()`".
+- **Models JSON Schema tests:** they check the setting keys against `$meta.params`, but not the ranges or types, and not that duplicate or non-string `values` are refused.
+- **Codegen tests:** the `metaFields` test covers only `email` (not the optional `params`, `check`, `maxLen`, `minimum`, `maximum`). `header()` quietly falls back to `//` for an unknown file extension. The engine-name regexes are loose (the compilers back them up). The Go helper `mod97` keeps its old name while the constant is now `checkIso7064Mod9710`.
+- **Pinned versions copied by hand:** `SERDE_JSON_VERSION` and `REGEX_VERSION` in `rust.mjs` are copies of `dev/langs/rust/Cargo.lock` and can drift. Read them from the lock file or test that they match.
+- **Not run anywhere:** Python 3.10 (header says ≥ 3.10; CI uses 3.12) and Rust 1.80 (header says ≥ 1.80; only 1.97 was run). Add them to CI, or raise the stated minimums.
+- **Hostile timing:** `wide_list` (200,000 items) takes ~1.0–1.6 s of its 2 s bound in Python and ~0.9 s in Rust's debug runner, mostly the existing `gtin` check. If CI flakes, halve the count: it still tells linear from quadratic.
+- **Python runner:** compares `out` with sorted keys, so declared key order isn't checked (not a spec requirement).
+- **README:** the Quick start Rust line says it needs only `regex` (true for the linked v0.4.0 file, wrong once models ship: `cargo add regex serde_json`). Fix it at the next release. "No extra keys" next to "undeclared keys are errors" reads as a contradiction; say "the cleaned payload has only declared keys". The Errors row of the method table is cramped.
+- **Go payloads** must be what `encoding/json` produces; hand-built `int`, `[]string` or `json.Number` are refused. That's the spec, and the README says so; revisit if Go users ask.
+
 ## Possible next steps (none promised)
+
+- **Source as YAML:** convert `src/scalar.json` to a single `src/scalar.yaml` (YAML 1.2, the `yaml` dev dependency) for comments, unescaped patterns and wrapped text. Convert with an established tool (`yq` or the `yaml` CLI), not a hand-written script, preferring single-quoted patterns. `dist/` stays JSON and must build byte-identical, with a test that every example keeps its type. Decided: one file, no split by type, domain or primitive.
 
 - Add or fix types without changing the shape. Each new type needs `valid` examples, at least 2 `invalid` ones if it has a rule, and a `level`.
 - `format`-only types (dates, `uri`, …) are checked by pattern where they have one. Their `format` keyword isn't validated by the runners.

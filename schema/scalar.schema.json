@@ -27,6 +27,16 @@
                         "pattern": "^https://[^#]*$"
                     }
                 },
+                "errors": {
+                    "type": "object",
+                    "description": "The message template of each error code a models engine reports. {name} is replaced by the problem's param of that name.",
+                    "propertyNames": {
+                        "pattern": "^[a-z][a-z0-9_]*$"
+                    },
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
                 "params": {
                     "type": "object",
                     "description": "Settings a field of a type can take (like a length), defined once. A type lists the ones it accepts in params.",

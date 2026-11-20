@@ -6,7 +6,8 @@ import { build, serialize } from "../build.mjs";
 import { emitGo, RESERVED_GO } from "../codegen/go.mjs";
 import { emitRust, RESERVED_RUST } from "../codegen/rust.mjs";
 import { RESERVED_PY } from "../codegen/python.mjs";
-import { toModel, identifiers } from "../codegen/model.mjs";
+import { toModel, modelOf, paramRules, identifiers } from "../codegen/model.mjs";
+import { emitPython } from "../codegen/python.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const { scalars } = build(root);
@@ -39,7 +40,7 @@ test("model: catalogue order", () => {
 });
 
 test("go: patterns, reserved names, static table", () => {
-    const go = emitGo(toModel(scalars), scalars.version)["go/scalars.go"];
+    const go = emitGo(toModel(scalars), scalars.version, scalars.$meta)["go/scalars.go"];
     assert.match(go, /^\/\/ Code generated .* DO NOT EDIT\.$/m);
     const token = scalars.types.sf_token.schema.pattern;
     assert.ok(token.includes("`") && go.includes(`\tpattern: ${JSON.stringify(token)},\n`), "sf_token's backtick forces an interpreted string");
@@ -51,15 +52,15 @@ test("go: patterns, reserved names, static table", () => {
 });
 
 test("rust: patterns, reserved names, static table", () => {
-    const rs = emitRust(toModel(scalars), scalars.version)["rust/scalars.rs"];
+    const rs = emitRust(toModel(scalars), scalars.version, scalars.$meta)["rust/scalars.rs"];
     assert.match(rs, /^\/\/ Code generated .* DO NOT EDIT\.$/m);
     assert.ok(rs.includes(`    pattern: Some(r"${scalars.types.email.schema.pattern}"),\n`), "patterns are raw strings");
     assert.ok(rs.includes("    steps: &[Step::Trim, Step::Lowercase],\n"), "steps are variants");
     assert.ok(rs.includes("    re: OnceLock::new(),\n"), "the regex waits for first use");
-    const probe = { name: "probe", label: "L", hint: "H", error: "E", details: "", level: "core", primitive: "string", aliases: [], kind: "text", steps: [], check: null, minLen: 0, maxLen: null };
-    const quoted = emitRust([{ ...probe, pattern: 'a"#b\\"c' }], "0")["rust/scalars.rs"];
+    const probe = { name: "probe", label: "L", hint: "H", error: "E", details: "", level: "core", primitive: "string", aliases: [], params: [], kind: "text", steps: [], check: null, minLen: 0, maxLen: null };
+    const quoted = emitRust([{ ...probe, pattern: 'a"#b\\"c' }], "0", scalars.$meta)["rust/scalars.rs"];
     assert.ok(quoted.includes(`pattern: Some(r##"a"#b\\"c"##),`), "a pattern holding \"# takes more hashes");
-    const label = emitRust([{ ...probe, pattern: null, label: "a\r\u0007\"\\" }], "0")["rust/scalars.rs"];
+    const label = emitRust([{ ...probe, pattern: null, label: "a\r\u0007\"\\" }], "0", scalars.$meta)["rust/scalars.rs"];
     assert.ok(label.includes(`label: "a\\r\\u{7}\\"\\\\",`), "string literals escape what Rust can't hold");
     const upper = RESERVED_RUST.filter((id) => id === id.toUpperCase()); // only these can meet a SCREAMING_SNAKE type
     for (const id of upper) assert.throws(() => identifiers([{ name: id.toLowerCase() }], "rust", RESERVED_RUST), /reserved/);
@@ -72,12 +73,33 @@ test("python: keywords and annotation builtins are reserved", () => {
 });
 
 test("go and rust: a lone surrogate in a raw-string pattern fails the build", () => {
-    const probe = { name: "probe", label: "L", hint: "H", error: "E", details: "", level: "core", primitive: "string", aliases: [],
+    const probe = { name: "probe", label: "L", hint: "H", error: "E", details: "", level: "core", primitive: "string", aliases: [], params: [],
         examples: { valid: [], invalid: [] }, kind: "text", steps: [], check: null, minLen: 0, maxLen: null, minimum: null, maximum: null };
     const bad = [{ ...probe, pattern: `^a${String.fromCharCode(0xd800)}$` }];
-    assert.throws(() => emitGo(bad, "0"), /Lone surrogate/);
-    assert.throws(() => emitRust(bad, "0"), /Lone surrogate/);
+    assert.throws(() => emitGo(bad, "0", scalars.$meta), /Lone surrogate/);
+    assert.throws(() => emitRust(bad, "0", scalars.$meta), /Lone surrogate/);
     const good = [{ ...probe, pattern: "^a\u{1F600}$" }];
-    assert.doesNotThrow(() => emitGo(good, "0"));
-    assert.doesNotThrow(() => emitRust(good, "0"));
+    assert.doesNotThrow(() => emitGo(good, "0", scalars.$meta));
+    assert.doesNotThrow(() => emitRust(good, "0", scalars.$meta));
+});
+
+test("model: types carry their params", () => {
+    assert.deepEqual(modelOf(scalars.types.string).params, ["length"]);
+    assert.deepEqual(modelOf(scalars.types.email).params, []);
+});
+
+test("paramRules: one rule per $meta.params key", () => {
+    const rules = paramRules(scalars.$meta);
+    assert.deepEqual(Object.keys(rules), Object.keys(scalars.$meta.params));
+    assert.deepEqual(rules.scale, { kind: "integer", minimum: -1000, maximum: 1000, minItems: null });
+    assert.equal(rules.values.minItems, 1);
+    assert.deepEqual(rules.nullable, { kind: "boolean", minimum: null, maximum: null, minItems: null });
+});
+
+test("python: params and the two tables are emitted", () => {
+    const py = emitPython(toModel(scalars), scalars.version, scalars.$meta)["python/scalars.py"];
+    assert.ok(py.includes('params=("precision", "scale"),'), "decimal lists its params");
+    assert.match(py, /^_PARAM_RULES: Final = \{/m);
+    assert.match(py, /^_ERRORS: Final = \{/m);
+    assert.ok(py.includes('"too_long": "At most {max} characters."'));
 });

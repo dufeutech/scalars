@@ -161,6 +161,14 @@ const NO = Symbol("not valid"); // what `run` returns for "not valid"; a value c
 
 type Kind = "text" | "integer" | "number" | "boolean" | "object" | "array" | "any";
 
+/** The limits of one setting in $meta.params; a limit it does not have is null. */
+interface ParamRule {
+    readonly kind: string;
+    readonly minimum: number | null;
+    readonly maximum: number | null;
+    readonly minItems: number | null;
+}
+
 /** The fields a type is built from. */
 export interface ScalarInit {
     readonly name: string;
@@ -171,6 +179,7 @@ export interface ScalarInit {
     readonly level: string;
     readonly primitive: string;
     readonly aliases: readonly string[];
+    readonly params?: readonly string[];
     readonly examples: { readonly valid: readonly unknown[]; readonly invalid: readonly unknown[] };
     readonly kind?: Kind;
     readonly steps?: readonly Step[];
@@ -192,6 +201,8 @@ export class Scalar<T> {
     readonly level: string;
     readonly primitive: string;
     readonly aliases: readonly string[];
+    /** Names from $meta.params that a field of this type can set. */
+    readonly params: readonly string[];
     /** The name of the rule beyond the pattern ($meta.checks), or undefined. */
     readonly check: string | undefined;
     /**
@@ -223,6 +234,7 @@ export class Scalar<T> {
         this.level = init.level;
         this.primitive = init.primitive;
         this.aliases = init.aliases;
+        this.params = init.params ?? [];
         this.examples = init.examples;
         this.kind = init.kind ?? "any";
         const names = init.steps ?? [];
@@ -346,6 +358,12 @@ function find(word: unknown, all: readonly Scalar<unknown>[]): Scalar<unknown> |
     const key = clean(word);
     return key === word ? undefined : map.get(key);
 }
+
+/** The limits of each setting in $meta.params. */
+const PARAM_RULES: Readonly<Record<string, ParamRule>> = {"length":{"kind":"integer","minimum":1,"maximum":10485760,"minItems":null},"precision":{"kind":"integer","minimum":1,"maximum":1000,"minItems":null},"scale":{"kind":"integer","minimum":-1000,"maximum":1000,"minItems":null},"fractional_seconds":{"kind":"integer","minimum":0,"maximum":6,"minItems":null},"values":{"kind":"array","minimum":null,"maximum":null,"minItems":1},"nullable":{"kind":"boolean","minimum":null,"maximum":null,"minItems":null}};
+
+/** The message template of each error code in $meta.errors. */
+const ERRORS: Readonly<Record<string, string>> = {"required":"Required.","unknown_field":"Not a field of this model.","not_object":"Must be an object.","not_list":"Must be a list.","too_long":"At most {max} characters.","not_allowed":"Must be one of: {values}.","too_many_digits":"Too many digits for precision {precision}, scale {scale}.","bad_name":"Names are lowercase letters, digits and underscores, starting with a letter.","unresolved":"No type or model by this name.","alias":"This is an alias; write \"{canonical}\".","unknown_setting":"This type takes no such setting.","bad_setting":"This setting's value is out of range or the wrong kind.","missing_setting":"This type needs \"{setting}\".","cycle":"This reference leads back to itself.","too_deep":"Models nest more than {max} levels deep."};
 
 export type Name = "any" | "array" | "base64" | "base64url" | "bic" | "binary" | "boolean" | "char" | "cidr" | "color" | "commonmark" | "country" | "country_alpha3" | "cron" | "css_color" | "currency" | "date" | "date_time" | "date_time_local" | "decimal" | "decimal128" | "doi" | "double_int" | "duration" | "email" | "enum" | "float32" | "float64" | "gln" | "gtin" | "hostname" | "html" | "http_date" | "iban" | "idn_email" | "idn_hostname" | "int16" | "int32" | "int64" | "int8" | "ipv4" | "ipv4_cidr" | "ipv6" | "ipv6_cidr" | "iri" | "iri_reference" | "isbn" | "json_pointer" | "jwt" | "language" | "lei" | "locale" | "mac_address" | "media_range" | "media_type" | "object" | "orcid" | "phone" | "port" | "regex" | "relative_json_pointer" | "secret" | "semver" | "sf_binary" | "sf_boolean" | "sf_decimal" | "sf_integer" | "sf_string" | "sf_token" | "sha256" | "slug" | "string" | "subdivision" | "text" | "time" | "time_local" | "timezone" | "uint16" | "uint32" | "uint64" | "uint8" | "ulid" | "unix_time" | "uri" | "uri_reference" | "uri_template" | "uuid" | "uuid_v7" | "wikidata_qid";
 
@@ -613,6 +631,7 @@ export const scalars = {
         aliases: ["datetime","timestamp","instant"],
         examples: { valid: ["2026-08-16T14:30:00Z","2026-08-16T14:30:00.123+02:00"], invalid: ["2026-08-16T14:30:00","2026-08-16 14:30:00Z"] },
         kind: "text",
+        params: ["fractional_seconds"],
         pattern: "^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt][0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?([Zz]|[+-][0-9]{2}:[0-9]{2})$",
         minLen: 20,
     }),
@@ -628,6 +647,7 @@ export const scalars = {
         aliases: ["local_datetime","wall_time"],
         examples: { valid: ["2026-08-16T14:30:00","2026-08-16T09:00:00.5"], invalid: ["2026-08-16T14:30:00Z","2026-08-16"] },
         kind: "text",
+        params: ["fractional_seconds"],
         pattern: "^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt][0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?$",
         minLen: 19,
     }),
@@ -643,6 +663,7 @@ export const scalars = {
         aliases: ["money","numeric"],
         examples: { valid: ["1234.56","-0.01","42"], invalid: ["1,234.56","1e5"] },
         kind: "text",
+        params: ["precision","scale"],
         pattern: "^-?[0-9]+(\\.[0-9]+)?$",
         minLen: 1,
     }),
@@ -658,6 +679,7 @@ export const scalars = {
         aliases: ["dec128"],
         examples: { valid: ["1234.567890123456789012345678901234","-1"], invalid: ["1e10","abc"] },
         kind: "text",
+        params: ["precision","scale"],
         pattern: "^-?[0-9]+(\\.[0-9]+)?$",
         minLen: 1,
     }),
@@ -703,6 +725,7 @@ export const scalars = {
         aliases: ["interval","timespan"],
         examples: { valid: ["P3DT4H30M","PT0.5S","P1Y2M"], invalid: ["P","3 days"] },
         kind: "text",
+        params: ["fractional_seconds"],
         pattern: "^P(([0-9]+Y([0-9]+M)?([0-9]+W)?([0-9]+D)?|[0-9]+M([0-9]+W)?([0-9]+D)?|[0-9]+W([0-9]+D)?|[0-9]+D)(T([0-9]+H([0-9]+M)?([0-9]+(\\.[0-9]+)?S)?|[0-9]+M([0-9]+(\\.[0-9]+)?S)?|[0-9]+(\\.[0-9]+)?S))?|T([0-9]+H([0-9]+M)?([0-9]+(\\.[0-9]+)?S)?|[0-9]+M([0-9]+(\\.[0-9]+)?S)?|[0-9]+(\\.[0-9]+)?S))$",
         minLen: 3,
     }),
@@ -734,6 +757,7 @@ export const scalars = {
         aliases: ["choice","select"],
         examples: { valid: ["active","draft","archived"], invalid: [] },
         kind: "text",
+        params: ["values"],
     }),
     /** Small-precision number — Any number, stored with ~7 digits. Single-precision floats: bulk sensor readings or ML weights where memory beats precision. Prefer float64 as the default floating-point type. */
     "float32": new Scalar<number>({
@@ -839,6 +863,7 @@ export const scalars = {
         aliases: ["imf_fixdate"],
         examples: { valid: ["Sun, 16 Aug 2026 14:30:00 GMT","Mon, 01 Jan 2024 00:00:00 GMT"], invalid: ["2026-08-16T14:30:00Z","Sun, 16 Aug 2026 14:30:00 UTC"] },
         kind: "text",
+        params: ["fractional_seconds"],
         pattern: "^(Mon|Tue|Wed|Thu|Fri|Sat|Sun), [0-9]{2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2} GMT$",
         minLen: 29,
         maxLen: 29,
@@ -1332,6 +1357,7 @@ export const scalars = {
         aliases: ["structured_decimal"],
         examples: { valid: [4.5,-999999999999.999], invalid: ["4.5"] },
         kind: "number",
+        params: ["precision","scale"],
     }),
     /** Header number — Up to 15 digits. An HTTP Structured Fields integer (15 digits max): numeric members of structured headers. Prefer int64 outside header serialization. */
     "sf_integer": new Scalar<number>({
@@ -1421,6 +1447,7 @@ export const scalars = {
         aliases: ["short_text","varchar"],
         examples: { valid: ["hello","Ada Lovelace"], invalid: [42,null] },
         kind: "text",
+        params: ["length"],
     }),
     /** State or region — Country, dash, region, like US-CA. An ISO 3166-2 subdivision code (US-CA): states, provinces, regions. Carries its country prefix, so no separate country field is needed to interpret it. */
     "subdivision": new Scalar<string>({
@@ -1464,6 +1491,7 @@ export const scalars = {
         aliases: ["timetz","offset_time"],
         examples: { valid: ["14:30:00Z","09:05:30.250+05:30"], invalid: ["14:30:00","2:30 PM"] },
         kind: "text",
+        params: ["fractional_seconds"],
         pattern: "^[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?([Zz]|[+-][0-9]{2}:[0-9]{2})$",
         minLen: 9,
     }),
@@ -1479,6 +1507,7 @@ export const scalars = {
         aliases: ["time_of_day","local_time"],
         examples: { valid: ["14:30:00","09:05:30.250"], invalid: ["14:30","14:30:00Z"] },
         kind: "text",
+        params: ["fractional_seconds"],
         pattern: "^[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?$",
         minLen: 8,
     }),
@@ -1539,6 +1568,7 @@ export const scalars = {
         aliases: ["ulong"],
         examples: { valid: ["18446744073709551615","0"], invalid: ["-1","1.5"] },
         kind: "text",
+        params: ["precision","scale"],
         pattern: "^[0-9]+$",
         check: "uint64_range",
         minLen: 1,

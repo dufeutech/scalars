@@ -1,7 +1,7 @@
 // Emits dist/go/scalars.go (the hand-written engine.go followed by one generated record per type) and its go.mod.
 // Everything is written already gofmt-clean, and the table is plain composite literals, so Go builds it statically.
 import fs from "node:fs";
-import { identifiers } from "./model.mjs";
+import { identifiers, paramRules } from "./model.mjs";
 
 /** Names the engine exports, so no type may take them. */
 export const RESERVED_GO = ["Meta", "ScalarError", "TextScalar", "IntScalar", "NumberScalar", "BoolScalar", "ShapeScalar", "Get", "All", "Lookup"];
@@ -100,6 +100,7 @@ function record(m, id) {
         ["Name", str(m.name)], ["Label", str(m.label)], ["Hint", str(m.hint)], ["Error", str(m.error)],
         ["Details", str(m.details)], ["Level", str(m.level)], ["Primitive", str(m.primitive)],
         ["Aliases", `[]string{${m.aliases.map(str).join(", ")}}`],
+        ...(m.params.length ? [["Params", `[]string{${m.params.map(str).join(", ")}}`]] : []),
         ["Valid", examples(m.examples.valid)], ["Invalid", examples(m.examples.invalid)],
         ...(m.check === null ? [] : [["Check", str(m.check)]]),
     ], "\t\t");
@@ -116,7 +117,22 @@ ${meta}
 `;
 }
 
-export function emitGo(models, version) {
+/** The two tables as arrays of struct literals: no map, so nothing runs at program start. */
+function tables(meta) {
+    const rules = Object.entries(paramRules(meta)).map(([name, r]) =>
+        `\t{${str(name)}, ${str(r.kind)}, ${int64(r.minimum, name, "math.MinInt64")}, ${int64(r.maximum, name, "math.MaxInt64")}, ${r.minItems ?? 0}},\n`);
+    const errors = Object.entries(meta.errors).map(([code, text]) => `\t{${str(code)}, ${str(text)}},\n`);
+    return `// paramRules holds the limits of each setting in $meta.params.
+var paramRules = [...]paramRule{
+${rules.join("")}}
+
+// errorTemplates holds the message template of each error code in $meta.errors.
+var errorTemplates = [...]errorTemplate{
+${errors.join("")}}
+`;
+}
+
+export function emitGo(models, version, meta) {
     const ids = identifiers(models, "go", RESERVED_GO);
     const id = (m) => ids.get(m.name);
     const header = [
@@ -130,6 +146,7 @@ export function emitGo(models, version) {
     const lookup = models.map((m) => `\tcase ${str(m.name)}:\n\t\treturn ${id(m)}\n`).join("");
     const every = models.map((m) => `\t&scalar${id(m)}.Meta,\n`).join("");
     const source = `${header}${ENGINE}
+${tables(meta)}
 ${table}
 // All is every type, in catalogue order.
 var All = []*Meta{

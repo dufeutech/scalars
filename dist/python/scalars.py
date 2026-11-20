@@ -141,7 +141,7 @@ class Scalar(Generic[T]):
     """
 
     __slots__ = (
-        "name", "label", "hint", "error", "details", "level", "primitive", "aliases", "examples", "check",
+        "name", "label", "hint", "error", "details", "level", "primitive", "aliases", "params", "examples", "check",
         "_kind", "_steps", "_case_at", "_form_at", "_early", "_pattern", "_min_len", "_max_len", "_minimum", "_maximum", "_re", "_test",
     )
 
@@ -157,6 +157,7 @@ class Scalar(Generic[T]):
         primitive: str,
         aliases: tuple[str, ...],
         examples: dict[str, tuple[_Any, ...]],
+        params: tuple[str, ...] = (),
         kind: str = "any",
         steps: tuple[str, ...] = (),
         pattern: str | None = None,
@@ -174,6 +175,7 @@ class Scalar(Generic[T]):
         self.level = level
         self.primitive = primitive
         self.aliases = aliases
+        self.params = params  # names from $meta.params that a field of this type can set
         self.examples = examples
         self._kind = kind
         self._steps = _b.tuple(_STEPS[s] for s in steps)  # a bad name fails here, not on first use
@@ -334,6 +336,9 @@ def get(word: Name | str) -> Scalar[_Any] | None:
             found = index.get(key)
     return found
 
+
+_PARAM_RULES: Final = {"length": {"kind": "integer", "minimum": 1, "maximum": 10485760, "minItems": None}, "precision": {"kind": "integer", "minimum": 1, "maximum": 1000, "minItems": None}, "scale": {"kind": "integer", "minimum": -1000, "maximum": 1000, "minItems": None}, "fractional_seconds": {"kind": "integer", "minimum": 0, "maximum": 6, "minItems": None}, "values": {"kind": "array", "minimum": None, "maximum": None, "minItems": 1}, "nullable": {"kind": "boolean", "minimum": None, "maximum": None, "minItems": None}}
+_ERRORS: Final = {"required": "Required.", "unknown_field": "Not a field of this model.", "not_object": "Must be an object.", "not_list": "Must be a list.", "too_long": "At most {max} characters.", "not_allowed": "Must be one of: {values}.", "too_many_digits": "Too many digits for precision {precision}, scale {scale}.", "bad_name": "Names are lowercase letters, digits and underscores, starting with a letter.", "unresolved": "No type or model by this name.", "alias": "This is an alias; write \"{canonical}\".", "unknown_setting": "This type takes no such setting.", "bad_setting": "This setting's value is out of range or the wrong kind.", "missing_setting": "This type needs \"{setting}\".", "cycle": "This reference leads back to itself.", "too_deep": "Models nest more than {max} levels deep."}
 
 any: Final[Scalar[_Any]] = Scalar(
     name="any",
@@ -681,6 +686,7 @@ date_time: Final[Scalar[str]] = Scalar(
     aliases=("datetime", "timestamp", "instant"),
     examples={"valid": ("2026-08-16T14:30:00Z", "2026-08-16T14:30:00.123+02:00"), "invalid": ("2026-08-16T14:30:00", "2026-08-16 14:30:00Z")},
     kind="text",
+    params=("fractional_seconds",),
     pattern="^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt][0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?([Zz]|[+-][0-9]{2}:[0-9]{2})$",
     min_len=20,
 )
@@ -701,6 +707,7 @@ date_time_local: Final[Scalar[str]] = Scalar(
     aliases=("local_datetime", "wall_time"),
     examples={"valid": ("2026-08-16T14:30:00", "2026-08-16T09:00:00.5"), "invalid": ("2026-08-16T14:30:00Z", "2026-08-16")},
     kind="text",
+    params=("fractional_seconds",),
     pattern="^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt][0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?$",
     min_len=19,
 )
@@ -721,6 +728,7 @@ decimal: Final[Scalar[str]] = Scalar(
     aliases=("money", "numeric"),
     examples={"valid": ("1234.56", "-0.01", "42"), "invalid": ("1,234.56", "1e5")},
     kind="text",
+    params=("precision", "scale"),
     pattern="^-?[0-9]+(\\.[0-9]+)?$",
     min_len=1,
 )
@@ -741,6 +749,7 @@ decimal128: Final[Scalar[str]] = Scalar(
     aliases=("dec128",),
     examples={"valid": ("1234.567890123456789012345678901234", "-1"), "invalid": ("1e10", "abc")},
     kind="text",
+    params=("precision", "scale"),
     pattern="^-?[0-9]+(\\.[0-9]+)?$",
     min_len=1,
 )
@@ -801,6 +810,7 @@ duration: Final[Scalar[str]] = Scalar(
     aliases=("interval", "timespan"),
     examples={"valid": ("P3DT4H30M", "PT0.5S", "P1Y2M"), "invalid": ("P", "3 days")},
     kind="text",
+    params=("fractional_seconds",),
     pattern="^P(([0-9]+Y([0-9]+M)?([0-9]+W)?([0-9]+D)?|[0-9]+M([0-9]+W)?([0-9]+D)?|[0-9]+W([0-9]+D)?|[0-9]+D)(T([0-9]+H([0-9]+M)?([0-9]+(\\.[0-9]+)?S)?|[0-9]+M([0-9]+(\\.[0-9]+)?S)?|[0-9]+(\\.[0-9]+)?S))?|T([0-9]+H([0-9]+M)?([0-9]+(\\.[0-9]+)?S)?|[0-9]+M([0-9]+(\\.[0-9]+)?S)?|[0-9]+(\\.[0-9]+)?S))$",
     min_len=3,
 )
@@ -842,6 +852,7 @@ enum: Final[Scalar[str]] = Scalar(
     aliases=("choice", "select"),
     examples={"valid": ("active", "draft", "archived"), "invalid": ()},
     kind="text",
+    params=("values",),
 )
 """Choice
 
@@ -982,6 +993,7 @@ http_date: Final[Scalar[str]] = Scalar(
     aliases=("imf_fixdate",),
     examples={"valid": ("Sun, 16 Aug 2026 14:30:00 GMT", "Mon, 01 Jan 2024 00:00:00 GMT"), "invalid": ("2026-08-16T14:30:00Z", "Sun, 16 Aug 2026 14:30:00 UTC")},
     kind="text",
+    params=("fractional_seconds",),
     pattern="^(Mon|Tue|Wed|Thu|Fri|Sat|Sun), [0-9]{2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2} GMT$",
     min_len=29,
     max_len=29,
@@ -1640,6 +1652,7 @@ sf_decimal: Final[Scalar[float]] = Scalar(
     aliases=("structured_decimal",),
     examples={"valid": (4.5, -999999999999.999), "invalid": ("4.5",)},
     kind="number",
+    params=("precision", "scale"),
 )
 """Header decimal
 
@@ -1759,6 +1772,7 @@ string: Final[Scalar[str]] = Scalar(
     aliases=("short_text", "varchar"),
     examples={"valid": ("hello", "Ada Lovelace"), "invalid": (42, None)},
     kind="text",
+    params=("length",),
 )
 """Short text
 
@@ -1817,6 +1831,7 @@ time: Final[Scalar[str]] = Scalar(
     aliases=("timetz", "offset_time"),
     examples={"valid": ("14:30:00Z", "09:05:30.250+05:30"), "invalid": ("14:30:00", "2:30 PM")},
     kind="text",
+    params=("fractional_seconds",),
     pattern="^[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?([Zz]|[+-][0-9]{2}:[0-9]{2})$",
     min_len=9,
 )
@@ -1837,6 +1852,7 @@ time_local: Final[Scalar[str]] = Scalar(
     aliases=("time_of_day", "local_time"),
     examples={"valid": ("14:30:00", "09:05:30.250"), "invalid": ("14:30", "14:30:00Z")},
     kind="text",
+    params=("fractional_seconds",),
     pattern="^[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?$",
     min_len=8,
 )
@@ -1917,6 +1933,7 @@ uint64: Final[Scalar[str]] = Scalar(
     aliases=("ulong",),
     examples={"valid": ("18446744073709551615", "0"), "invalid": ("-1", "1.5")},
     kind="text",
+    params=("precision", "scale"),
     pattern="^[0-9]+$",
     check="uint64_range",
     min_len=1,

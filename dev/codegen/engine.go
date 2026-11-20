@@ -19,9 +19,22 @@ import (
 type Meta struct {
 	Name, Label, Hint, Error, Details, Level, Primitive string
 	Aliases                                             []string
+	Params                                              []string // names from $meta.params that a field of this type can set
 	Valid, Invalid                                      []any
 	Check                                               string // the rule beyond the pattern ($meta.checks), or ""
 }
+
+// paramRule is the limits of one setting in $meta.params. A limit it does not have is the widest int64
+// (minimum, maximum) or 0 (minItems). Tables of these are arrays of literals, so Go builds them statically.
+type paramRule struct {
+	name, kind string
+	minimum    int64
+	maximum    int64
+	minItems   int
+}
+
+// errorTemplate is the message template of one error code in $meta.errors; "{name}" is replaced by a param.
+type errorTemplate struct{ code, text string }
 
 // ScalarError is a value that failed a type's rule. Error returns the type's error text.
 type ScalarError struct {

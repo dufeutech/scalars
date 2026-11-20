@@ -54,7 +54,7 @@ for name, spec in types.items():
         fails.append(f"scalars.{name} is not the type get({name!r}) returns")
     if (t.name, t.label, t.hint, t.error, t.details, t.level, t.primitive) != (
         name, spec["label"], spec["hint"], spec["error"], spec["details"], spec["level"], spec["primitive"],
-    ) or t.aliases != tuple(spec.get("aliases", [])) or t.check != spec.get("check"):
+    ) or t.aliases != tuple(spec.get("aliases", [])) or t.params != tuple(spec.get("params", [])) or t.check != spec.get("check"):
         fails.append(f"{name} metadata differs from dist")
     for v in spec["examples"]["valid"]:
         if not t.is_valid(v):

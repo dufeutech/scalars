@@ -98,6 +98,23 @@
                 "level": "core",
                 "description": "Whether the field accepts null. Applies to every type, so no type lists it. Postgres: false emits NOT NULL."
             }
+        },
+        "errors": {
+            "required": "Required.",
+            "unknown_field": "Not a field of this model.",
+            "not_object": "Must be an object.",
+            "not_list": "Must be a list.",
+            "too_long": "At most {max} characters.",
+            "not_allowed": "Must be one of: {values}.",
+            "too_many_digits": "Too many digits for precision {precision}, scale {scale}.",
+            "bad_name": "Names are lowercase letters, digits and underscores, starting with a letter.",
+            "unresolved": "No type or model by this name.",
+            "alias": "This is an alias; write \"{canonical}\".",
+            "unknown_setting": "This type takes no such setting.",
+            "bad_setting": "This setting's value is out of range or the wrong kind.",
+            "missing_setting": "This type needs \"{setting}\".",
+            "cycle": "This reference leads back to itself.",
+            "too_deep": "Models nest more than {max} levels deep."
         }
     },
     "_token": {

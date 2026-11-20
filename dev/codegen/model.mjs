@@ -29,6 +29,7 @@ export function modelOf(t) {
         level: t.level,
         primitive: t.primitive,
         aliases: t.aliases ?? [],
+        params: t.params ?? [],
         examples: t.examples,
         kind,
         steps: t.normalize ?? [],
@@ -40,6 +41,15 @@ export function modelOf(t) {
         maximum: s.maximum ?? null,
     };
 }
+
+/** The limits of every `$meta.params` setting, as the models engines check them: absent limits are null. */
+export const paramRules = (meta) =>
+    Object.fromEntries(
+        Object.entries(meta.params).map(([name, p]) => [
+            name,
+            { kind: p.type, minimum: p.minimum ?? null, maximum: p.maximum ?? null, minItems: p.minItems ?? null },
+        ]),
+    );
 
 const words = (name) => name.split("_");
 const IDENTIFIER_STYLES = {

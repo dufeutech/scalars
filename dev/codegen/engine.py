@@ -138,7 +138,7 @@ class Scalar(Generic[T]):
     """
 
     __slots__ = (
-        "name", "label", "hint", "error", "details", "level", "primitive", "aliases", "examples", "check",
+        "name", "label", "hint", "error", "details", "level", "primitive", "aliases", "params", "examples", "check",
         "_kind", "_steps", "_case_at", "_form_at", "_early", "_pattern", "_min_len", "_max_len", "_minimum", "_maximum", "_re", "_test",
     )
 
@@ -154,6 +154,7 @@ class Scalar(Generic[T]):
         primitive: str,
         aliases: tuple[str, ...],
         examples: dict[str, tuple[_Any, ...]],
+        params: tuple[str, ...] = (),
         kind: str = "any",
         steps: tuple[str, ...] = (),
         pattern: str | None = None,
@@ -171,6 +172,7 @@ class Scalar(Generic[T]):
         self.level = level
         self.primitive = primitive
         self.aliases = aliases
+        self.params = params  # names from $meta.params that a field of this type can set
         self.examples = examples
         self._kind = kind
         self._steps = _b.tuple(_STEPS[s] for s in steps)  # a bad name fails here, not on first use

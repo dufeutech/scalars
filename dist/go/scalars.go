@@ -23,9 +23,22 @@ import (
 type Meta struct {
 	Name, Label, Hint, Error, Details, Level, Primitive string
 	Aliases                                             []string
+	Params                                              []string // names from $meta.params that a field of this type can set
 	Valid, Invalid                                      []any
 	Check                                               string // the rule beyond the pattern ($meta.checks), or ""
 }
+
+// paramRule is the limits of one setting in $meta.params. A limit it does not have is the widest int64
+// (minimum, maximum) or 0 (minItems). Tables of these are arrays of literals, so Go builds them statically.
+type paramRule struct {
+	name, kind string
+	minimum    int64
+	maximum    int64
+	minItems   int
+}
+
+// errorTemplate is the message template of one error code in $meta.errors; "{name}" is replaced by a param.
+type errorTemplate struct{ code, text string }
 
 // ScalarError is a value that failed a type's rule. Error returns the type's error text.
 type ScalarError struct {
@@ -465,6 +478,35 @@ func clean(word string) string {
 	return b.String()
 }
 
+// paramRules holds the limits of each setting in $meta.params.
+var paramRules = [...]paramRule{
+	{"length", "integer", 1, 10485760, 0},
+	{"precision", "integer", 1, 1000, 0},
+	{"scale", "integer", -1000, 1000, 0},
+	{"fractional_seconds", "integer", 0, 6, 0},
+	{"values", "array", math.MinInt64, math.MaxInt64, 1},
+	{"nullable", "boolean", math.MinInt64, math.MaxInt64, 0},
+}
+
+// errorTemplates holds the message template of each error code in $meta.errors.
+var errorTemplates = [...]errorTemplate{
+	{"required", "Required."},
+	{"unknown_field", "Not a field of this model."},
+	{"not_object", "Must be an object."},
+	{"not_list", "Must be a list."},
+	{"too_long", "At most {max} characters."},
+	{"not_allowed", "Must be one of: {values}."},
+	{"too_many_digits", "Too many digits for precision {precision}, scale {scale}."},
+	{"bad_name", "Names are lowercase letters, digits and underscores, starting with a letter."},
+	{"unresolved", "No type or model by this name."},
+	{"alias", "This is an alias; write \"{canonical}\"."},
+	{"unknown_setting", "This type takes no such setting."},
+	{"bad_setting", "This setting's value is out of range or the wrong kind."},
+	{"missing_setting", "This type needs \"{setting}\"."},
+	{"cycle", "This reference leads back to itself."},
+	{"too_deep", "Models nest more than {max} levels deep."},
+}
+
 // Any is Anything: Any value at all.
 //
 // Deliberately unconstrained: passthrough payloads and escape hatches. Reach for it last - every consumer inherits the validation burden.
@@ -876,6 +918,7 @@ var scalarDateTime = TextScalar{
 		Level:     "core",
 		Primitive: "date_time",
 		Aliases:   []string{"datetime", "timestamp", "instant"},
+		Params:    []string{"fractional_seconds"},
 		Valid:     []any{"2026-08-16T14:30:00Z", "2026-08-16T14:30:00.123+02:00"},
 		Invalid:   []any{"2026-08-16T14:30:00", "2026-08-16 14:30:00Z"},
 	},
@@ -900,6 +943,7 @@ var scalarDateTimeLocal = TextScalar{
 		Level:     "core",
 		Primitive: "date_time_local",
 		Aliases:   []string{"local_datetime", "wall_time"},
+		Params:    []string{"fractional_seconds"},
 		Valid:     []any{"2026-08-16T14:30:00", "2026-08-16T09:00:00.5"},
 		Invalid:   []any{"2026-08-16T14:30:00Z", "2026-08-16"},
 	},
@@ -924,6 +968,7 @@ var scalarDecimal = TextScalar{
 		Level:     "core",
 		Primitive: "decimal",
 		Aliases:   []string{"money", "numeric"},
+		Params:    []string{"precision", "scale"},
 		Valid:     []any{"1234.56", "-0.01", "42"},
 		Invalid:   []any{"1,234.56", "1e5"},
 	},
@@ -948,6 +993,7 @@ var scalarDecimal128 = TextScalar{
 		Level:     "advanced",
 		Primitive: "decimal",
 		Aliases:   []string{"dec128"},
+		Params:    []string{"precision", "scale"},
 		Valid:     []any{"1234.567890123456789012345678901234", "-1"},
 		Invalid:   []any{"1e10", "abc"},
 	},
@@ -1018,6 +1064,7 @@ var scalarDuration = TextScalar{
 		Level:     "core",
 		Primitive: "duration",
 		Aliases:   []string{"interval", "timespan"},
+		Params:    []string{"fractional_seconds"},
 		Valid:     []any{"P3DT4H30M", "PT0.5S", "P1Y2M"},
 		Invalid:   []any{"P", "3 days"},
 	},
@@ -1066,6 +1113,7 @@ var scalarEnum = TextScalar{
 		Level:     "core",
 		Primitive: "string",
 		Aliases:   []string{"choice", "select"},
+		Params:    []string{"values"},
 		Valid:     []any{"active", "draft", "archived"},
 		Invalid:   []any{},
 	},
@@ -1234,6 +1282,7 @@ var scalarHttpDate = TextScalar{
 		Level:     "domain",
 		Primitive: "date_time",
 		Aliases:   []string{"imf_fixdate"},
+		Params:    []string{"fractional_seconds"},
 		Valid:     []any{"Sun, 16 Aug 2026 14:30:00 GMT", "Mon, 01 Jan 2024 00:00:00 GMT"},
 		Invalid:   []any{"2026-08-16T14:30:00Z", "Sun, 16 Aug 2026 14:30:00 UTC"},
 	},
@@ -2020,6 +2069,7 @@ var scalarSfDecimal = NumberScalar{
 		Level:     "domain",
 		Primitive: "float64",
 		Aliases:   []string{"structured_decimal"},
+		Params:    []string{"precision", "scale"},
 		Valid:     []any{4.5, -999999999999.999},
 		Invalid:   []any{"4.5"},
 	},
@@ -2160,6 +2210,7 @@ var scalarString = TextScalar{
 		Level:     "core",
 		Primitive: "string",
 		Aliases:   []string{"short_text", "varchar"},
+		Params:    []string{"length"},
 		Valid:     []any{"hello", "Ada Lovelace"},
 		Invalid:   []any{42.0, nil},
 	},
@@ -2232,6 +2283,7 @@ var scalarTime = TextScalar{
 		Level:     "advanced",
 		Primitive: "time_local",
 		Aliases:   []string{"timetz", "offset_time"},
+		Params:    []string{"fractional_seconds"},
 		Valid:     []any{"14:30:00Z", "09:05:30.250+05:30"},
 		Invalid:   []any{"14:30:00", "2:30 PM"},
 	},
@@ -2256,6 +2308,7 @@ var scalarTimeLocal = TextScalar{
 		Level:     "core",
 		Primitive: "time_local",
 		Aliases:   []string{"time_of_day", "local_time"},
+		Params:    []string{"fractional_seconds"},
 		Valid:     []any{"14:30:00", "09:05:30.250"},
 		Invalid:   []any{"14:30", "14:30:00Z"},
 	},
@@ -2348,6 +2401,7 @@ var scalarUint64 = TextScalar{
 		Level:     "advanced",
 		Primitive: "int64",
 		Aliases:   []string{"ulong"},
+		Params:    []string{"precision", "scale"},
 		Valid:     []any{"18446744073709551615", "0"},
 		Invalid:   []any{"-1", "1.5"},
 		Check:     "uint64_range",

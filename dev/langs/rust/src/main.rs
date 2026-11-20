@@ -174,6 +174,7 @@ fn main() {
         if [m.name, m.label, m.hint, m.error, m.details, m.level, m.primitive]
             != [name.as_str(), text("label"), text("hint"), text("error"), text("details"), text("level"), text("primitive")]
             || m.aliases != strs(&spec["aliases"]).as_slice()
+            || m.params != strs(&spec["params"]).as_slice()
             || m.check != spec["check"].as_str()
         {
             fails.push(format!("{name} metadata differs from dist"));
@@ -216,7 +217,7 @@ fn main() {
         let (input, want) = (c["in"].as_str().unwrap(), c["out"].as_str().unwrap());
         // normalize is a method of the type, so build a probe with the case's steps and no rule.
         let list: &'static [Step] = steps(&strs(&c["steps"]), &mut fails).leak();
-        let meta = Meta { name: "probe", label: "", hint: "", error: "", details: "", level: "", primitive: "string", aliases: &[], check: None };
+        let meta = Meta { name: "probe", label: "", hint: "", error: "", details: "", level: "", primitive: "string", aliases: &[], params: &[], check: None };
         let probe = Text::new(meta, list, None, 0, usize::MAX, None);
         let got = probe.normalize(input);
         if got != want {

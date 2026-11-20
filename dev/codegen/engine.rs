@@ -20,8 +20,20 @@ pub struct Meta {
     pub level: &'static str,
     pub primitive: &'static str,
     pub aliases: &'static [&'static str],
+    /// Names from $meta.params that a field of this type can set.
+    pub params: &'static [&'static str],
     /// The rule beyond the pattern ($meta.checks), if any.
     pub check: Option<&'static str>,
+}
+
+/// The limits of one setting in $meta.params. A limit it does not have is None.
+#[derive(Debug)]
+struct ParamRule {
+    name: &'static str,
+    kind: &'static str,
+    minimum: Option<i64>,
+    maximum: Option<i64>,
+    min_items: Option<usize>,
 }
 
 /// A value that failed a type's rule. It displays as the type's error text.

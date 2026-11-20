@@ -158,6 +158,14 @@ const NO = Symbol("not valid"); // what `run` returns for "not valid"; a value c
 
 type Kind = "text" | "integer" | "number" | "boolean" | "object" | "array" | "any";
 
+/** The limits of one setting in $meta.params; a limit it does not have is null. */
+interface ParamRule {
+    readonly kind: string;
+    readonly minimum: number | null;
+    readonly maximum: number | null;
+    readonly minItems: number | null;
+}
+
 /** The fields a type is built from. */
 export interface ScalarInit {
     readonly name: string;
@@ -168,6 +176,7 @@ export interface ScalarInit {
     readonly level: string;
     readonly primitive: string;
     readonly aliases: readonly string[];
+    readonly params?: readonly string[];
     readonly examples: { readonly valid: readonly unknown[]; readonly invalid: readonly unknown[] };
     readonly kind?: Kind;
     readonly steps?: readonly Step[];
@@ -189,6 +198,8 @@ export class Scalar<T> {
     readonly level: string;
     readonly primitive: string;
     readonly aliases: readonly string[];
+    /** Names from $meta.params that a field of this type can set. */
+    readonly params: readonly string[];
     /** The name of the rule beyond the pattern ($meta.checks), or undefined. */
     readonly check: string | undefined;
     /**
@@ -220,6 +231,7 @@ export class Scalar<T> {
         this.level = init.level;
         this.primitive = init.primitive;
         this.aliases = init.aliases;
+        this.params = init.params ?? [];
         this.examples = init.examples;
         this.kind = init.kind ?? "any";
         const names = init.steps ?? [];

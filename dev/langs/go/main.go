@@ -25,6 +25,7 @@ type Type struct {
 	Level     string   `json:"level"`
 	Primitive string   `json:"primitive"`
 	Aliases   []string `json:"aliases"`
+	Params    []string `json:"params"`
 	Normalize []string `json:"normalize"`
 	Check     string   `json:"check"`
 	Examples  struct {
@@ -249,7 +250,8 @@ func main() {
 		}
 		if [8]string{m.Name, m.Label, m.Hint, m.Error, m.Details, m.Level, m.Primitive, m.Check} !=
 			[8]string{name, spec.Label, spec.Hint, spec.Error, spec.Details, spec.Level, spec.Primitive, spec.Check} ||
-			strings.Join(m.Aliases, "\x00") != strings.Join(spec.Aliases, "\x00") {
+			strings.Join(m.Aliases, "\x00") != strings.Join(spec.Aliases, "\x00") ||
+			strings.Join(m.Params, "\x00") != strings.Join(spec.Params, "\x00") {
 			fail("%s metadata differs from dist", name)
 		}
 		if !reflect.DeepEqual(m.Valid, scalarExamples(spec.Examples.Valid)) ||

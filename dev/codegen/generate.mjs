@@ -5,12 +5,12 @@ import { emitTypeScript } from "./ts.mjs";
 import { emitGo } from "./go.mjs";
 import { emitRust } from "./rust.mjs";
 
-/** Each emitter is (models, version) => { "<path under dist/>": text }. Tasks add theirs here. */
+/** Each emitter is (models, version, $meta) => { "<path under dist/>": text }. Tasks add theirs here. */
 const EMITTERS = [emitPython, emitTypeScript, emitGo, emitRust];
 
 export function generate(scalars) {
     const models = toModel(scalars);
     const files = {};
-    for (const emit of EMITTERS) Object.assign(files, emit(models, scalars.version));
+    for (const emit of EMITTERS) Object.assign(files, emit(models, scalars.version, scalars.$meta));
     return files;
 }

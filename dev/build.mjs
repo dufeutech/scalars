@@ -31,6 +31,7 @@ export function build(root) {
         version,
         $meta: {
             checks: Object.fromEntries(schema.$defs.check.oneOf.map((c) => [c.const, c.description])),
+            errors: sources.core.$defs.errors,
             lookup: LOOKUP_RULE,
             normalize_steps: Object.fromEntries(schema.$defs.normalize_step.oneOf.map((s) => [s.const, s.description])),
             params: sources.core.$defs.params,

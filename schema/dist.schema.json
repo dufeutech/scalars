@@ -10,11 +10,17 @@
         "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
         "$meta": {
             "type": "object",
-            "required": ["checks", "lookup", "normalize_steps", "params", "postgres_attrs"],
+            "required": ["checks", "errors", "lookup", "normalize_steps", "params", "postgres_attrs"],
             "properties": {
                 "checks": {
                     "type": "object",
                     "description": "Every check a type's check may name, with its exact meaning. A check runs on the normalized value after the pattern matched.",
+                    "additionalProperties": { "type": "string" }
+                },
+                "errors": {
+                    "type": "object",
+                    "description": "The message template of each error code a models engine reports. {name} is replaced by the problem's param of that name.",
+                    "propertyNames": { "pattern": "^[a-z][a-z0-9_]*$" },
                     "additionalProperties": { "type": "string" }
                 },
                 "lookup": { "type": "string", "description": "How to find a type from a word a person typed." },

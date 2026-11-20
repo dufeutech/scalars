@@ -1,7 +1,7 @@
 // Emits dist/rust/scalars.rs: the hand-written engine.rs followed by one generated static per type.
 // Everything is written rustfmt-clean, and every static is a plain constant expression, so nothing runs at load.
 import fs from "node:fs";
-import { identifiers } from "./model.mjs";
+import { identifiers, paramRules } from "./model.mjs";
 
 /** Upper-case names the engine defines and the statics it uses, so no type may take them. */
 export const RESERVED_RUST = ["META", "ALL", "INDEX", "WS", "Kind", "lookup"];
@@ -89,10 +89,10 @@ function fields(pairs, indent) {
     return pairs.map(([k, v]) => `${indent}${k}: ${v},`).join("\n");
 }
 
-function aliases(list, indent) {
-    const one = `&[${list.map(str).join(", ")}]`;
-    if (`${indent}aliases: ${one},`.length <= 100) return one;
-    return `&[\n${list.map((a) => `${indent}    ${str(a)},\n`).join("")}${indent}]`;
+function list(items, field, indent) {
+    const one = `&[${items.map(str).join(", ")}]`;
+    if (`${indent}${field}: ${one},`.length <= 100) return one;
+    return `&[\n${items.map((a) => `${indent}    ${str(a)},\n`).join("")}${indent}]`;
 }
 
 function record(m, id) {
@@ -101,14 +101,36 @@ function record(m, id) {
     const meta = fields([
         ["name", str(m.name)], ["label", str(m.label)], ["hint", str(m.hint)], ["error", str(m.error)],
         ["details", str(m.details)], ["level", str(m.level)], ["primitive", str(m.primitive)],
-        ["aliases", aliases(m.aliases, inner)],
+        ["aliases", list(m.aliases, "aliases", inner)],
+        ["params", list(m.params, "params", inner)],
         ["check", m.check === null ? "None" : `Some(${str(m.check)})`],
     ], inner);
     const body = more === null ? meta : `    meta: Meta {\n${meta}\n    },${more.length ? `\n${fields(more, "    ")}` : ""}`;
     return `${doc(m)}\npub static ${id}: ${struct} = ${struct} {\n${body}\n};\n`;
 }
 
-export function emitRust(models, version) {
+/** The two tables as slices of constants, so nothing runs at load. */
+function tables(meta) {
+    const opt = (n) => (n === null ? "None" : `Some(${n})`);
+    const rules = Object.entries(paramRules(meta)).map(([name, r]) =>
+        `    ParamRule {\n        name: ${str(name)},\n        kind: ${str(r.kind)},\n        minimum: ${opt(r.minimum)},\n        maximum: ${opt(r.maximum)},\n        min_items: ${opt(r.minItems)},\n    },\n`);
+    const errors = Object.entries(meta.errors).map(([code, text]) => {
+        const one = `    (${str(code)}, ${str(text)})`; // rustfmt breaks a tuple wider than 60
+        return one.length - 4 <= 60 ? `${one},\n` : `    (\n        ${str(code)},\n        ${str(text)},\n    ),\n`;
+    });
+    return `/// The limits of each setting in $meta.params.
+#[allow(dead_code)]
+static PARAM_RULES: &[ParamRule] = &[
+${rules.join("")}];
+
+/// The message template of each error code in $meta.errors.
+#[allow(dead_code)]
+static ERRORS: &[(&str, &str)] = &[
+${errors.join("")}];
+`;
+}
+
+export function emitRust(models, version, meta) {
     const ids = identifiers(models, "rust", RESERVED_RUST);
     const id = (m) => ids.get(m.name);
     const header = [
@@ -123,6 +145,7 @@ export function emitRust(models, version) {
     const variant = (m) => (SHAPES.has(m.kind) ? "Shape" : rules(m)[0]);
     const lookup = models.map((m) => `        ${str(m.name)} => Kind::${variant(m)}(&${id(m)}),\n`).join("");
     const source = `${header}${ENGINE}
+${tables(meta)}
 ${table}
 /// Every type, in catalogue order.
 pub static ALL: &[&Meta] = &[

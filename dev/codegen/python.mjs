@@ -1,6 +1,6 @@
 // Emits dist/python/scalars.py: the hand-written engine (engine.py) followed by one generated record per type.
 import fs from "node:fs";
-import { identifiers } from "./model.mjs";
+import { identifiers, paramRules } from "./model.mjs";
 
 /** Python's keywords (keyword.kwlist), which can never name a module attribute. */
 const KEYWORDS_PY = [
@@ -44,6 +44,7 @@ function record(m, id) {
         ["examples", `{"valid": ${tuple(m.examples.valid)}, "invalid": ${tuple(m.examples.invalid ?? [])}}`],
         ["kind", lit(m.kind)],
     ];
+    if (m.params.length) fields.push(["params", tuple(m.params)]);
     if (m.steps.length) fields.push(["steps", tuple(m.steps)]);
     if (m.pattern !== null) fields.push(["pattern", lit(m.pattern)]);
     if (m.check !== null) fields.push(["check", lit(m.check)]);
@@ -55,7 +56,7 @@ function record(m, id) {
     return `${id}: Final[Scalar[${NATIVE[m.kind]}]] = Scalar(\n${body}\n)\n${docstring(m)}\n`;
 }
 
-export function emitPython(models, version) {
+export function emitPython(models, version, meta) {
     const ids = identifiers(models, "python", RESERVED_PY);
     const header = [
         `# scalars.py, catalogue version ${version}.`,
@@ -66,5 +67,7 @@ export function emitPython(models, version) {
     const table = models.map((m) => record(m, ids.get(m.name))).join("\n");
     const names = `Name = Literal[${models.map((m) => lit(m.name)).join(", ")}]`;
     const every = `all: Final[tuple[Scalar[_Any], ...]] = (${models.map((m) => ids.get(m.name)).join(", ")},)`;
-    return { "python/scalars.py": `${header}${ENGINE}\n\n${table}\n${names}\n\n${every}\n` };
+    // The limits of each setting in $meta.params, and the message template of each error code in $meta.errors.
+    const tables = `_PARAM_RULES: Final = ${lit(paramRules(meta))}\n_ERRORS: Final = ${lit(meta.errors)}\n`;
+    return { "python/scalars.py": `${header}${ENGINE}\n\n${tables}\n${table}\n${names}\n\n${every}\n` };
 }

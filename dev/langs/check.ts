@@ -35,8 +35,8 @@ for (const [name, spec] of Object.entries(types)) {
     const t = get(name);
     if (t === undefined) continue;
     if (scalars[name] !== t) fails.push(`scalars.${name} is not the type get(${show(name)}) returns`);
-    const same = [t.name, t.label, t.hint, t.error, t.details, t.level, t.primitive, JSON.stringify(t.aliases)]
-        .join("\u0000") === [name, spec.label, spec.hint, spec.error, spec.details, spec.level, spec.primitive, JSON.stringify(spec.aliases ?? [])].join("\u0000");
+    const same = [t.name, t.label, t.hint, t.error, t.details, t.level, t.primitive, JSON.stringify(t.aliases), JSON.stringify(t.params)]
+        .join("\u0000") === [name, spec.label, spec.hint, spec.error, spec.details, spec.level, spec.primitive, JSON.stringify(spec.aliases ?? []), JSON.stringify(spec.params ?? [])].join("\u0000");
     if (!same || (t.check ?? null) !== (spec.check ?? null)) fails.push(`${name} metadata differs from dist`);
     for (const v of spec.examples.valid) if (!t.isValid(v)) fails.push(`${name} rejects valid ${show(v)}`);
     for (const v of spec.examples.invalid ?? []) {

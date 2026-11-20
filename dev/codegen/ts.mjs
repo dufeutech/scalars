@@ -1,6 +1,6 @@
 // Emits dist/ts/scalars.ts: the hand-written engine (engine.ts) followed by one generated record per type.
 import fs from "node:fs";
-import { identifiers } from "./model.mjs";
+import { identifiers, paramRules } from "./model.mjs";
 
 /** Names the engine defines on the `scalars` object, so no type may take them. */
 export const RESERVED_TS = ["get", "all", "__proto__"];
@@ -22,6 +22,7 @@ function record(m, id) {
         ["examples", `{ valid: ${lit(m.examples.valid)}, invalid: ${lit(m.examples.invalid ?? [])} }`],
         ["kind", lit(m.kind)],
     ];
+    if (m.params.length) fields.push(["params", lit(m.params)]);
     if (m.steps.length) fields.push(["steps", lit(m.steps)]);
     if (m.pattern !== null) fields.push(["pattern", lit(m.pattern)]);
     if (m.check !== null) fields.push(["check", lit(m.check)]);
@@ -33,7 +34,7 @@ function record(m, id) {
     return `    ${doc(m)}\n    ${lit(id)}: new Scalar<${NATIVE[m.kind]}>({\n${body}\n    }),`;
 }
 
-export function emitTypeScript(models, version) {
+export function emitTypeScript(models, version, meta) {
     const ids = identifiers(models, "ts", RESERVED_TS);
     const header = [
         `// scalars.ts, catalogue version ${version}.`,
@@ -44,7 +45,14 @@ export function emitTypeScript(models, version) {
     const names = `export type Name = ${models.map((m) => lit(m.name)).join(" | ")};`;
     const table = models.map((m) => record(m, ids.get(m.name))).join("\n");
     const every = models.map((m) => `scalars[${lit(ids.get(m.name))}]`).join(", ");
+    const tables = `/** The limits of each setting in $meta.params. */
+const PARAM_RULES: Readonly<Record<string, ParamRule>> = ${lit(paramRules(meta))};
+
+/** The message template of each error code in $meta.errors. */
+const ERRORS: Readonly<Record<string, string>> = ${lit(meta.errors)};
+`;
     const source = `${header}${ENGINE}
+${tables}
 ${names}
 
 /** Every type by name, plus \`get\` (name or alias) and \`all\`. */

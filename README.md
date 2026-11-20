@@ -136,7 +136,7 @@ Start with the **core** types below; they cover almost everything. Each one also
 | List                                  | `array`           | `list`                   | `[1, 2, 3]`                              |
 | Anything at all                       | `any`             | `json`                   | `{"anything": [1, "two", true]}`         |
 
-Need something more specific? There are 55 more **advanced** and **domain** types (like `uuid_v7`, `semver`, `iban`, `isbn`). Every one of them names the core type to fall back to in its `alternative` field.
+Need something more specific? There are 56 more **advanced** and **domain** types (like `uuid_v7`, `semver`, `iban`, `isbn`, `gln`). Every one of them names the core type to fall back to in its `alternative` field.
 
 ## Forms, OpenAPI and Postgres
 
@@ -173,6 +173,7 @@ One type in `dist/scalars.json` (shortened):
 - `params` (on types like `string`, `decimal`, `enum`) lists the settings a field can take, like `length` or `values`. Each one is defined once in `$meta.params`.
 - `examples.invalid` values break the rule in `schema` before any cleanup. A few become valid once `normalize` has run: `country` lists `"us"`, which `validate` turns into `"US"`.
 - `examples.db_invalid` holds values that pass the JSON rule but that only the database can reject, like `2026-02-30`.
+- `check` (on a few types) names a rule beyond the pattern, defined in `$meta.checks`: a check digit or a 64-bit range. `examples.check_invalid` holds values that match the pattern but fail it, like a barcode with a wrong last digit.
 - The rule for matching a word to a type (as `get` does) is in `$meta.lookup`.
 
 **The shape is stable from 0.3.0:** new releases add or fix types, but never rename or move a field.
@@ -180,6 +181,7 @@ One type in `dist/scalars.json` (shortened):
 ## Good to know
 
 - **Fast on any input.** `validate` takes time proportional to the input length, in all four languages. The build rejects any pattern that isn't provably linear, so no input can make a regex run for seconds.
+- **Check digits and 64-bit ranges are checked.** `validate` rejects a `gtin`, `gln`, `iban`, `lei`, `isbn` or `orcid` with a wrong check digit, and an `int64` or `uint64` too big for 64 bits, in all four languages. JSON Schema and HTML only check the pattern; Postgres catches the 64-bit range but not check digits.
 - **Text must be well-formed Unicode** (no lone surrogates, no invalid UTF-8), as the web's `USVString` and RFC 7493 require. Anything else fails `validate` like any other bad value.
 - **Go and Rust: `get` returns metadata only.** To validate a type you found by alias, pass its name to `scalars.Lookup` (Go, returns `*TextScalar`, `*IntScalar`, ... as `any`) or `scalars::lookup` (Rust, returns a `Kind`):
 

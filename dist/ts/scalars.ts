@@ -875,13 +875,17 @@ const STOP = Symbol("stop");
 export class Model {
     readonly name: string;
     private readonly fields: ReadonlyMap<string, ModelField>;
-    private readonly entries: readonly (readonly [string, ModelField])[]; // in declared order, built once, not per payload
+    /**
+     * [name, field, shadows] in declared order, built once, not per payload. `shadows` marks a name Object.prototype
+     * also has (`constructor`): its output key is defined, since a plain assignment would hit the inherited one.
+     */
+    private readonly entries: readonly (readonly [string, ModelField, boolean])[];
     private readonly root: ModelField; // the payload itself, a value of this model
 
     constructor(name: string, fields: ReadonlyMap<string, ModelField>) {
         this.name = name;
         this.fields = fields;
-        this.entries = [...fields];
+        this.entries = [...fields].map(([f, field]) => [f, field, Object.hasOwn(Object.prototype, f)] as const);
         this.root = new ModelField("model", false, null, null, null, name, null);
         this.root.target = this;
     }
@@ -962,9 +966,14 @@ function walk(f: ModelField, v: unknown, up: Loc | null, seg: Segment | undefine
         const model = f.target as Model;
         const fields = model["fields"];
         for (const k of Object.keys(v)) if (!fields.has(k)) report(problems, { up: at, seg: k }, "unknown_field");
-        // Field names match NAME, so none is "__proto__": a plain assignment always makes an own property.
+        // A plain assignment runs [[Set]], which an inherited read-only `constructor` (a frozen Object.prototype)
+        // refuses: a name Object.prototype has is defined instead. Field names match NAME, so none is "__proto__".
         const out: Record<string, unknown> = {};
-        for (const [name, sub] of model["entries"]) out[name] = walk(sub, Object.hasOwn(v, name) ? v[name] : undefined, at, name, problems);
+        for (const [name, sub, shadows] of model["entries"]) {
+            const value = walk(sub, Object.hasOwn(v, name) ? v[name] : undefined, at, name, problems);
+            if (shadows) Object.defineProperty(out, name, { value, writable: true, enumerable: true, configurable: true });
+            else out[name] = value;
+        }
         return out;
     }
     if (!Array.isArray(v)) {

@@ -205,6 +205,10 @@ for (const c of cases.models.hostile) {
         fails.push(`models.hostile: unknown kind ${show(c.kind)}`);
         continue;
     }
+    if (!("load" in c) && !Object.hasOwn(HOSTILE_MODELS, c.kind)) {
+        fails.push(`models.hostile ${c.kind}: no load case and no models builder`);
+        continue;
+    }
     const data = "load" in c ? loadCases[c.load].data : HOSTILE_MODELS[c.kind](c.count);
     const payload = HOSTILE[c.kind](c.count);
     const start = performance.now(); // load and validate
@@ -232,6 +236,18 @@ for (const c of cases.models.hostile) {
         fails.push(`models.hostile ${c.kind}: ${problems.length} problems, first ${problems[0].code} at ${show(problems[0].pointer)}`);
     }
     if (ms >= 2000) fails.push(`models.hostile ${c.kind} took ${ms.toFixed(0)} ms`);
+}
+
+// Last, since it can't be undone: with Object.prototype frozen, its read-only `constructor` must not stop a field of
+// that name from being set on the output (a plain assignment would throw in strict mode).
+const frozenModel = scalars.models(loadCases.proto_model.data).get("app:p");
+Object.freeze(Object.prototype);
+try {
+    const out = frozenModel.validate({ constructor: "a" });
+    if (canon(out) !== canon({ constructor: "a" }) || !Object.hasOwn(out, "constructor")) fails.push(`models: with Object.prototype frozen, out is ${canon(out)}`);
+    if (!frozenModel.isValid({ constructor: "a" })) fails.push("models: with Object.prototype frozen, isValid says no");
+} catch (e: any) {
+    fails.push(`models: with Object.prototype frozen, validate threw ${e?.message ?? e}`);
 }
 
 console.log(fails.length ? fails.join("\n") : `ts: ok, ${Object.keys(types).length} types, slowest hostile ${slowest.type} ${slowest.ms.toFixed(1)} ms, slowest models hostile ${modelsSlowest.kind} ${modelsSlowest.ms.toFixed(1)} ms`);

@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.6.0 — 2026-11-21
+
+### Added
+- **Failure reasons.** Every failed `validate` says why, with one reason from a fixed set: `wrong_kind`, `malformed`, `too_long`, `too_short`, `pattern`, `out_of_range`, `check`, `not_in_list`. A value that breaks several rules gets the first one checked, the same in all four languages. TypeScript and Python `ScalarError.reason` (with an emitted `Reason`), Go `ScalarError.Reason` (`type Reason string`, constants like `ReasonNotInList`), Rust `ScalarError.reason` (an enum with `as_str()`). The set, its order and meanings are the new `$meta.reasons` in `dist/scalars.json`. Messages are unchanged.
+- **Closed code lists.** `country` and `country_alpha3` accept only currently assigned ISO 3166-1 codes (249 each, from Debian `iso-codes` v4.20.1), and `currency` only ISO 4217 List One codes (178, from SIX, published 2026-09-17). The list is the type's `schema.enum`, so JSON Schema and OpenAPI enforce it too, and the HTML `select` options read it. New `examples.list_invalid`.
+
+### Changed
+- **`validate` accepts less:** unassigned and withdrawn codes (`XX`, `QQQ`, `XK`, `HRK`) now fail `country`, `country_alpha3` and `currency`. Stored data holding them will start failing. Postgres is unchanged: its CHECK is still the pattern only, so no migration.
+- **Models:** the `invalid` code is gone. A field whose value fails its type reports the reason as its code (`pattern`, `wrong_kind`, `not_in_list`, ...), and every problem on a type field carries `params.type`, including `too_long`, `not_allowed` and `too_many_digits`. A type's own length limit reports `too_long` with `params.max`, like a field's `length`.
+- **Rust:** `Text::new` takes the list as a new last argument.
+- **HTML:** `currency` options no longer point at `Intl.supportedValuesOf`; `country`, `country_alpha3` and `currency` take their values from `schema.enum` and only their labels from `Intl.DisplayNames`.
+
 ## 0.5.0 — 2026-11-21
 
 ### Added

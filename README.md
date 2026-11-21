@@ -11,7 +11,7 @@ Download one file into your project and use it. There's no package to install.
 **Python** (3.10 or newer, no dependencies)
 
 ```sh
-curl -O https://raw.githubusercontent.com/dufeutech/scalars/v0.5.0/dist/python/scalars.py
+curl -O https://raw.githubusercontent.com/dufeutech/scalars/v0.6.0/dist/python/scalars.py
 ```
 
 ```python
@@ -28,7 +28,7 @@ except scalars.ScalarError as e:
 **TypeScript** (5.6 or newer, or Node 22.18 or newer; no dependencies)
 
 ```sh
-curl -O https://raw.githubusercontent.com/dufeutech/scalars/v0.5.0/dist/ts/scalars.ts
+curl -O https://raw.githubusercontent.com/dufeutech/scalars/v0.6.0/dist/ts/scalars.ts
 ```
 
 ```ts
@@ -46,8 +46,8 @@ try {
 **Go** (1.21 or newer, needs `golang.org/x/text`)
 
 ```sh
-curl --create-dirs -o scalars/go.mod     https://raw.githubusercontent.com/dufeutech/scalars/v0.5.0/dist/go/go.mod
-curl --create-dirs -o scalars/scalars.go https://raw.githubusercontent.com/dufeutech/scalars/v0.5.0/dist/go/scalars.go
+curl --create-dirs -o scalars/go.mod     https://raw.githubusercontent.com/dufeutech/scalars/v0.6.0/dist/go/go.mod
+curl --create-dirs -o scalars/scalars.go https://raw.githubusercontent.com/dufeutech/scalars/v0.6.0/dist/go/scalars.go
 go mod edit -require=scalars@v0.0.0 -replace=scalars=./scalars
 go mod tidy
 ```
@@ -63,7 +63,7 @@ _, err := scalars.Phone.Validate("4155552671")  // err.Error() is the type's err
 **Rust** (1.80 or newer, needs the `regex` and `serde_json` crates)
 
 ```sh
-curl -o src/scalars.rs https://raw.githubusercontent.com/dufeutech/scalars/v0.5.0/dist/rust/scalars.rs
+curl -o src/scalars.rs https://raw.githubusercontent.com/dufeutech/scalars/v0.6.0/dist/rust/scalars.rs
 cargo add regex serde_json
 ```
 
@@ -83,11 +83,14 @@ That's it. Every type in the table below is there the same way: `scalars.uuid`, 
 | ----------------------- | -------------------------- | -------------------------- | --------------------------- | -------------------------- |
 | Clean up, then check    | `validate(v)` (raises)     | `validate(v)` (throws)     | `Validate(v)` → `(v, err)`  | `validate(v)` → `Result`   |
 | Just check              | `is_valid(v)`              | `isValid(v)`               | `IsValid(v)`                | `is_valid(v)`              |
+| Why it failed           | `e.reason` (`Reason.*`)    | `e.reason` (`Reason`)      | `e.Reason` (`Reason*`)      | `e.reason` (`Reason`, `.as_str()`) |
 | Only clean up           | `normalize(s)`             | `normalize(s)`             | `Normalize(s)` (text types) | `normalize(s)` (text types) |
 | Find a type by any name | `scalars.get("money")`     | `scalars.get("money")`     | `scalars.Get("money")`      | `scalars::get("money")`    |
 | Every type              | `scalars.all`              | `scalars.all`              | `scalars.All`               | `scalars::ALL`             |
 
 Each type also carries its `label`, `hint` and `error` text, ready to show in a form.
+
+A failed `validate` says why with one reason from a fixed set: `wrong_kind`, `malformed`, `too_long`, `too_short`, `pattern`, `out_of_range`, `check`, `not_in_list`. When a value breaks several rules you get the first one checked, in that order, the same in all four languages. The set, its order and each meaning are `$meta.reasons` in `dist/scalars.json`. The error's message stays the type's `error` text.
 
 ## Models: check a whole payload
 
@@ -273,6 +276,8 @@ Start with the **core** types below; they cover almost everything. Each one also
 | List                                  | `array`           | `list`                   | `[1, 2, 3]`                              |
 | Anything at all                       | `any`             | `json`                   | `{"anything": [1, "two", true]}`         |
 
+`country`, `country_alpha3` and `currency` accept only the codes ISO currently assigns (ISO 3166-1, and ISO 4217 List One): `XX`, `QQQ` and withdrawn codes like `HRK` fail with `not_in_list`. The list is `schema.enum`, so JSON Schema and HTML `select` options use the same one. Postgres checks the pattern only, so a list update never needs a migration.
+
 Need something more specific? There are 56 more **advanced** and **domain** types (like `uuid_v7`, `semver`, `iban`, `isbn`, `gln`). Every one of them names the core type to fall back to in its `alternative` field.
 
 ## Forms, OpenAPI and Postgres
@@ -311,6 +316,7 @@ One type in `dist/scalars.json` (shortened):
 - `examples.invalid` values break the rule in `schema` before any cleanup. A few become valid once `normalize` has run: `country` lists `"us"`, which `validate` turns into `"US"`.
 - `examples.db_invalid` holds values that pass the JSON rule but that only the database can reject, like `2026-02-30`.
 - `check` (on a few types) names a rule beyond the pattern, defined in `$meta.checks`: a check digit or a 64-bit range. `examples.check_invalid` holds values that match the pattern but fail it, like a barcode with a wrong last digit.
+- `schema.enum` (on `country`, `country_alpha3`, `currency`) is a closed list, checked after everything else. `examples.list_invalid` holds values that match the pattern but aren't on it.
 - The rule for matching a word to a type (as `get` does) is in `$meta.lookup`.
 
 **The shape is stable from 0.3.0:** new releases add or fix types, but never rename or move a field.

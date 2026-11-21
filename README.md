@@ -11,7 +11,7 @@ Download one file into your project and use it. There's no package to install.
 **Python** (3.10 or newer, no dependencies)
 
 ```sh
-curl -O https://raw.githubusercontent.com/dufeutech/scalars/v0.4.0/dist/python/scalars.py
+curl -O https://raw.githubusercontent.com/dufeutech/scalars/v0.5.0/dist/python/scalars.py
 ```
 
 ```python
@@ -28,7 +28,7 @@ except scalars.ScalarError as e:
 **TypeScript** (5.6 or newer, or Node 22.18 or newer; no dependencies)
 
 ```sh
-curl -O https://raw.githubusercontent.com/dufeutech/scalars/v0.4.0/dist/ts/scalars.ts
+curl -O https://raw.githubusercontent.com/dufeutech/scalars/v0.5.0/dist/ts/scalars.ts
 ```
 
 ```ts
@@ -46,8 +46,8 @@ try {
 **Go** (1.21 or newer, needs `golang.org/x/text`)
 
 ```sh
-curl --create-dirs -o scalars/go.mod     https://raw.githubusercontent.com/dufeutech/scalars/v0.4.0/dist/go/go.mod
-curl --create-dirs -o scalars/scalars.go https://raw.githubusercontent.com/dufeutech/scalars/v0.4.0/dist/go/scalars.go
+curl --create-dirs -o scalars/go.mod     https://raw.githubusercontent.com/dufeutech/scalars/v0.5.0/dist/go/go.mod
+curl --create-dirs -o scalars/scalars.go https://raw.githubusercontent.com/dufeutech/scalars/v0.5.0/dist/go/scalars.go
 go mod edit -require=scalars@v0.0.0 -replace=scalars=./scalars
 go mod tidy
 ```
@@ -60,11 +60,11 @@ ok := scalars.Email.IsValid("user@example.com") // true
 _, err := scalars.Phone.Validate("4155552671")  // err.Error() is the type's error text
 ```
 
-**Rust** (1.80 or newer, needs the `regex` crate)
+**Rust** (1.80 or newer, needs the `regex` and `serde_json` crates)
 
 ```sh
-curl -o src/scalars.rs https://raw.githubusercontent.com/dufeutech/scalars/v0.4.0/dist/rust/scalars.rs
-cargo add regex
+curl -o src/scalars.rs https://raw.githubusercontent.com/dufeutech/scalars/v0.5.0/dist/rust/scalars.rs
+cargo add regex serde_json
 ```
 
 ```rust

@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.0 — 2026-11-21
 
 ### Added
 - **Models**: check a whole payload against models written as data, in Python, TypeScript, Go and Rust. A models file has three levels (domain, model, field); fields can reference types, models and other fields (`billing:invoice.total`); `scalars.models(data)` loads it, `get("domain:model")` finds a model, `validate` / `is_valid` check a payload and return the cleaned one.

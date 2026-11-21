@@ -1,5 +1,5 @@
 // Code generated from dist/scalars.json by dev/codegen/go.mjs. DO NOT EDIT.
-// scalars.go, catalogue version 0.4.0. Run `npm run build` in dev/ to regenerate.
+// scalars.go, catalogue version 0.5.0. Run `npm run build` in dev/ to regenerate.
 // Requires Go >= 1.21 and golang.org/x/text (tested with v0.21.0 on Go 1.26.3).
 
 // Package scalars has one typed value per scalar type, each with Normalize (text), Validate and IsValid.

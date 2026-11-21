@@ -1331,19 +1331,26 @@ type entry struct {
 	field *field
 }
 
-// Model is one model of a loaded models file. It is safe for concurrent use: nothing changes after load.
+// Model is one model of a loaded models file. It is safe for concurrent use: nothing changes after load. Only
+// Models builds one; a zero Model is not usable.
 type Model struct {
-	Name    string
+	name    string
 	fields  map[string]*field
 	entries []entry // built once, not per payload
 	root    *field  // the payload itself, a value of this model
 }
 
-// ModelSet is a loaded models file: Get("domain:model") and All, every full name, sorted.
+// Name is the model's full "domain:model" name.
+func (m *Model) Name() string { return m.name }
+
+// ModelSet is a loaded models file: Get("domain:model") and All, every full name, sorted. Only Models builds one.
 type ModelSet struct {
-	All    []string
+	all    []string
 	byName map[string]*Model
 }
+
+// All gives every full model name, sorted. The slice is a copy: changing it changes nothing in the set.
+func (s *ModelSet) All() []string { return slices.Clone(s.all) }
 
 // Get finds a model by its full "domain:model" name, exactly.
 func (s *ModelSet) Get(name string) (*Model, bool) {
@@ -1369,9 +1376,9 @@ func Models(data any) (*ModelSet, error) {
 	if len(l.problems) > 0 {
 		return nil, &ModelsError{sortedProblems(l.problems)}
 	}
-	set := &ModelSet{All: make([]string, 0, len(l.nodes)), byName: make(map[string]*Model, len(l.nodes))}
+	set := &ModelSet{all: make([]string, 0, len(l.nodes)), byName: make(map[string]*Model, len(l.nodes))}
 	for name, node := range l.nodes {
-		m := &Model{Name: name, fields: make(map[string]*field, len(node.list)), entries: make([]entry, 0, len(node.list))}
+		m := &Model{name: name, fields: make(map[string]*field, len(node.list)), entries: make([]entry, 0, len(node.list))}
 		for _, d := range node.list {
 			f := d.segments[2].key
 			m.fields[f] = d.field
@@ -1379,9 +1386,9 @@ func Models(data any) (*ModelSet, error) {
 		}
 		m.root = &field{kind: kindModel, model: name, target: m}
 		set.byName[name] = m
-		set.All = append(set.All, name)
+		set.all = append(set.all, name)
 	}
-	slices.Sort(set.All)
+	slices.Sort(set.all)
 	// Each model field points at its Model once, here, so validate never looks a model up by name.
 	for _, f := range l.fields {
 		if f.kind == kindModel {

@@ -367,6 +367,13 @@ function find(word: unknown, all: readonly Scalar<unknown>[]): Scalar<unknown> |
 const MAX_DEPTH = 64;
 /** Settings refused on number-kind types: float text differs by language, so digit counts can't agree. */
 const DIGIT_SETTINGS: readonly string[] = ["precision", "scale"];
+/** The key only models() holds: a Model or Models built by hand would skip load's checks. */
+const INTERNAL: unique symbol = Symbol("models()");
+
+/** Refuses a constructor call from outside this module. */
+function internalOnly(key: unknown, what: string): void {
+    if (key !== INTERNAL) throw new TypeError(`${what} is built by models(), not by new`);
+}
 
 /** One problem: an RFC 6901 `pointer`, a fixed `code`, the `params` the message needs, the English `message`. */
 export type Problem = {
@@ -872,7 +879,7 @@ type Loc = { readonly up: Loc | null; readonly seg: Segment };
 /** isValid found a problem: nothing more needs checking. */
 const STOP = Symbol("stop");
 
-/** One model of a loaded models file: `validate(payload)` and `isValid(payload)`. */
+/** One model of a loaded models file: `validate(payload)` and `isValid(payload)`. Only `scalars.models()` builds one. */
 export class Model {
     readonly name: string;
     private readonly fields: ReadonlyMap<string, ModelField>;
@@ -883,7 +890,8 @@ export class Model {
     private readonly entries: readonly (readonly [string, ModelField, boolean])[];
     private readonly root: ModelField; // the payload itself, a value of this model
 
-    constructor(name: string, fields: ReadonlyMap<string, ModelField>) {
+    constructor(key: typeof INTERNAL, name: string, fields: ReadonlyMap<string, ModelField>) {
+        internalOnly(key, "Model");
         this.name = name;
         this.fields = fields;
         this.entries = [...fields].map(([f, field]) => [f, field, Object.hasOwn(Object.prototype, f)] as const);
@@ -1009,13 +1017,14 @@ function fitsNumeric(t: string, p: number, s: number): boolean {
     return width + (carry && nines ? 1 : 0) <= p;
 }
 
-/** A loaded models file: `get("domain:model")` and `all`, every full name, sorted by code point. */
+/** A loaded models file: `get("domain:model")` and `all`, every full name, sorted by code point. Only `scalars.models()` builds one. */
 export class Models {
     readonly all: readonly string[];
     private readonly byName: ReadonlyMap<string, Model>;
     private static catalogue: Catalogue | undefined = undefined; // built on the first load
 
-    constructor(byName: ReadonlyMap<string, Model>) {
+    constructor(key: typeof INTERNAL, byName: ReadonlyMap<string, Model>) {
+        internalOnly(key, "Models");
         this.byName = byName;
         this.all = [...byName.keys()].sort(compareText);
     }
@@ -1051,11 +1060,11 @@ function loadModels(data: unknown): Models {
     for (const node of loaded.nodes.values()) {
         const fields = new Map<string, ModelField>();
         for (const [f, d] of node.fields) fields.set(f, d.field as ModelField);
-        byName.set(node.name, new Model(node.name, fields));
+        byName.set(node.name, new Model(INTERNAL, node.name, fields));
     }
     // Each model field points at its Model once, here, so validate never looks a model up by name.
     for (const field of loaded.fields) if (field.kind === "model") field.target = byName.get(field.model) as Model;
-    return new Models(byName);
+    return new Models(INTERNAL, byName);
 }
 
 /** The limits of each setting in $meta.params. */

@@ -146,16 +146,18 @@ let clean = order.validate(&payload)?; // Err(ModelError), or the cleaned payloa
 | ----------------------- | ----------------------- | ----------------------- | -------------------------- | ------------------------- |
 | Load a file             | `scalars.models(data)`  | `scalars.models(data)`  | `scalars.Models(data)`     | `scalars::models(&data)`  |
 | Find a model            | `models.get(name)`      | `models.get(name)`      | `models.Get(name)`         | `models.get(name)`        |
-| Every model name        | `models.all`            | `models.all`            | `models.All`               | `models.all()`            |
+| Every model name        | `models.all`            | `models.all`            | `models.All()`             | `models.all()`            |
 | Clean up, then check    | `m.validate(p)`         | `m.validate(p)`         | `m.Validate(p)`            | `m.validate(&p)`          |
 | Just check              | `m.is_valid(p)`         | `m.isValid(p)`          | `m.IsValid(p)`             | `m.is_valid(&p)`          |
-| Errors                  | `ModelsError`, `ModelError` (`.problems`) | same | `*ModelsError`, `*ModelError` (`.Problems`) | same (`.problems`) |
+| A bad file              | `ModelsError`           | `ModelsError`           | `*ModelsError`             | `ModelsError`             |
+| A bad payload           | `ModelError`            | `ModelError`            | `*ModelError`              | `ModelError`              |
+| Each error's problems   | `e.problems`            | `e.problems`            | `e.Problems`               | `e.problems`              |
 
 - `data` is already-parsed JSON. The library never reads files, so write your models file in YAML or anything else and parse it yourself.
 - **Go:** payloads and models data must be what `encoding/json` produces: `map[string]any`, `[]any`, `float64`, `string`, `bool`, `nil`. A hand-built `int`, `[]string` or `map[string]string` is refused, and `json.Number` (`Decoder.UseNumber`) isn't supported.
 - **Rust:** `cargo add regex serde_json`. Data and payloads are `serde_json::Value`.
 - **Python** returns a float for number-kind fields (`3` → `3.0`), as it does for single scalars.
-- On success you get the cleaned payload: normalized values, no extra keys, missing nullable keys as `null`. A missing key and `null` are the same. Keys the model doesn't declare are errors.
+- On success you get the cleaned payload: normalized values, only the declared keys, missing nullable keys as `null`. A missing key and `null` are the same. A key the model doesn't declare is an error.
 - Every bad field is reported, sorted by location. Limits: models nest at most 64 levels (models and `items` combined), and `get` takes the full `domain:model` name only.
 
 ### References

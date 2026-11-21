@@ -6,6 +6,13 @@ from typing import NamedTuple as _NamedTuple
 
 _MAX_DEPTH: Final = 64  # nesting deeper than this, each model and each `items` one level, is refused at load
 _DIGIT_SETTINGS: Final = ("precision", "scale")  # refused on number-kind types: float text differs by language
+_INTERNAL: Final = _Obj()  # the key only models() holds: a Model or Models built by hand would skip load's checks
+
+
+def _internal_only(key: _Obj, what: str) -> None:
+    """Refuses a constructor call from outside this module."""
+    if key is not _INTERNAL:
+        raise _b.TypeError(f"{what} is built by models(), not called directly")
 
 
 class Problem(_NamedTuple):
@@ -524,11 +531,12 @@ class _Loader:
 
 
 class Model:
-    """One model of a loaded models file: `validate(payload)` and `is_valid(payload)`."""
+    """One model of a loaded models file: `validate(payload)` and `is_valid(payload)`. Only `models()` builds one."""
 
     __slots__ = ("name", "_fields", "_entries", "_root")
 
-    def __init__(self, name: str, fields: dict[str, _Field]) -> None:
+    def __init__(self, key: _Obj, name: str, fields: dict[str, _Field]) -> None:
+        _internal_only(key, "Model")
         self.name = name
         self._fields = fields
         self._entries = _b.tuple(fields.items())  # (name, field) in declared order, built once, not per payload
@@ -668,11 +676,12 @@ def _fits_numeric(t: str, p: int, s: int) -> bool:
 
 
 class Models:
-    """A loaded models file: `get("domain:model")` and `all`, every full name, sorted."""
+    """A loaded models file: `get("domain:model")` and `all`, every full name, sorted. Only `models()` builds one."""
 
     __slots__ = ("all", "_by_name")
 
-    def __init__(self, by_name: dict[str, Model]) -> None:
+    def __init__(self, key: _Obj, by_name: dict[str, Model]) -> None:
+        _internal_only(key, "Models")
         self._by_name = by_name
         self.all: tuple[str, ...] = _b.tuple(_b.sorted(by_name))
 
@@ -698,9 +707,9 @@ def models(data: _Obj) -> Models:
         raise ModelsError(_sorted(loaded.problems))
     by_name: dict[str, Model] = {}
     for node in loaded.nodes.values():
-        by_name[node.name] = Model(node.name, {f: d.field for f, d in node.fields.items()})  # type: ignore[misc]
+        by_name[node.name] = Model(_INTERNAL, node.name, {f: d.field for f, d in node.fields.items()})  # type: ignore[misc]
     # Each model field points at its Model once, here, so validate never looks a model up by name.
     for field in loaded.fields:
         if field.kind == "model":
             field.target = by_name[field.model]
-    return Models(by_name)
+    return Models(_INTERNAL, by_name)

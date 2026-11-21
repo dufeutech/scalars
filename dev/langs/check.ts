@@ -188,6 +188,15 @@ const ownedModel = scalars.models(owned).get("app:a");
 owned.app.a.s.values[0] = "w";
 owned.app.a.s.values.push("z");
 if (!ownedModel.isValid({ s: "x" }) || ownedModel.isValid({ s: "z" })) fails.push("loaded settings alias the caller's values");
+// Only models() builds a Model or Models: a hand-built one would skip load's checks.
+for (const build of [() => new mod.Models(Symbol("models()"), new Map()), () => new mod.Model(Symbol("models()"), "app:a", new Map())]) {
+    try {
+        build();
+        fails.push("a Model or Models was built without models()");
+    } catch (e) {
+        if (!(e instanceof TypeError)) throw e;
+    }
+}
 
 const ADDRESS = { street: "a", country: "US" };
 const HOSTILE: Record<string, (n: number) => unknown> = {

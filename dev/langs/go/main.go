@@ -596,8 +596,13 @@ func checkModels(cases *Cases) (float64, string) {
 		}
 		if !c.Ok {
 			fail("%s: loaded, want problems %s", what, canon(c.Problems))
-		} else if canon(set.All) != canon(c.All) {
-			fail("%s: All %s, want %s", what, canon(set.All), canon(c.All))
+		} else if canon(set.All()) != canon(c.All) {
+			fail("%s: All %s, want %s", what, canon(set.All()), canon(c.All))
+		} else if all := set.All(); len(all) > 0 {
+			all[0] = ""
+			if set.All()[0] == "" {
+				fail("%s: All shares its slice with the set", what)
+			}
 		}
 	}
 
@@ -612,8 +617,8 @@ func checkModels(cases *Cases) (float64, string) {
 			fail("%s: no model %q", what, name)
 			return nil
 		}
-		if m.Name != name {
-			fail("%s: model name %q", what, m.Name)
+		if m.Name() != name {
+			fail("%s: model name %q", what, m.Name())
 		}
 		return m
 	}

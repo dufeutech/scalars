@@ -215,6 +215,13 @@ owned["app"]["a"]["s"]["values"][0] = "w"
 owned["app"]["a"]["s"]["values"].append("z")
 if not owned_model.is_valid({"s": "x"}) or owned_model.is_valid({"s": "z"}):
     fails.append("loaded settings alias the caller's values")
+# Only models() builds a Model or Models: a hand-built one would skip load's checks.
+for build in (lambda: scalars.Models(object(), {}), lambda: scalars.Model(object(), "app:a", {})):
+    try:
+        build()
+        fails.append("a Model or Models was built without models()")
+    except TypeError:
+        pass
 
 ADDRESS = {"street": "a", "country": "US"}
 HOSTILE = {

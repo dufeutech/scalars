@@ -61,3 +61,18 @@ jobs:
       - uses: dtolnay/rust-toolchain@1.80
       - run: npm ci
       - run: npm run check:langs
+
+  # dist/go/go.mod says go 1.21; build the package as shipped on that Go, in a copy (dist has no go.sum).
+  go-minimum:
+    runs-on: ubuntu-latest
+    env:
+      GOTOOLCHAIN: local
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+          cache: false
+      - run: cp -r dist/go "$RUNNER_TEMP/scalars"
+      - run: go mod tidy && go vet ./... && go build ./...
+        working-directory: ${{ runner.temp }}/scalars

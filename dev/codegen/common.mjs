@@ -66,7 +66,7 @@ export function header({ file, source, version, requires }) {
             "",
         ].join("\n");
     }
-    const mark = { ".py": "#", ".ts": "//" }[ext] ?? fail(`header: no comment syntax for ${file}`);
+    const mark = { ".py": "#", ".ts": "//", ".sql": "--" }[ext] ?? fail(`header: no comment syntax for ${file}`);
     return [
         `${mark} ${name}.`,
         `${mark} Generated from dist/scalars.json ${generated}. Do not edit: run \`npm run build\` in dev/.`,

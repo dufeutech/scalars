@@ -250,3 +250,13 @@ test("reasons are emitted from $meta.reasons, never spelled by an engine", () =>
     assert.match(py, /^class Reason:/m);
     for (const r of names) assert.ok(py.includes(`    ${r.toUpperCase()}: Final = ${JSON.stringify(r)}\n`), `python lacks Reason.${r.toUpperCase()}`);
 });
+
+test("postgres: the emitter guards engine.sql's checks and quotes patterns", async () => {
+    const { emitPostgres } = await import("../codegen/postgres.mjs");
+    const models = toModel(scalars);
+    const meta = scalars.$meta;
+    assert.throws(() => emitPostgres(models, "0", { ...meta, checks: { ...meta.checks, x: "made up" } }), /engine\.sql has no scalars\.check_x/);
+    const quoted = models.map((m) => (m.name === "slug" ? { ...m, pattern: "^a'b$" } : m));
+    assert.ok(emitPostgres(quoted, "0", meta)["postgres/scalars.sql"].includes("v !~ '^a''b$'"));
+    assert.ok(common.header({ file: "a.sql", source: "postgres.mjs", version: "0", requires: "r" }).startsWith("-- a.sql"));
+});

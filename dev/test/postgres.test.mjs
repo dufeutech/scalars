@@ -7,6 +7,8 @@ import { PGlite } from "@electric-sql/pglite";
 import { build } from "../build.mjs";
 import { readEngine } from "../codegen/common.mjs";
 import { CHECKS, validate } from "../lib/reference.mjs";
+import { modelOf } from "../codegen/model.mjs";
+import { pgInput, pgReason } from "../langs/pg.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const { scalars } = build(root);
@@ -77,4 +79,38 @@ test("check helpers are linear: 100,000 digits in well under 200 ms", async () =
     assert.equal(await one("SELECT scalars.check_int64_range($1)", [big]), false);
     assert.equal(await one("SELECT scalars.check_gs1_mod10($1)", [big]), CHECKS.gs1_mod10(big));
     assert.ok(Date.now() - t < 200, `took ${Date.now() - t} ms`);
+});
+
+const sql = build(root).code["postgres/scalars.sql"];
+
+test("scalars.sql loads twice (an upgrade) and has no enum functions", async () => {
+    const pg = new PGlite();
+    await pg.exec(sql);
+    await pg.exec(sql);
+    const fns = (await pg.query("SELECT proname FROM pg_proc WHERE pronamespace = 'scalars'::regnamespace")).rows.map((r) => r.proname);
+    assert.ok(!fns.includes("enum_reason") && !fns.includes("is_enum"), "enum has no functions");
+    for (const t of types.filter((t) => t.name !== "enum")) {
+        assert.ok(fns.includes(`${t.name}_reason`) && fns.includes(`is_${t.name}`), `${t.name} lacks its functions`);
+    }
+    await pg.close();
+});
+
+test("every example gets the reference's reason from scalars.<type>_reason", async () => {
+    const pg = new PGlite();
+    await pg.exec(sql);
+    const bad = [];
+    for (const t of types.filter((t) => t.name !== "enum")) {
+        const ex = t.examples;
+        for (const v of [...ex.valid, ...(ex.invalid ?? []), ...(ex.check_invalid ?? []), ...(ex.list_invalid ?? [])]) {
+            const input = pgInput(t, v);
+            if (!input) continue;
+            const ref = validate(t, modelOf(t).kind === "text" ? input.arg : v);
+            const want = ref.ok ? null : ref.reason;
+            const got = await pgReason(pg, t, input);
+            const is = (await pg.query(`SELECT scalars.is_${t.name}($1::${input.sqlType}) AS ok`, [input.arg])).rows[0].ok;
+            if (got !== want || is !== ref.ok) bad.push(`${t.name} ${JSON.stringify(input.arg)}: got ${got}/${is}, want ${want}`);
+        }
+    }
+    assert.deepEqual(bad, []);
+    await pg.close();
 });

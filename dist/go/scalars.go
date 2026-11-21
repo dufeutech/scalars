@@ -2224,7 +2224,7 @@ var scalarDuration = TextScalar{
 
 // Email is Email address: Like name@example.com.
 //
-// An email address: login and contact fields. Accepting internationalized mailboxes is a validation choice, not a separate type.
+// An email address, ASCII or international (RFC 6531, like 用户@例子.广告): login and contact fields. Whether a mail server delivers to a non-ASCII address is its own matter.
 var Email = &scalarEmail
 
 var scalarEmail = TextScalar{
@@ -2233,11 +2233,11 @@ var scalarEmail = TextScalar{
 		Label:     "Email address",
 		Hint:      "Like name@example.com",
 		Error:     "That email looks wrong. Try user@example.com.",
-		Details:   "An email address: login and contact fields. Accepting internationalized mailboxes is a validation choice, not a separate type.",
+		Details:   "An email address, ASCII or international (RFC 6531, like 用户@例子.广告): login and contact fields. Whether a mail server delivers to a non-ASCII address is its own matter.",
 		Level:     "core",
 		Primitive: "string",
 		Aliases:   []string{"email_address", "mail"},
-		Valid:     []any{"user@example.com", "first.last+tag@sub.example.co.uk"},
+		Valid:     []any{"user@example.com", "first.last+tag@sub.example.co.uk", "用户@例子.广告"},
 		Invalid:   []any{"user@", "user example.com"},
 	},
 	steps:   []step{stepTrim},
@@ -2369,7 +2369,7 @@ var scalarGtin = TextScalar{
 
 // Hostname is Website name: Like api.example.com.
 //
-// A DNS hostname: servers and endpoints without scheme or path. Prefer uri when a full locator travels; internationalized names are a validation choice.
+// A DNS hostname: servers and endpoints without scheme or path. International names are stored in their ASCII (punycode) form, like xn--bcher-kva.example. Prefer uri when a full locator travels.
 var Hostname = &scalarHostname
 
 var scalarHostname = TextScalar{
@@ -2378,7 +2378,7 @@ var scalarHostname = TextScalar{
 		Label:     "Website name",
 		Hint:      "Like api.example.com",
 		Error:     "Please use letters, digits, dots and dashes, like api.example.com.",
-		Details:   "A DNS hostname: servers and endpoints without scheme or path. Prefer uri when a full locator travels; internationalized names are a validation choice.",
+		Details:   "A DNS hostname: servers and endpoints without scheme or path. International names are stored in their ASCII (punycode) form, like xn--bcher-kva.example. Prefer uri when a full locator travels.",
 		Level:     "core",
 		Primitive: "string",
 		Aliases:   []string{"domain", "domain_name", "host"},
@@ -3326,7 +3326,7 @@ var scalarUnixTime = IntScalar{
 
 // Uri is Web link: Like https://example.com/page.
 //
-// An absolute URI with scheme: links, webhooks, resource locators. Use string for relative paths.
+// An absolute URI with scheme: links, webhooks, resource locators. International text is percent-encoded and the host is punycode. Prefer uri_reference for relative paths.
 var Uri = &scalarUri
 
 var scalarUri = TextScalar{
@@ -3335,7 +3335,7 @@ var scalarUri = TextScalar{
 		Label:     "Web link",
 		Hint:      "Like https://example.com/page",
 		Error:     "That link looks wrong. Try https://example.com/page.",
-		Details:   "An absolute URI with scheme: links, webhooks, resource locators. Use string for relative paths.",
+		Details:   "An absolute URI with scheme: links, webhooks, resource locators. International text is percent-encoded and the host is punycode. Prefer uri_reference for relative paths.",
 		Level:     "core",
 		Primitive: "string",
 		Aliases:   []string{"url", "link", "website"},
@@ -3350,7 +3350,7 @@ var scalarUri = TextScalar{
 
 // UriReference is Link or path: A full link or a path like /a/b.
 //
-// A URI reference, absolute or relative: redirect targets, in-site paths. Prefer uri when an absolute, scheme-carrying value is required.
+// A URI reference, absolute or relative: redirect targets, in-site paths. International text is percent-encoded, as in uri. Prefer uri when an absolute, scheme-carrying value is required.
 var UriReference = &scalarUriReference
 
 var scalarUriReference = TextScalar{
@@ -3359,7 +3359,7 @@ var scalarUriReference = TextScalar{
 		Label:     "Link or path",
 		Hint:      "A full link or a path like /a/b",
 		Error:     "That link or path looks wrong. Try /a/b?c=1.",
-		Details:   "A URI reference, absolute or relative: redirect targets, in-site paths. Prefer uri when an absolute, scheme-carrying value is required.",
+		Details:   "A URI reference, absolute or relative: redirect targets, in-site paths. International text is percent-encoded, as in uri. Prefer uri when an absolute, scheme-carrying value is required.",
 		Level:     "advanced",
 		Primitive: "string",
 		Aliases:   []string{"relative_url", "href"},

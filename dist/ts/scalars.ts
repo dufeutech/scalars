@@ -1501,17 +1501,17 @@ export const scalars = {
         pattern: "^P(([0-9]+Y([0-9]+M)?([0-9]+W)?([0-9]+D)?|[0-9]+M([0-9]+W)?([0-9]+D)?|[0-9]+W([0-9]+D)?|[0-9]+D)(T([0-9]+H([0-9]+M)?([0-9]+(\\.[0-9]+)?S)?|[0-9]+M([0-9]+(\\.[0-9]+)?S)?|[0-9]+(\\.[0-9]+)?S))?|T([0-9]+H([0-9]+M)?([0-9]+(\\.[0-9]+)?S)?|[0-9]+M([0-9]+(\\.[0-9]+)?S)?|[0-9]+(\\.[0-9]+)?S))$",
         minLen: 3,
     }),
-    /** Email address — Like name@example.com. An email address: login and contact fields. Accepting internationalized mailboxes is a validation choice, not a separate type. */
+    /** Email address — Like name@example.com. An email address, ASCII or international (RFC 6531, like 用户@例子.广告): login and contact fields. Whether a mail server delivers to a non-ASCII address is its own matter. */
     "email": new Scalar<string>({
         name: "email",
         label: "Email address",
         hint: "Like name@example.com",
         error: "That email looks wrong. Try user@example.com.",
-        details: "An email address: login and contact fields. Accepting internationalized mailboxes is a validation choice, not a separate type.",
+        details: "An email address, ASCII or international (RFC 6531, like 用户@例子.广告): login and contact fields. Whether a mail server delivers to a non-ASCII address is its own matter.",
         level: "core",
         primitive: "string",
         aliases: ["email_address","mail"],
-        examples: { valid: ["user@example.com","first.last+tag@sub.example.co.uk"], invalid: ["user@","user example.com"] },
+        examples: { valid: ["user@example.com","first.last+tag@sub.example.co.uk","用户@例子.广告"], invalid: ["user@","user example.com"] },
         kind: "text",
         steps: ["trim"],
         pattern: "^[^@\\x09-\\x0D\\x20]+@[^@\\x09-\\x0D\\x20][^.@\\x09-\\x0D\\x20]*\\.[^@\\x09-\\x0D\\x20]+$",
@@ -1593,13 +1593,13 @@ export const scalars = {
         minLen: 8,
         maxLen: 14,
     }),
-    /** Website name — Like api.example.com. A DNS hostname: servers and endpoints without scheme or path. Prefer uri when a full locator travels; internationalized names are a validation choice. */
+    /** Website name — Like api.example.com. A DNS hostname: servers and endpoints without scheme or path. International names are stored in their ASCII (punycode) form, like xn--bcher-kva.example. Prefer uri when a full locator travels. */
     "hostname": new Scalar<string>({
         name: "hostname",
         label: "Website name",
         hint: "Like api.example.com",
         error: "Please use letters, digits, dots and dashes, like api.example.com.",
-        details: "A DNS hostname: servers and endpoints without scheme or path. Prefer uri when a full locator travels; internationalized names are a validation choice.",
+        details: "A DNS hostname: servers and endpoints without scheme or path. International names are stored in their ASCII (punycode) form, like xn--bcher-kva.example. Prefer uri when a full locator travels.",
         level: "core",
         primitive: "string",
         aliases: ["domain","domain_name","host"],
@@ -2207,26 +2207,26 @@ export const scalars = {
         minimum: -9007199254740991,
         maximum: 9007199254740991,
     }),
-    /** Web link — Like https://example.com/page. An absolute URI with scheme: links, webhooks, resource locators. Use string for relative paths. */
+    /** Web link — Like https://example.com/page. An absolute URI with scheme: links, webhooks, resource locators. International text is percent-encoded and the host is punycode. Prefer uri_reference for relative paths. */
     "uri": new Scalar<string>({
         name: "uri",
         label: "Web link",
         hint: "Like https://example.com/page",
         error: "That link looks wrong. Try https://example.com/page.",
-        details: "An absolute URI with scheme: links, webhooks, resource locators. Use string for relative paths.",
+        details: "An absolute URI with scheme: links, webhooks, resource locators. International text is percent-encoded and the host is punycode. Prefer uri_reference for relative paths.",
         level: "core",
         primitive: "string",
         aliases: ["url","link","website"],
         examples: { valid: ["https://example.com/a/b?c=1","mailto:user@example.com","urn:isbn:9780306406157"], invalid: [] },
         kind: "text",
     }),
-    /** Link or path — A full link or a path like /a/b. A URI reference, absolute or relative: redirect targets, in-site paths. Prefer uri when an absolute, scheme-carrying value is required. */
+    /** Link or path — A full link or a path like /a/b. A URI reference, absolute or relative: redirect targets, in-site paths. International text is percent-encoded, as in uri. Prefer uri when an absolute, scheme-carrying value is required. */
     "uri_reference": new Scalar<string>({
         name: "uri_reference",
         label: "Link or path",
         hint: "A full link or a path like /a/b",
         error: "That link or path looks wrong. Try /a/b?c=1.",
-        details: "A URI reference, absolute or relative: redirect targets, in-site paths. Prefer uri when an absolute, scheme-carrying value is required.",
+        details: "A URI reference, absolute or relative: redirect targets, in-site paths. International text is percent-encoded, as in uri. Prefer uri when an absolute, scheme-carrying value is required.",
         level: "advanced",
         primitive: "string",
         aliases: ["relative_url","href"],

@@ -190,7 +190,7 @@ Settings written next to a reference override the copied ones: `{ "type": "billi
 
 Loading the file refuses:
 
-- a setting the type doesn't list, like `length` on `text`; `precision` and `scale` on number-kind types like `sf_decimal`;
+- a setting the type doesn't list, like `length` on `text` or `precision` on `float64`;
 - `scale` without `precision`;
 - `values` entries that aren't strings, repeat, or aren't already clean (the type must return each one unchanged).
 
@@ -278,7 +278,7 @@ Start with the **core** types below; they cover almost everything. Each one also
 
 `country`, `country_alpha3` and `currency` accept only the codes ISO currently assigns (ISO 3166-1, and ISO 4217 List One): `XX`, `QQQ` and withdrawn codes like `HRK` fail with `not_in_list`. `language` accepts only current BCP 47 language codes (the IANA Language Subtag Registry): the 2-letter code where one exists, so `fra` fails (use `fr`), as do deprecated codes like `iw` (now `he`). The list is `schema.enum`, so JSON Schema and HTML `select` options use the same one. Postgres checks the pattern only, so a list update never needs a migration.
 
-Need something more specific? There are 56 more **advanced** and **domain** types (like `uuid_v7`, `semver`, `iban`, `isbn`, `gln`). Every one of them names the core type to fall back to in its `alternative` field.
+Need something more specific? There are 42 more **advanced** and **domain** types (like `uuid_v7`, `semver`, `iban`, `isbn`, `gln`). Every one of them names the core type to fall back to in its `alternative` field.
 
 ## Forms, OpenAPI and Postgres
 

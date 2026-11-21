@@ -3156,14 +3156,14 @@ pub static DURATION: Text = Text {
 
 /// Email address: Like name@example.com.
 ///
-/// An email address: login and contact fields. Accepting internationalized mailboxes is a validation choice, not a separate type.
+/// An email address, ASCII or international (RFC 6531, like 用户@例子.广告): login and contact fields. Whether a mail server delivers to a non-ASCII address is its own matter.
 pub static EMAIL: Text = Text {
     meta: Meta {
         name: "email",
         label: "Email address",
         hint: "Like name@example.com",
         error: "That email looks wrong. Try user@example.com.",
-        details: "An email address: login and contact fields. Accepting internationalized mailboxes is a validation choice, not a separate type.",
+        details: "An email address, ASCII or international (RFC 6531, like 用户@例子.广告): login and contact fields. Whether a mail server delivers to a non-ASCII address is its own matter.",
         level: "core",
         primitive: "string",
         aliases: &["email_address", "mail"],
@@ -3296,14 +3296,14 @@ pub static GTIN: Text = Text {
 
 /// Website name: Like api.example.com.
 ///
-/// A DNS hostname: servers and endpoints without scheme or path. Prefer uri when a full locator travels; internationalized names are a validation choice.
+/// A DNS hostname: servers and endpoints without scheme or path. International names are stored in their ASCII (punycode) form, like xn--bcher-kva.example. Prefer uri when a full locator travels.
 pub static HOSTNAME: Text = Text {
     meta: Meta {
         name: "hostname",
         label: "Website name",
         hint: "Like api.example.com",
         error: "Please use letters, digits, dots and dashes, like api.example.com.",
-        details: "A DNS hostname: servers and endpoints without scheme or path. Prefer uri when a full locator travels; internationalized names are a validation choice.",
+        details: "A DNS hostname: servers and endpoints without scheme or path. International names are stored in their ASCII (punycode) form, like xn--bcher-kva.example. Prefer uri when a full locator travels.",
         level: "core",
         primitive: "string",
         aliases: &["domain", "domain_name", "host"],
@@ -12299,14 +12299,14 @@ pub static UNIX_TIME: Int = Int {
 
 /// Web link: Like https://example.com/page.
 ///
-/// An absolute URI with scheme: links, webhooks, resource locators. Use string for relative paths.
+/// An absolute URI with scheme: links, webhooks, resource locators. International text is percent-encoded and the host is punycode. Prefer uri_reference for relative paths.
 pub static URI: Text = Text {
     meta: Meta {
         name: "uri",
         label: "Web link",
         hint: "Like https://example.com/page",
         error: "That link looks wrong. Try https://example.com/page.",
-        details: "An absolute URI with scheme: links, webhooks, resource locators. Use string for relative paths.",
+        details: "An absolute URI with scheme: links, webhooks, resource locators. International text is percent-encoded and the host is punycode. Prefer uri_reference for relative paths.",
         level: "core",
         primitive: "string",
         aliases: &["url", "link", "website"],
@@ -12324,14 +12324,14 @@ pub static URI: Text = Text {
 
 /// Link or path: A full link or a path like /a/b.
 ///
-/// A URI reference, absolute or relative: redirect targets, in-site paths. Prefer uri when an absolute, scheme-carrying value is required.
+/// A URI reference, absolute or relative: redirect targets, in-site paths. International text is percent-encoded, as in uri. Prefer uri when an absolute, scheme-carrying value is required.
 pub static URI_REFERENCE: Text = Text {
     meta: Meta {
         name: "uri_reference",
         label: "Link or path",
         hint: "A full link or a path like /a/b",
         error: "That link or path looks wrong. Try /a/b?c=1.",
-        details: "A URI reference, absolute or relative: redirect targets, in-site paths. Prefer uri when an absolute, scheme-carrying value is required.",
+        details: "A URI reference, absolute or relative: redirect targets, in-site paths. International text is percent-encoded, as in uri. Prefer uri when an absolute, scheme-carrying value is required.",
         level: "advanced",
         primitive: "string",
         aliases: &["relative_url", "href"],

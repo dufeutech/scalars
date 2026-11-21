@@ -8,8 +8,6 @@ export const NAME = /^[a-z][a-z0-9_]*$/;
 export const REF = /^(?:([a-z][a-z0-9_]*):)?([a-z][a-z0-9_]*)(?:\.([a-z][a-z0-9_]*))?$/;
 /** Nesting deeper than this, each model and each `items` one level, is refused at load: it bounds a payload's depth. */
 export const MAX_DEPTH = 64;
-/** Settings refused on number-kind types: float text differs by language, so digit counts can't agree. */
-export const DIGIT_SETTINGS = ["precision", "scale"];
 /** A field's `values` array → its Set, built at load so validate looks a value up in O(1). */
 const valueSets = new WeakMap();
 
@@ -90,8 +88,7 @@ function catalogue(scalars) {
     const settings = new Map();
     for (const t of Object.values(scalars.types)) {
         for (const a of t.aliases ?? []) aliases.set(a, t.name);
-        const m = modelOf(t);
-        settings.set(t.name, m.kind === "number" ? m.params.filter((p) => !DIGIT_SETTINGS.includes(p)) : m.params);
+        settings.set(t.name, modelOf(t).params);
     }
     c = { aliases, settings, rules: paramRules(scalars.$meta) };
     catalogues.set(scalars, c);

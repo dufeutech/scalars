@@ -1,7 +1,7 @@
 // Emits dist/ts/scalars.ts: the hand-written engine (engine.ts, then models.ts) followed by one generated record per type.
 import { header, readEngine } from "./common.mjs";
 import { identifiers, metaFields, paramRules, pascal } from "./model.mjs";
-import { DIGIT_SETTINGS, MAX_DEPTH, NAME, REF } from "../lib/models.mjs";
+import { MAX_DEPTH, NAME, REF } from "../lib/models.mjs";
 
 /** Names the engine defines on the `scalars` object, so no type may take them. */
 export const RESERVED_TS = ["get", "all", "models", "__proto__"];
@@ -53,8 +53,6 @@ const ERRORS: Readonly<Record<string, string>> = ${lit(meta.errors)};
 
 /** Nesting deeper than this, each model and each \`items\` one level, is refused at load. */
 const MAX_DEPTH = ${MAX_DEPTH};
-/** Settings refused on number-kind types: float text differs by language, so digit counts can't agree. */
-const DIGIT_SETTINGS: readonly string[] = [${DIGIT_SETTINGS.map(lit).join(", ")}];
 /** A domain, model or field name, and a reference: [domain:]name[.field]. */
 const NAME_PATTERN = ${lit(NAME.source)};
 const REF_PATTERN = ${lit(REF.source)};

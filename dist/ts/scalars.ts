@@ -1077,7 +1077,7 @@ function catalogue(): Catalogue {
     let cat = Models["catalogue"];
     if (cat === undefined) {
         const settings = new Map<string, readonly string[]>();
-        for (const t of scalars.all) settings.set(t.name, t["kind"] === "number" ? t.params.filter((p) => !DIGIT_SETTINGS.includes(p)) : t.params);
+        for (const t of scalars.all) settings.set(t.name, t.params);
         cat = {
             name: new RegExp(NAME_PATTERN),
             ref: new RegExp(REF_PATTERN),
@@ -1145,8 +1145,6 @@ const ERRORS: Readonly<Record<string, string>> = {"required":"Required.","unknow
 
 /** Nesting deeper than this, each model and each `items` one level, is refused at load. */
 const MAX_DEPTH = 64;
-/** Settings refused on number-kind types: float text differs by language, so digit counts can't agree. */
-const DIGIT_SETTINGS: readonly string[] = ["precision", "scale"];
 /** A domain, model or field name, and a reference: [domain:]name[.field]. */
 const NAME_PATTERN = "^[a-z][a-z0-9_]*$";
 const REF_PATTERN = "^(?:([a-z][a-z0-9_]*):)?([a-z][a-z0-9_]*)(?:\\.([a-z][a-z0-9_]*))?$";

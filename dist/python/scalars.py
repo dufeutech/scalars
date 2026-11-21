@@ -459,8 +459,7 @@ class _Catalogue:
         self.ref = _re.compile(_REF_PATTERN)
         self.settings: dict[str, tuple[str, ...]] = {}
         for t in all:  # the tuple of types, not the builtin
-            p = t.params
-            self.settings[t.name] = _b.tuple(x for x in p if x not in _DIGIT_SETTINGS) if t._kind == "number" else p
+            self.settings[t.name] = t.params
 
 
 _catalogue: _Catalogue | None = None
@@ -1117,7 +1116,6 @@ class _FAIL:
 _PARAM_RULES: Final = {"length": {"kind": "integer", "minimum": 1, "maximum": 10485760, "minItems": None, "maxItemBytes": None}, "precision": {"kind": "integer", "minimum": 1, "maximum": 1000, "minItems": None, "maxItemBytes": None}, "scale": {"kind": "integer", "minimum": -1000, "maximum": 1000, "minItems": None, "maxItemBytes": None}, "fractional_seconds": {"kind": "integer", "minimum": 0, "maximum": 6, "minItems": None, "maxItemBytes": None}, "values": {"kind": "array", "minimum": None, "maximum": None, "minItems": 1, "maxItemBytes": 63}, "nullable": {"kind": "boolean", "minimum": None, "maximum": None, "minItems": None, "maxItemBytes": None}}
 _ERRORS: Final = {"required": "Required.", "unknown_field": "Not a field of this model.", "not_object": "Must be an object.", "not_list": "Must be a list.", "too_long": "At most {max} characters.", "not_allowed": "Must be one of: {values}.", "too_many_digits": "Too many digits for precision {precision}, scale {scale}.", "bad_name": "Names are lowercase letters, digits and underscores, starting with a letter.", "type_name": "A model can't take a type's name.", "unresolved": "No type or model by this name.", "alias": "This is an alias; write \"{canonical}\".", "unknown_setting": "This type takes no such setting.", "bad_setting": "Out of range or the wrong kind of value.", "missing_setting": "Needs \"{setting}\".", "cycle": "This reference leads back to itself.", "too_deep": "Models nest more than {max} levels deep."}
 _MAX_DEPTH: Final = 64  # nesting deeper than this, each model and each `items` one level, is refused at load
-_DIGIT_SETTINGS: Final = ("precision", "scale")  # refused on number-kind types: float text differs by language
 # A name, and a reference ([domain:]name[.field]); unanchored, for fullmatch (with match, "$" would accept a final "\n").
 _NAME_PATTERN: Final = "[a-z][a-z0-9_]*"
 _REF_PATTERN: Final = "(?:([a-z][a-z0-9_]*):)?([a-z][a-z0-9_]*)(?:\\.([a-z][a-z0-9_]*))?"

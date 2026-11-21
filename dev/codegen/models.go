@@ -200,11 +200,10 @@ func parseRef(s string) (domain, name, field string, ok bool) {
 	return domain, name, field, isName(name)
 }
 
-// typeInfo is one type as models use it: the typed scalar from Lookup and the settings a field of it takes.
+// typeInfo is one type as models use it: the typed scalar from Lookup and its Meta (whose Params a field may set).
 type typeInfo struct {
-	scalar   any
-	meta     *Meta
-	settings []string
+	scalar any
+	meta   *Meta
 }
 
 // catalogue is built on the first Models call, not at program start.
@@ -220,18 +219,7 @@ var (
 func buildCatalogue() {
 	catalogue.types = make(map[string]*typeInfo, len(All))
 	for _, m := range All {
-		t := Lookup(m.Name)
-		settings := m.Params
-		// Settings refused on number-kind types: float text differs by language, so digit counts can't agree.
-		if _, number := t.(*NumberScalar); number {
-			settings = nil
-			for _, p := range m.Params {
-				if p != "precision" && p != "scale" {
-					settings = append(settings, p)
-				}
-			}
-		}
-		catalogue.types[m.Name] = &typeInfo{t, m, settings}
+		catalogue.types[m.Name] = &typeInfo{Lookup(m.Name), m}
 	}
 	catalogue.rules = make(map[string]*paramRule, len(paramRules))
 	for i := range paramRules {
@@ -645,7 +633,7 @@ func (l *loader) resolve(v *modelDef) {
 	var allowed []string
 	switch base.kind {
 	case kindType:
-		allowed = base.typ.settings
+		allowed = base.typ.meta.Params
 	case kindArray:
 		allowed = []string{"items"}
 	}

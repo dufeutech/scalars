@@ -185,6 +185,15 @@ test("a text type taking precision needs a digits pattern", () => {
     assert.deepEqual(r.amount.params, ["precision", "scale"]);
 });
 
+test("a number type can't take precision or scale", () => {
+    const s = patched({
+        float64: { level: "core", type: "number", label: "Number" },
+        ratio: { base: "float64", level: "core", params: ["scale"] },
+    });
+    s.core.$defs = { ...s.core.$defs, params: { precision: { type: "integer" }, scale: { type: "integer" } } };
+    assert.throws(() => resolve(s), /Type "ratio" is a number, so it can't take precision or scale/);
+});
+
 test("enum is inherited, and the build checks every list", () => {
     const code = { base: "string", level: "core", pattern: "^[A-Z]{2}$", normalize: ["trim", "uppercase"] };
     const r = resolve(patched({ code: { ...code, enum: ["DE", "US"] }, code_too: { base: "code", level: "advanced" } }));

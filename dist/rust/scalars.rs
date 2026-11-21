@@ -1044,11 +1044,7 @@ enum BaseKind {
 /// Whether a field of this kind takes the setting `key`, besides `nullable`.
 fn allowed(kind: BaseKind, key: &str) -> bool {
     match kind {
-        // Settings refused on number-kind types: float text differs by language, so digit counts can't agree.
-        BaseKind::Type(kind, meta) => {
-            meta.params.contains(&key)
-                && !(matches!(kind, Kind::Number(_)) && (key == "precision" || key == "scale"))
-        }
+        BaseKind::Type(_, meta) => meta.params.contains(&key),
         BaseKind::Array => key == "items",
         BaseKind::Model(_) => false,
     }

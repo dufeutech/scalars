@@ -2,7 +2,7 @@
 // A port of dev/lib/models.mjs, the reference every engine copies. Load is O(file) and iterative: no recursion is
 // driven by the input. Validate recurses, but load bounds a payload's depth at MAX_DEPTH levels.
 
-// MAX_DEPTH, DIGIT_SETTINGS, NAME_PATTERN and REF_PATTERN are emitted after this file, from dev/lib/models.mjs.
+// MAX_DEPTH, NAME_PATTERN and REF_PATTERN are emitted after this file, from dev/lib/models.mjs.
 /** The key only models() holds: a Model or Models built by hand would skip load's checks. */
 const INTERNAL: unique symbol = Symbol("models()");
 
@@ -691,7 +691,7 @@ function catalogue(): Catalogue {
     let cat = Models["catalogue"];
     if (cat === undefined) {
         const settings = new Map<string, readonly string[]>();
-        for (const t of scalars.all) settings.set(t.name, t["kind"] === "number" ? t.params.filter((p) => !DIGIT_SETTINGS.includes(p)) : t.params);
+        for (const t of scalars.all) settings.set(t.name, t.params);
         cat = {
             name: new RegExp(NAME_PATTERN),
             ref: new RegExp(REF_PATTERN),

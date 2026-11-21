@@ -130,6 +130,10 @@ export function resolve({ core, targets }) {
         for (const p of t.params ?? []) {
             if (!params[p]) throw new Error(`Type "${name}" names unknown param "${p}"`);
         }
+        // Float text differs by language, so digit counts can't agree.
+        if (t.type !== "string" && t.params?.some((p) => p === "precision" || p === "scale")) {
+            throw new Error(`Type "${name}" is a number, so it can't take precision or scale`);
+        }
         if (t.type === "string" && t.params?.includes("precision") && !DIGIT_PATTERNS.has(t.pattern)) {
             throw new Error(`Type "${name}" takes precision, so its pattern must be digits (-?[0-9]+(\\.[0-9]+)? or narrower), not ${t.pattern}`);
         }

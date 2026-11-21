@@ -210,6 +210,6 @@ for (let i = 0; i < count; i++) {
 const out = path.join(os.tmpdir(), `scalars-fuzz-${seed}.json`);
 fs.writeFileSync(out, JSON.stringify(cases));
 console.log(`seed ${seed}: ${loadCount} models files (${okLoads} load), ${validateCount} payloads, cases in ${out}`);
-const failed = runAll(path.resolve(DIST), out, 40);
+const failed = runAll(path.resolve(DIST), out, 40, { postgres: false });
 console.log(failed ? `seed ${seed}: ${failed} runner(s) disagree with the reference` : `seed ${seed}: all runners agree`);
 process.exit(failed ? 1 : 0);

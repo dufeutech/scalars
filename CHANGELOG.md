@@ -5,7 +5,7 @@
 ### Added
 - **Models**: check a whole payload against models written as data, in Python, TypeScript, Go and Rust. A models file has three levels (domain, model, field); fields can reference types, models and other fields (`billing:invoice.total`); `scalars.models(data)` loads it, `get("domain:model")` finds a model, `validate` / `is_valid` check a payload and return the cleaned one.
 - Field settings are now enforced in models: `length`, `values`, `precision` and `scale` (what Postgres `numeric(p, s)` refuses), `nullable`, and `items` on `array`.
-- Errors have a fixed `code`, an RFC 6901 `pointer` and `params`, so they drop into an RFC 9457 response and can be translated. `ModelError` (payload) and `ModelsError` (file) list every problem, sorted by location. The English templates are new in `$meta.errors` in `dist/scalars.json`.
+- Errors have a fixed `code`, an RFC 6901 `pointer` and `params`, so they drop into an RFC 9457 response and can be translated. `ModelError` (payload) and `ModelsError` (file) list every problem, sorted by location. The English templates are new in `$meta.errors` in `dist/scalars.json`. In Rust, `serde_json::Value::from(&problem)` gives the JSON object.
 - `schema/models.schema.json`, a JSON Schema for models files.
 - **Rust now needs `serde_json`** (as well as `regex`) for models data and payloads.
 

@@ -221,6 +221,8 @@ A bad models file raises `ModelsError` with the same shape, pointing into the fi
 }
 ```
 
+Each problem turns into that JSON object as is: Python `p._asdict()`, Go `encoding/json` (the fields have JSON tags), Rust `serde_json::Value::from(&p)`, and TypeScript problems are plain objects already.
+
 ## Pick a type
 
 Start with the **core** types below; they cover almost everything. Each one also has **aliases**, so if you think "url" or "money", that works too (`url` → `uri`, `money` → `decimal`).

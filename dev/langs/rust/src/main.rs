@@ -141,9 +141,9 @@ fn steps(names: &[&str], fails: &mut Vec<String>) -> Vec<Step> {
         .collect()
 }
 
-/// Problems as the cases write them.
+/// Problems as the cases write them, through the library's own JSON conversion.
 fn problems_json(problems: &[Problem]) -> Value {
-    problems.iter().map(|p| json!({"pointer": p.pointer, "code": p.code, "params": p.params, "message": p.message})).collect()
+    problems.iter().map(Value::from).collect()
 }
 
 /// The error text must be each problem's `pointer: message`, joined with "; ", and it must be a std error.

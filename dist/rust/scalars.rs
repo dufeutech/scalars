@@ -504,6 +504,18 @@ pub struct Problem {
     pub message: String,
 }
 
+/// The problem as a JSON object, `{pointer, code, params, message}`, ready for an RFC 9457 response.
+impl From<&Problem> for Value {
+    fn from(p: &Problem) -> Value {
+        let mut o = Map::with_capacity(4);
+        o.insert("pointer".into(), Value::String(p.pointer.clone()));
+        o.insert("code".into(), Value::String(p.code.into()));
+        o.insert("params".into(), Value::Object(p.params.clone()));
+        o.insert("message".into(), Value::String(p.message.clone()));
+        Value::Object(o)
+    }
+}
+
 fn join_problems(f: &mut fmt::Formatter<'_>, problems: &[Problem]) -> fmt::Result {
     for (i, p) in problems.iter().enumerate() {
         if i > 0 {

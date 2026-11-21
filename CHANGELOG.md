@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.2 — 2026-11-21
+
+### Changed
+- **`language` accepts only current BCP 47 language codes:** 8,043 subtags from the IANA Language Subtag Registry (File-Date 2026-11-18), not deprecated and not private-use. That's every ISO 639-1 code plus the 639-3 and 639-5 codes for languages without one, and `mul`, `und`, `zxx`. `xx`, 3-letter forms of 2-letter languages (`fra`, use `fr`) and deprecated codes (`iw`, now `he`) fail with `not_in_list`. JSON Schema, OpenAPI and the HTML `select` use the same list. Postgres is unchanged (pattern CHECK only).
+- Each dist file grows by about 50 KB for the list.
+
 ## 0.6.1 — 2026-11-21
 
 ### Fixed

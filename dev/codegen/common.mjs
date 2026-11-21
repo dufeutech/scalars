@@ -7,8 +7,14 @@ export function fail(message) {
     throw new Error(message);
 }
 
-/** The hand-written engine `dev/codegen/<file>`, with CRLF line endings turned into LF. */
-export const readEngine = (file) => fs.readFileSync(new URL(`./${file}`, import.meta.url), "utf8").replaceAll("\r\n", "\n");
+/**
+ * The hand-written engine `dev/codegen/<file>`, with CRLF line endings turned into LF, and without its dev-only
+ * pointer comments (whole lines saying a value is "emitted after this file", plus one blank line after them), which
+ * read oddly in dist next to the emitted value.
+ */
+export const readEngine = (file) => fs.readFileSync(new URL(`./${file}`, import.meta.url), "utf8")
+    .replaceAll("\r\n", "\n")
+    .replace(/^.*emitted after this file.*\n\n?/gm, "");
 
 /**
  * The version of `name` that a runner's lock file pins, so a generated header names what was tested: a Cargo.lock

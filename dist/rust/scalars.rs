@@ -492,8 +492,6 @@ use std::cmp::Ordering;
 use std::collections::HashSet;
 use std::sync::Arc;
 
-// MAX_DEPTH (how deep models may nest) is emitted after this file, from dev/lib/models.mjs.
-
 /// One problem: an RFC 6901 `pointer`, a fixed `code`, the `params` its message needs (empty when there are none),
 /// and the English `message`.
 #[derive(Debug, Clone, PartialEq)]

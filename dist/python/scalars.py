@@ -343,7 +343,6 @@ def get(word: Name | str) -> Scalar[_Any] | None:
 
 from typing import NamedTuple as _NamedTuple
 
-# _MAX_DEPTH, _DIGIT_SETTINGS, _NAME_PATTERN and _REF_PATTERN are emitted after this file, from dev/lib/models.mjs.
 _INTERNAL: Final = _Obj()  # the key only models() holds: a Model or Models built by hand would skip load's checks
 
 

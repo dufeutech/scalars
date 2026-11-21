@@ -1,5 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build, serialize } from "../build.mjs";
@@ -165,6 +166,19 @@ test("common: shared emitter helpers", () => {
     assert.equal(common.noLoneSurrogate("a😀"), "a😀");
     assert.throws(() => common.fail("boom"), /boom/);
     assert.ok(!common.readEngine("engine.py").includes("\r"));
+});
+
+test("common: the engines' dev-only pointer comments stay out of dist", () => {
+    const pointer = "emitted after this file";
+    const raw = (file) => fs.readFileSync(path.join(root, "dev/codegen", file), "utf8").replaceAll("\r\n", "\n");
+    const doubleBlanks = (text) => text.split("\n\n\n").length;
+    for (const file of ["models.py", "models.ts", "models.go", "models.rs"]) {
+        assert.ok(raw(file).includes(pointer), `${file} lost its pointer comment`);
+        const engine = common.readEngine(file);
+        assert.ok(!engine.includes(pointer), file);
+        assert.equal(doubleBlanks(engine), doubleBlanks(raw(file)), `${file}: removing the comment left a double blank line`);
+    }
+    for (const [file, text] of Object.entries(build(root).code)) assert.ok(!text.includes(pointer), file);
 });
 
 test("model: metaFields lists the facts every record writes, in order", () => {

@@ -364,7 +364,6 @@ function find(word: unknown, all: readonly Scalar<unknown>[]): Scalar<unknown> |
 // A port of dev/lib/models.mjs, the reference every engine copies. Load is O(file) and iterative: no recursion is
 // driven by the input. Validate recurses, but load bounds a payload's depth at MAX_DEPTH levels.
 
-// MAX_DEPTH, DIGIT_SETTINGS, NAME_PATTERN and REF_PATTERN are emitted after this file, from dev/lib/models.mjs.
 /** The key only models() holds: a Model or Models built by hand would skip load's checks. */
 const INTERNAL: unique symbol = Symbol("models()");
 

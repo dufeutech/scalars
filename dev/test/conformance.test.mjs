@@ -40,7 +40,7 @@ test("types with an enum have at least 2 list_invalid examples, other types none
         .filter((t) => (t.enum ? (t.examples?.list_invalid?.length ?? 0) < 2 : t.examples?.list_invalid !== undefined))
         .map((t) => t.name);
     assert.deepEqual(wrong, []);
-    assert.deepEqual(Object.values(types).filter((t) => t.enum).map((t) => t.name).sort(), ["country", "country_alpha3", "currency"]);
+    assert.deepEqual(Object.values(types).filter((t) => t.enum).map((t) => t.name).sort(), ["country", "country_alpha3", "currency", "language"]);
 });
 
 for (const t of Object.values(types).filter((t) => t.enum)) {

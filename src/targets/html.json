@@ -331,8 +331,9 @@
     },
     "language": {
         "options": {
-            "source": "ISO 639-1 / 639-2",
-            "js": "new Intl.DisplayNames([locale], { type: 'language' })"
+            "source": "IANA Language Subtag Registry",
+            "note": "The options are schema.enum.",
+            "js": "new Intl.DisplayNames([locale], { type: 'language' }).of(code)"
         }
     },
     "http_date": {

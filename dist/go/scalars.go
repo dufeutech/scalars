@@ -3577,7 +3577,7 @@ var scalarUnixTime = IntScalar{
 		Primitive: "int32",
 		Aliases:   []string{"epoch", "epoch_seconds"},
 		Valid:     []any{1786000000.0, 0.0, -86400.0},
-		Invalid:   []any{1.5},
+		Invalid:   []any{9007199254740992.0, 1.5},
 	},
 	minimum: -9007199254740991,
 	maximum: 9007199254740991,

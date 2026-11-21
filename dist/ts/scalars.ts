@@ -2313,7 +2313,7 @@ export const scalars = {
         level: "advanced",
         primitive: "int32",
         aliases: ["epoch","epoch_seconds"],
-        examples: { valid: [1786000000,0,-86400], invalid: [1.5] },
+        examples: { valid: [1786000000,0,-86400], invalid: [9007199254740992,1.5] },
         kind: "integer",
         minimum: -9007199254740991,
         maximum: 9007199254740991,

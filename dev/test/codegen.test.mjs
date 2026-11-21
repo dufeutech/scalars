@@ -239,7 +239,7 @@ test("reasons are emitted from $meta.reasons, never spelled by an engine", () =>
     const spelled = new RegExp(`["'](${names.join("|")})["']`);
     // engine.py's __slots__ name the public attribute `check`, which is not the reason: drop those tuples first.
     const source = (file) => common.readEngine(file).replace(/__slots__ = \([^)]*\)/g, "");
-    for (const file of ["engine.ts", "engine.py", "engine.go", "engine.rs", "models.ts", "models.py", "models.go", "models.rs"]) {
+    for (const file of ["engine.ts", "engine.py", "engine.go", "engine.rs", "engine.sql", "models.ts", "models.py", "models.go", "models.rs"]) {
         assert.doesNotMatch(source(file), spelled, `${file} spells a reason`);
     }
     const { code } = build(root);

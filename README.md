@@ -157,6 +157,7 @@ let clean = order.validate(&payload)?; // Err(ModelError), or the cleaned payloa
 - **Go:** payloads and models data must be what `encoding/json` produces: `map[string]any`, `[]any`, `float64`, `string`, `bool`, `nil`. A hand-built `int`, `[]string` or `map[string]string` is refused, and `json.Number` (`Decoder.UseNumber`) isn't supported.
 - **Rust:** `cargo add regex serde_json`. Data and payloads are `serde_json::Value`.
 - **Python** returns a float for number-kind fields (`3` → `3.0`), as it does for single scalars.
+- Values of `object` and `any` fields come back as given, even inside a list: Python, TypeScript and Go return the input's own object, so the cleaned payload shares it with the payload you passed in. Rust returns a copy. Lists themselves are always new.
 - On success you get the cleaned payload: normalized values, only the declared keys, missing nullable keys as `null`. A missing key and `null` are the same. A key the model doesn't declare is an error.
 - Every bad field is reported, sorted by location. Limits: models nest at most 64 levels (models and `items` combined), and `get` takes the full `domain:model` name only.
 

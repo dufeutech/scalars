@@ -23,7 +23,7 @@ Both ship together as 0.6.0.
 
 ## Anti-goals
 
-- **No change to the dist shape** beyond additions. Nothing is renamed or moved.
+- **Bending the design around backward compatibility.** The project has no users to protect, so it may rename, move or remove anything when that gives the cleaner design; the changelog and version bump are kept for a professional record, not as a promise.
 - **Each list lives once in `src/`.** No copy for HTML, no copy per language.
 - **`is_valid` costs nothing extra.** It must not build an error or a reason string.
 - **No second pass** to explain a failure: the reason comes from the same single pass that validates.
@@ -79,16 +79,15 @@ Both ship together as 0.6.0.
   - TS: `ScalarError.reason: Reason`, a string-literal union type.
   - Python: `ScalarError.reason: str`, plus the set emitted as constants.
   - Go: `ScalarError.Reason Reason` (`type Reason string`, one exported constant per reason, e.g. `ReasonNotInList`).
-  - Rust: `ScalarError.reason: Reason`, a `#[non_exhaustive]` enum with `as_str()`, and `Display` unchanged.
-  - **The set may grow; the order may not change.** Adding a reason is a minor release, documented as such in the README so TS and Rust users don't match exhaustively. Renaming or removing one, or reordering the rules, waits for 1.0, like the dist shape.
+  - Rust: `ScalarError.reason: Reason`, a plain enum (exhaustive matching is a feature here) with `as_str()`, and `Display` unchanged.
   - The reason names are emitted from `$meta.reasons`; a codegen test fails if an engine spells them by hand, as with the models constants.
 - **Inside the engines.** The internal "not valid" marker becomes the reason. Concretely: in TS and Python `run` returns a reason sentinel (a module-level constant per reason), in Go the check returns `(value, Reason)` with `""` meaning ok, in Rust `Result<_, Reason>`. `is_valid` keeps building no error.
-- **Models.** An `invalid` problem gains `params.reason`. The code stays `invalid` and the message stays the type's `error`, so the error shape doesn't change. `wrong_kind` covers models' existing wrong-type cases for scalar fields. The models schema and `$meta.errors` docs mention the new param.
+- **Models: the reason is the code.** The catch-all `invalid` code goes away. A field whose value fails its type reports the reason itself as `code` (`pattern`, `not_in_list`, `wrong_kind`, ...), with `params.type` as today. One vocabulary then covers both layers, and consumers switch on one field. Messages follow one rule: a code with a template in `$meta.errors` uses it, anything else uses the type's `error`. So `too_long` reads "At most {max} characters." whether the limit came from the type's `maxLength` (`params.max` is then the type's limit) or the field's `length` setting, and `pattern` reads the type's `error`. The models schema, the `$meta.errors` docs, the shared cases and the README are updated to match.
 - **Tests.** `dev/langs/cases.json` cases gain an expected `reason`, and every runner checks it. Every reason appears in at least one shared case per language that can produce it. The fuzzer compares reasons too.
 
 ### Release
 
-0.6.0: bump the version and its asserts, date the changelog, move the README links, and add a README line on `.reason` to the method table. The changelog says the lists narrow what `validate` accepts.
+0.6.0: bump the version and its asserts, date the changelog, move the README links, and add a README line on `.reason` to the method table. The changelog says the lists narrow what `validate` accepts and that models' `invalid` code became the reason codes. `docs/HANDOFF.md` drops "the shape of `dist/scalars.json` is stable" and says instead that there is no compatibility promise before 1.0.
 
 **Keeping the lists current** (goes into `docs/HANDOFF.md` as a rule): an older release rejects a code ISO added after it. A list update is a patch release (0.6.x), shipped soon after ISO announces the change; ISO 4217 changes about once a year, ISO 3166-1 rarely.
 

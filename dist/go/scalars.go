@@ -420,7 +420,7 @@ func longerThan(s string, limit int) bool {
 	if len(s)/utf8.UTFMax > limit {
 		return true
 	}
-	return utf8.RuneCountInString(s) > limit
+	return codePoints(s) > limit
 }
 
 // shorterThan reports whether s has fewer than limit code points, settled by the byte length when it can be.
@@ -431,7 +431,22 @@ func shorterThan(s string, limit int) bool {
 	if len(s)/utf8.UTFMax >= limit {
 		return false
 	}
-	return utf8.RuneCountInString(s) < limit
+	return codePoints(s) < limit
+}
+
+// codePoints counts code points as JS and Python do: like utf8.RuneCountInString, except that a lone surrogate
+// encoded in 3 bytes (ED A0-BF 80-BF) counts as one, not three. Linear, and allocates nothing.
+func codePoints(s string) int {
+	n := 0
+	for i := 0; i < len(s); n++ {
+		if s[i] == 0xed && i+2 < len(s) && s[i+1] >= 0xa0 && s[i+1] <= 0xbf && s[i+2] >= 0x80 && s[i+2] <= 0xbf {
+			i += 3
+			continue
+		}
+		_, size := utf8.DecodeRuneInString(s[i:])
+		i += size
+	}
+	return n
 }
 
 var (

@@ -436,6 +436,24 @@ func main() {
 			}
 		}
 	}
+	// An encoded lone surrogate is one code point, as in JS and Python; a cut-short one is two invalid bytes,
+	// and a CESU-8 pair is two surrogates.
+	for _, c := range []struct {
+		s    string
+		want scalars.Reason
+	}{
+		{"\xed\xa0\x80", scalars.ReasonMalformed},
+		{"a\xed\xa0\x80", scalars.ReasonTooLong},
+		{"\xff", scalars.ReasonMalformed},
+		{"\xed\xa0", scalars.ReasonTooLong},
+		{"\xed\xa0\xbd\xed\xb8\x80", scalars.ReasonTooLong},
+	} {
+		if _, err := scalars.Char.Validate(c.s); err == nil {
+			fail("Char accepts %q", c.s)
+		} else if r := err.(*scalars.ScalarError).Reason; r != c.want {
+			fail("Char on %q: reason %s, want %s", c.s, r, c.want)
+		}
+	}
 
 	slowest, slowestType := 0.0, ""
 	for _, c := range cases.Hostile {

@@ -89,11 +89,11 @@ timezone:
     js: Intl.supportedValuesOf('timeZone')
 email:
   attrs:
-    type: email
     autocomplete: email
     inputmode: email
     autocapitalize: null
     spellcheck: null
+  note: 'Not type="email": browsers reject non-ASCII local parts there.'
 hostname:
   attrs:
     inputmode: url

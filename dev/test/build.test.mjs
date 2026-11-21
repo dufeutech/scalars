@@ -82,3 +82,16 @@ test("dist holds only built files", () => {
     const want = ["scalars.json", "openapi.json", ...Object.keys(out.code)].sort();
     assert.deepEqual(walk(path.join(root, "dist")).sort(), want);
 });
+
+test("a type with non-ASCII valid examples claims no ASCII-only format or input", () => {
+    // JSON Schema's email/hostname/uri formats and the browser's type="email"/"url" inputs refuse non-ASCII text.
+    const asciiFormats = new Set(["email", "hostname", "uri", "uri-reference"]);
+    const asciiInputs = new Set(["email", "url"]);
+    const bad = [];
+    for (const t of Object.values(out.scalars.types)) {
+        if (!(t.examples?.valid ?? []).some((v) => typeof v === "string" && /[^\x00-\x7F]/.test(v))) continue;
+        if (asciiFormats.has(t.schema.format)) bad.push(`${t.name}: format ${t.schema.format}`);
+        if (asciiInputs.has(t.html?.attrs?.type)) bad.push(`${t.name}: input type ${t.html.attrs.type}`);
+    }
+    assert.deepEqual(bad, []);
+});

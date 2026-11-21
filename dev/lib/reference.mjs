@@ -1,6 +1,6 @@
 // Dev-only reference implementations of the rules dist/ describes as data.
 // They exist to prove the written rules mean what they say; tools implement them in their own language.
-import fs from "node:fs";
+import { readSource } from "./source.mjs";
 import { modelOf } from "../codegen/model.mjs";
 
 /** Lookup rule: the trim step, lowercase, each run of spaces and "-" becomes one "_"; exact name first, then alias. */
@@ -76,8 +76,8 @@ export const codePoints = (s) => {
     return n;
 };
 
-/** One frozen failure per reason of $meta.reasons (src/scalar.json $defs.reasons), so a failure allocates nothing. */
-const FAIL = Object.fromEntries(Object.keys(JSON.parse(fs.readFileSync(new URL("../../src/scalar.json", import.meta.url), "utf8")).$defs.reasons).map((r) => [r, Object.freeze({ ok: false, reason: r })]));
+/** One frozen failure per reason of $meta.reasons (src/scalar.yaml $defs.reasons), so a failure allocates nothing. */
+const FAIL = Object.fromEntries(Object.keys(readSource(new URL("../../src/scalar.yaml", import.meta.url)).$defs.reasons).map((r) => [r, Object.freeze({ ok: false, reason: r })]));
 
 /**
  * Validates a value against a type, following the spec: text is trimmed, length-gated at maxLen

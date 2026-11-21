@@ -1,8 +1,9 @@
-// Dev-only: resolves the source JSON (src/scalar.json + src/targets/*.json) into flat types.
+// Dev-only: resolves the source (src/scalar.yaml + src/targets/*.yaml) into flat types.
 import fs from "node:fs";
 import path from "node:path";
 import { applyGenerated } from "./derive.mjs";
 import { normalize } from "./reference.mjs";
+import { readSource } from "./source.mjs";
 
 /** The closed set every type maps to, read from the dist schema so it is written in one place. */
 export const PRIMITIVES = new Set(JSON.parse(fs.readFileSync(new URL("../../schema/dist.schema.json", import.meta.url), "utf8"))
@@ -24,12 +25,10 @@ const RESERVED = new Set(["$schema", "version", "$defs"]);
  */
 const DIGIT_PATTERNS = new Set(["^-?[0-9]+(\\.[0-9]+)?$", "^-?[0-9]+$", "^[0-9]+(\\.[0-9]+)?$", "^[0-9]+$"]);
 
-const readJson = (p) => JSON.parse(fs.readFileSync(p, "utf8"));
-
 export function loadSources(dir) {
     return {
-        core: readJson(path.join(dir, "scalar.json")),
-        targets: Object.fromEntries(TARGETS.map((t) => [t, readJson(path.join(dir, "targets", `${t}.json`))])),
+        core: readSource(path.join(dir, "scalar.yaml")),
+        targets: Object.fromEntries(TARGETS.map((t) => [t, readSource(path.join(dir, "targets", `${t}.yaml`))])),
     };
 }
 
@@ -69,7 +68,7 @@ export function resolve({ core, targets }) {
 
     for (const [tname, file] of Object.entries(targets)) {
         for (const [k] of entries(file)) {
-            if (!(k in defs)) throw new Error(`targets/${tname}.json has an entry for unknown type "${k}"`);
+            if (!(k in defs)) throw new Error(`targets/${tname}.yaml has an entry for unknown type "${k}"`);
         }
     }
 

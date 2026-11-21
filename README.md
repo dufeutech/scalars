@@ -346,7 +346,7 @@ One type in `dist/scalars.json` (shortened):
 
 **Use what's in `dist/`. Edit what's in `src/`.** Both hold the same types. `src/` is short and has no repeats; `dist/` is generated from it with every value written out.
 
-Edit [`src/scalar.json`](src/scalar.json), plus [`src/targets/html.json`](src/targets/html.json) and [`src/targets/postgres.json`](src/targets/postgres.json). A type can say `"base": "string"` and then list only what differs. Three hidden building blocks (`_token`, `_json`, `_bytes`) hold settings that many types share. The HTML `pattern`, the Postgres `CHECK`s and the `docs_link`s are never written by hand; they're generated from the type's one `pattern`.
+Edit [`src/scalar.yaml`](src/scalar.yaml), plus [`src/targets/html.yaml`](src/targets/html.yaml) and [`src/targets/postgres.yaml`](src/targets/postgres.yaml). They're YAML 1.2, so comments are fine. Write patterns in single quotes (`'^[0-9]+$'`: no backslash is ever doubled), and quote any value a YAML 1.1 tool would read as a boolean or number, like `'NO'` or `'0'` (a test fails otherwise). A type can say `base: string` and then list only what differs. Three hidden building blocks (`_token`, `_json`, `_bytes`) hold settings that many types share. The HTML `pattern`, the Postgres `CHECK`s and the `docs_link`s are never written by hand; they're generated from the type's one `pattern`.
 
 Then rebuild and test (Node 22 or newer; this is dev tooling only, the release doesn't need it):
 

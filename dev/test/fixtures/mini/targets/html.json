@@ -1,5 +1,0 @@
-{
-    "$schema": "../../../../../schema/html.schema.json",
-    "string": { "element": "input", "attrs": { "type": "text" } },
-    "_token": { "attrs": { "autocapitalize": "none", "spellcheck": "false" } }
-}

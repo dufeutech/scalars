@@ -1,7 +1,0 @@
-{
-    "$schema": "../../../../../schema/postgres.schema.json",
-    "$defs": { "attr": { "collation": { "description": "C", "sql": "COLLATE \"C\"" } } },
-    "string": { "type": "text", "attr": ["collation"], "note": "N" },
-    "uuid": { "type": "uuid", "attr": null },
-    "quiet": { "note": null }
-}

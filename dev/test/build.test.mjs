@@ -5,6 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import Ajv2020 from "ajv/dist/2020.js";
 import { build, serialize } from "../build.mjs";
+import { readSource } from "../lib/source.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const out = build(root);
@@ -69,7 +70,7 @@ test("committed dist matches a fresh build", () => {
 
 test("README download links use the current version tag", () => {
     const readme = fs.readFileSync(path.join(root, "README.md"), "utf8");
-    const version = JSON.parse(fs.readFileSync(path.join(root, "src/scalar.json"), "utf8")).version;
+    const version = readSource(path.join(root, "src/scalar.yaml")).version;
     const refs = [...readme.matchAll(/raw\.githubusercontent\.com\/dufeutech\/scalars\/([^/\s]+)\//g)].map((m) => m[1]);
     assert.ok(refs.length > 0, "README has no download links");
     for (const ref of refs) assert.equal(ref, `v${version}`, "README link points at the wrong tag: move it with the release");

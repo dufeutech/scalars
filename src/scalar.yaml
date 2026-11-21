@@ -1,0 +1,2577 @@
+# yaml-language-server: $schema=../schema/scalar.schema.json
+$schema: ../schema/scalar.schema.json
+version: 0.6.2
+$defs:
+  docs:
+    json_schema_validation: https://json-schema.org/draft/2020-12/json-schema-validation
+    openapi_formats: https://spec.openapis.org/registry/format/
+    ieee754: https://standards.ieee.org/ieee/754/6210/
+    ecma404: https://ecma-international.org/publications-and-standards/standards/ecma-404/
+    json_schema_core: https://json-schema.org/draft/2020-12/json-schema-core
+    rfc3339: https://datatracker.ietf.org/doc/html/rfc3339
+    iana_tz: https://www.iana.org/time-zones
+    rfc5321: https://datatracker.ietf.org/doc/html/rfc5321
+    rfc1123: https://datatracker.ietf.org/doc/html/rfc1123
+    rfc791: https://datatracker.ietf.org/doc/html/rfc791
+    rfc4291: https://datatracker.ietf.org/doc/html/rfc4291
+    rfc4632: https://datatracker.ietf.org/doc/html/rfc4632
+    rfc3986: https://datatracker.ietf.org/doc/html/rfc3986
+    rfc9562: https://datatracker.ietf.org/doc/html/rfc9562
+    itu_e164: https://www.itu.int/rec/T-REC-E.164
+    openapi_3_2: https://spec.openapis.org/oas/v3.2.0.html
+    iana_media_types: https://www.iana.org/assignments/media-types/media-types.xhtml
+    iso3166: https://www.iso.org/iso-3166-country-codes.html
+    iso4217: https://www.iso.org/iso-4217-currency-codes.html
+    rfc5646: https://datatracker.ietf.org/doc/html/rfc5646
+    css_color_4: https://www.w3.org/TR/css-color-4/
+    posix_epoch: https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/V1_chap04.html
+    rfc6531: https://datatracker.ietf.org/doc/html/rfc6531
+    rfc5890: https://datatracker.ietf.org/doc/html/rfc5890
+    ieee802: https://standards.ieee.org/ieee/802/
+    rfc3987: https://datatracker.ietf.org/doc/html/rfc3987
+    ulid: https://github.com/ulid/spec
+    rfc4648: https://datatracker.ietf.org/doc/html/rfc4648
+    commonmark: https://spec.commonmark.org/0.31.2/
+    whatwg_html: https://html.spec.whatwg.org/multipage/
+    rfc6901: https://datatracker.ietf.org/doc/html/rfc6901
+    rfc6570: https://datatracker.ietf.org/doc/html/rfc6570
+    ecma262: https://tc39.es/ecma262/
+    semver: https://semver.org/spec/v2.0.0.html
+    rfc7519: https://datatracker.ietf.org/doc/html/rfc7519
+    fips180_4: https://csrc.nist.gov/pubs/fips/180-4/upd1/final
+    rfc6335: https://datatracker.ietf.org/doc/html/rfc6335
+    posix_crontab: https://pubs.opengroup.org/onlinepubs/9799919799/utilities/crontab.html
+    iso3166_2: https://www.iso.org/standard/72483.html
+    iana_language: https://www.iana.org/assignments/language-subtag-registry/language-subtag-registry
+    rfc9110: https://datatracker.ietf.org/doc/html/rfc9110
+    wikidata: https://www.wikidata.org/wiki/Wikidata:Identifiers
+    doi: https://www.doi.org/the-identifier/what-is-a-doi/
+    orcid: https://info.orcid.org/documentation/
+    iso17442: https://www.gleif.org/en/about-lei/iso-17442-the-lei-code-structure
+    rfc9651: https://datatracker.ietf.org/doc/html/rfc9651
+    iso13616: https://www.iso.org/standard/81090.html
+    iso9362: https://www.iso.org/standard/60390.html
+    isbn: https://www.isbn-international.org/
+    gs1_gtin: https://www.gs1.org/standards/id-keys/gtin
+    gs1_gln: https://www.gs1.org/standards/id-keys/gln
+  params:
+    length:
+      type: integer
+      minimum: 1
+      maximum: 10485760
+      level: core
+      description: 'Most characters a value may have; omitted means unlimited. HTML: maxlength. Postgres: varchar(n).'
+    precision:
+      type: integer
+      minimum: 1
+      maximum: 1000
+      level: core
+      description: 'Total significant digits; omitted means unlimited. Postgres: numeric(precision, scale).'
+    scale:
+      type: integer
+      minimum: -1000
+      maximum: 1000
+      default: 0
+      level: core
+      description: 'Digits kept right of the decimal point; requires precision. Negative rounds left of the point. Postgres:
+        numeric(precision, scale).'
+    fractional_seconds:
+      type: integer
+      minimum: 0
+      maximum: 6
+      default: 6
+      level: advanced
+      description: 'Fractional-second digits kept; values beyond it are rounded. Postgres: time(p), timestamp(p),
+        timestamptz(p), interval(p).'
+    values:
+      type: array
+      minItems: 1
+      maxItemBytes: 63
+      level: core
+      description: 'The allowed values, in order; the order is also the sort order. Each is at most 63 bytes as UTF-8, the
+        Postgres limit for an enum label. HTML: the select options. Postgres: CREATE TYPE ... AS ENUM (...); values can
+        be added later, never removed.'
+    nullable:
+      type: boolean
+      default: false
+      level: core
+      description: 'Whether the field accepts null. Applies to every type, so no type lists it. Postgres: false emits NOT NULL.'
+  errors:
+    required: Required.
+    unknown_field: Not a field of this model.
+    not_object: Must be an object.
+    not_list: Must be a list.
+    too_long: At most {max} characters.
+    not_allowed: 'Must be one of: {values}.'
+    too_many_digits: Too many digits for precision {precision}, scale {scale}.
+    bad_name: Names are lowercase letters, digits and underscores, starting with a letter.
+    type_name: A model can't take a type's name.
+    unresolved: No type or model by this name.
+    alias: This is an alias; write "{canonical}".
+    unknown_setting: This type takes no such setting.
+    bad_setting: Out of range or the wrong kind of value.
+    missing_setting: Needs "{setting}".
+    cycle: This reference leads back to itself.
+    too_deep: Models nest more than {max} levels deep.
+  reasons:
+    wrong_kind: Not the type's primitive kind (TS, Python and models only; Go and Rust are typed by their signatures).
+    malformed: Text that isn't well-formed Unicode (a lone surrogate).
+    too_long: More code points than the type's maxLength (or a field's length).
+    too_short: Fewer code points than the type's minLength.
+    pattern: 'Doesn''t match the type''s pattern.'
+    out_of_range: Below minimum, above maximum, or a non-finite number.
+    check: Failed the type's check (a check digit, a 64-bit range).
+    not_in_list: Not on the type's enum.
+_token:
+  base: string
+  abstract: true
+_json:
+  abstract: true
+_bytes:
+  base: string
+  abstract: true
+  contentEncoding: base64
+string:
+  level: core
+  label: Short text
+  hint: A few words, like a name or a title
+  error: Please type some text.
+  aliases:
+    - short_text
+    - varchar
+  type: string
+  params:
+    - length
+  examples:
+    valid:
+      - hello
+      - Ada Lovelace
+    invalid:
+      - 42
+      - null
+  standard: JSON Schema 2020-12
+  docs: json_schema_validation
+  details: 'Single-line text where a length bound is meaningful: names, titles, labels. Prefer text when there is no
+    maximum, and enum when the values form a closed set.'
+text:
+  level: core
+  label: Long text
+  hint: As many lines as you need
+  error: Please type some text.
+  aliases:
+    - long_text
+    - paragraph
+  type: string
+  examples:
+    valid:
+      - unbounded multi-line body
+      - |-
+        Line one
+        Line two
+    invalid:
+      - - not
+        - text
+  standard: JSON Schema 2020-12
+  docs: json_schema_validation
+  details: 'Unbounded prose: article bodies, comments, logs. Prefer string when a length limit is part of the contract.'
+boolean:
+  level: core
+  label: Yes or no
+  hint: Pick yes or no
+  error: Please pick yes or no.
+  aliases:
+    - bool
+    - yes_no
+  type: boolean
+  examples:
+    valid:
+      - true
+      - false
+    invalid:
+      - 'true'
+      - 1
+  standard: JSON Schema 2020-12
+  docs: json_schema_validation
+  details: 'A true/false fact: flags, toggles, switches. Prefer enum if a third state could ever appear, rather than a
+    nullable boolean.'
+int32:
+  level: core
+  label: Whole number
+  hint: A number with no decimal point, like 42
+  error: Please use a whole number, like 42.
+  aliases:
+    - int
+    - integer
+  type: integer
+  format: int32
+  minimum: -2147483648
+  maximum: 2147483647
+  examples:
+    valid:
+      - 42
+      - -2147483648
+      - 0
+    invalid:
+      - 2147483648
+      - 1.5
+  standard: OpenAPI Format Registry
+  docs: openapi_formats
+  details: 'The general-purpose signed integer: counts, quantities, offsets. Prefer int64 for identifiers or anything that
+    can outgrow two billion.'
+int64:
+  base: _token
+  level: core
+  label: Big whole number
+  hint: A very big number with no decimal point
+  error: Please use a whole number that fits in 64 bits, digits only, like 9007199254740993.
+  aliases:
+    - bigint
+    - long
+  format: int64
+  pattern: '^-?[0-9]+$'
+  check: int64_range
+  examples:
+    valid:
+      - '9007199254740993'
+      - '-42'
+      - '0'
+      - '9223372036854775807'
+      - '-9223372036854775808'
+    invalid:
+      - '12.5'
+      - 123
+    check_invalid:
+      - '9223372036854775808'
+      - '-9223372036854775809'
+    db_invalid:
+      - '9223372036854775808'
+  standard: OpenAPI Format Registry
+  docs: openapi_formats
+  details: 'Signed 64-bit integers: database keys, byte sizes, high-resolution counters. Values beyond 2^53 lose precision
+    as JSON numbers, so they travel as strings; storage is still a native 64-bit integer.'
+float64:
+  level: core
+  label: Number
+  hint: Any number, like 3.14
+  error: Please type a number, like 3.14.
+  aliases:
+    - number
+    - float
+    - double
+  type: number
+  format: double
+  examples:
+    valid:
+      - 3.141592653589793
+      - -0.5
+      - 1e+21
+    invalid:
+      - '3.14'
+  standard: IEEE 754 (binary64) / OpenAPI Format Registry
+  docs: ieee754
+  details: 'The default floating-point number: measurements, ratios, scores. Never money or exact quantities - use decimal
+    for anything where digits must be exact.'
+decimal:
+  base: _token
+  level: core
+  label: Exact number
+  hint: 'Exact amounts like money: 1234.56'
+  error: Please use digits and one dot, like 1234.56.
+  aliases:
+    - money
+    - numeric
+  format: decimal
+  pattern: '^-?[0-9]+(\.[0-9]+)?$'
+  params:
+    - precision
+    - scale
+  examples:
+    valid:
+      - '1234.56'
+      - '-0.01'
+      - '42'
+    invalid:
+      - 1,234.56
+      - '1e5'
+  standard: ISO 80000-1 / OpenAPI Format Registry
+  docs: openapi_formats
+  details: Exact decimal value represented as text. Use for money, rates, quantities, and other values where decimal
+    precision must be preserved. Precision and scale are determined by the target system.
+object:
+  base: _json
+  level: core
+  label: Group of fields
+  hint: Named values kept together
+  error: Please give named values, like a small card of facts.
+  aliases:
+    - map
+    - dict
+    - record
+  type: object
+  examples:
+    valid:
+      - key: value
+      - {}
+    invalid:
+      - - 1
+        - 2
+  standard: ECMA-404 / JSON Schema 2020-12
+  docs: ecma404
+  details: 'A nested JSON object: structured payloads, settings blobs, documents. Prefer dedicated fields or columns once
+    the shape is stable enough to query.'
+array:
+  base: _json
+  level: core
+  label: List
+  hint: Several values in order
+  error: Please give a list of values.
+  aliases:
+    - list
+  type: array
+  examples:
+    valid:
+      - - 1
+        - 2
+        - 3
+      - []
+    invalid:
+      - a: 1
+  standard: ECMA-404 / JSON Schema 2020-12
+  docs: ecma404
+  details: 'An ordered JSON list: tags, attachments, embedded collections. Prefer a separate table or repeated field when
+    elements need identity or independent querying.'
+enum:
+  base: string
+  params:
+    - values
+  level: core
+  label: Choice
+  hint: Pick one option from a fixed list
+  error: Please pick one of the options.
+  aliases:
+    - choice
+    - select
+  examples:
+    valid:
+      - active
+      - draft
+      - archived
+  standard: JSON Schema 2020-12 (enum keyword)
+  docs: json_schema_validation
+  anchor: '#name-enum'
+  details: 'One value from a closed, named set: statuses, roles, kinds. Prefer string for open-ended sets and boolean for
+    exactly two states.'
+any:
+  base: _json
+  level: core
+  label: Anything
+  hint: Any value at all
+  error: Any value is allowed here.
+  aliases:
+    - json
+    - jsonb
+  examples:
+    valid:
+      - anything:
+          - 1
+          - two
+          - true
+      - null
+      - text
+      - 7
+  standard: JSON Schema 2020-12 (unconstrained schema)
+  docs: json_schema_core
+  details: 'Deliberately unconstrained: passthrough payloads and escape hatches. Reach for it last - every consumer
+    inherits the validation burden.'
+date:
+  level: core
+  label: Date
+  hint: Year-month-day, like 2026-08-16
+  error: Please use year-month-day, like 2026-08-16.
+  aliases:
+    - day
+  type: string
+  format: date
+  pattern: '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
+  examples:
+    valid:
+      - '2026-08-16'
+      - '2024-02-29'
+    invalid:
+      - '2026-8-16'
+      - 16/08/2026
+    db_invalid:
+      - '2026-02-30'
+      - '2025-02-29'
+  standard: ISO 8601 / RFC 3339 full-date
+  docs: rfc3339
+  anchor: '#section-5.6'
+  details: 'A calendar date with no time or zone: birthdays, due dates, effective dates. Prefer date_time for an actual
+    instant.'
+time_local:
+  level: core
+  label: Time of day
+  hint: Hours:minutes:seconds, like 14:30:00
+  error: Please use hours:minutes:seconds, like 14:30:00.
+  aliases:
+    - time_of_day
+    - local_time
+  type: string
+  format: time-local
+  pattern: '^[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?$'
+  params:
+    - fractional_seconds
+  examples:
+    valid:
+      - '14:30:00'
+      - '09:05:30.250'
+    invalid:
+      - '14:30'
+      - 14:30:00Z
+    db_invalid:
+      - '25:00:00'
+  standard: OpenAPI Format Registry (RFC 3339 partial-time, no offset)
+  docs: openapi_formats
+  details: "A wall-clock time with no offset: daily schedules like 'every day at 14:30' that follow whatever zone applies.
+    Pair with timezone when the zone is fixed."
+date_time:
+  level: core
+  label: Date and time
+  hint: An exact moment, with its time zone
+  error: Please use date, T, time and zone, like 2026-08-16T14:30:00Z.
+  aliases:
+    - datetime
+    - timestamp
+    - instant
+  type: string
+  format: date-time
+  pattern: '^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt][0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?([Zz]|[+-][0-9]{2}:[0-9]{2})$'
+  params:
+    - fractional_seconds
+  examples:
+    valid:
+      - '2026-08-16T14:30:00Z'
+      - '2026-08-16T14:30:00.123+02:00'
+    invalid:
+      - '2026-08-16T14:30:00'
+      - '2026-08-16 14:30:00Z'
+    db_invalid:
+      - '2026-13-01T00:00:00Z'
+  standard: ISO 8601 / RFC 3339 date-time
+  docs: rfc3339
+  anchor: '#section-5.6'
+  details: An absolute instant with offset - the default for created/updated timestamps and anything that really happened.
+    Prefer date_time_local only for deliberately floating times.
+date_time_local:
+  level: core
+  label: Local date and time
+  hint: A date and time on the clock, no zone
+  error: Please use date, T and time, like 2026-08-16T14:30:00.
+  aliases:
+    - local_datetime
+    - wall_time
+  type: string
+  format: date-time-local
+  pattern: '^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt][0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?$'
+  params:
+    - fractional_seconds
+  examples:
+    valid:
+      - '2026-08-16T14:30:00'
+      - '2026-08-16T09:00:00.5'
+    invalid:
+      - '2026-08-16T14:30:00Z'
+      - '2026-08-16'
+    db_invalid:
+      - '2026-02-30T00:00:00'
+  standard: OpenAPI Format Registry (RFC 3339 date-time with no offset)
+  docs: openapi_formats
+  details: "A date and time with no offset: floating events like 'Jan 1 at midnight, wherever the user is'. Prefer
+    date_time for real instants; pair with timezone to reconstruct one."
+duration:
+  base: _token
+  level: core
+  label: Length of time
+  hint: How long something lasts, like P3DT4H30M
+  error: Please write it like P3DT4H30M (3 days, 4 hours, 30 minutes).
+  aliases:
+    - interval
+    - timespan
+  format: duration
+  pattern: '^P(([0-9]+Y([0-9]+M)?([0-9]+W)?([0-9]+D)?|[0-9]+M([0-9]+W)?([0-9]+D)?|[0-9]+W([0-9]+D)?|[0-9]+D)(T([0-9]+H([0-9]+M)?([0-9]+(\.[0-9]+)?S)?|[0-9]+M([0-9]+(\.[0-9]+)?S)?|[0-9]+(\.[0-9]+)?S))?|T([0-9]+H([0-9]+M)?([0-9]+(\.[0-9]+)?S)?|[0-9]+M([0-9]+(\.[0-9]+)?S)?|[0-9]+(\.[0-9]+)?S))$'
+  params:
+    - fractional_seconds
+  examples:
+    valid:
+      - P3DT4H30M
+      - PT0.5S
+      - P1Y2M
+    invalid:
+      - P
+      - 3 days
+  standard: ISO 8601-1 duration / RFC 3339 Appendix A
+  docs: rfc3339
+  anchor: '#appendix-A'
+  details: 'A span of time (ISO 8601): timeouts, retention windows, billing periods. A length, not a position - prefer
+    date_time for points in time.'
+timezone:
+  base: _token
+  level: core
+  label: Time zone
+  hint: A region and city, like America/New_York
+  error: Please pick a time zone, like America/New_York.
+  aliases:
+    - tz
+    - time_zone
+  pattern: '^(UTC|[A-Za-z_]+/[A-Za-z0-9_+-]+(/[A-Za-z0-9_+-]+)?)$'
+  examples:
+    valid:
+      - America/New_York
+      - UTC
+      - America/Argentina/Buenos_Aires
+    invalid:
+      - New York
+      - America/New York
+  standard: IANA Time Zone Database
+  docs: iana_tz
+  details: 'An IANA zone name like America/New_York: user preferences and scheduling context. Store the name, never a raw
+    offset - offsets change with DST and law.'
+email:
+  base: _token
+  level: core
+  label: Email address
+  hint: Like name@example.com
+  error: That email looks wrong. Try user@example.com.
+  aliases:
+    - email_address
+    - mail
+  format: email
+  pattern: '^[^@\x09-\x0D\x20]+@[^@\x09-\x0D\x20][^.@\x09-\x0D\x20]*\.[^@\x09-\x0D\x20]+$'
+  normalize:
+    - trim
+  examples:
+    valid:
+      - user@example.com
+      - first.last+tag@sub.example.co.uk
+    invalid:
+      - user@
+      - user example.com
+  standard: RFC 5321 / RFC 5322
+  docs: rfc5321
+  details: 'An email address: login and contact fields. Accepting internationalized mailboxes is a validation choice, not
+    a separate type.'
+hostname:
+  base: _token
+  level: core
+  label: Website name
+  hint: Like api.example.com
+  error: Please use letters, digits, dots and dashes, like api.example.com.
+  aliases:
+    - domain
+    - domain_name
+    - host
+  format: hostname
+  pattern: '^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$'
+  normalize:
+    - trim
+    - lowercase
+  examples:
+    valid:
+      - api.example.com
+      - localhost
+      - a-b.example
+    invalid:
+      - -api.example.com
+      - api..example.com
+      - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  standard: RFC 1123 / RFC 952
+  docs: rfc1123
+  anchor: '#section-2'
+  details: 'A DNS hostname: servers and endpoints without scheme or path. Prefer uri when a full locator travels;
+    internationalized names are a validation choice.'
+  maxLength: 253
+ipv4:
+  base: _token
+  level: core
+  label: IP address (v4)
+  hint: Four numbers with dots, like 192.0.2.1
+  error: Please use four numbers from 0 to 255, like 192.0.2.1.
+  aliases:
+    - ip
+    - ip_address
+  format: ipv4
+  pattern: '^((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])$'
+  examples:
+    valid:
+      - 192.0.2.1
+      - 0.0.0.0
+      - 255.255.255.255
+    invalid:
+      - 256.0.0.1
+      - 192.0.2
+  standard: RFC 791
+  docs: rfc791
+  details: A dotted-quad IPv4 host address. Prefer cidr for networks rather than hosts.
+ipv6:
+  base: _token
+  level: core
+  label: IP address (v6)
+  hint: Like 2001:db8::1
+  error: That IP address looks wrong. Try 2001:db8::1.
+  aliases:
+    - ipv6_address
+  format: ipv6
+  examples:
+    valid:
+      - 2001:db8::1
+      - ::1
+      - fe80::1ff:fe23:4567:890a
+    db_invalid:
+      - 2001:db8::zz
+      - '1:2:3:4:5:6:7:8:9'
+  standard: RFC 4291 addressing / RFC 8200
+  docs: rfc4291
+  anchor: '#section-2.2'
+  details: An IPv6 host address. Prefer cidr for prefixes rather than hosts.
+cidr:
+  base: _token
+  level: core
+  label: Network range
+  hint: An address and a size, like 192.0.2.0/24
+  error: Please use an address, a slash and a size, like 192.0.2.0/24.
+  aliases:
+    - subnet
+    - network
+  examples:
+    valid:
+      - 192.0.2.0/24
+      - 2001:db8::/32
+      - 10.0.0.0/8
+    db_invalid:
+      - 192.0.2.1/24
+  standard: RFC 4632 (IPv4) / RFC 4291 (IPv6 prefix)
+  docs: rfc4632
+  details: 'A network prefix of either IP family: allowlists, routing rules. Prefer ipv4 or ipv6 for a single host.'
+uri:
+  base: _token
+  level: core
+  label: Web link
+  hint: Like https://example.com/page
+  error: That link looks wrong. Try https://example.com/page.
+  aliases:
+    - url
+    - link
+    - website
+  format: uri
+  examples:
+    valid:
+      - https://example.com/a/b?c=1
+      - mailto:user@example.com
+      - urn:isbn:9780306406157
+  standard: RFC 3986
+  docs: rfc3986
+  details: 'An absolute URI with scheme: links, webhooks, resource locators. Use string for relative paths.'
+uuid:
+  base: _token
+  level: core
+  label: Unique ID
+  hint: A long ID with dashes, made by the computer
+  error: That ID looks wrong. It should look like f81d4fae-7dec-11d0-a765-00a0c91e6bf6.
+  aliases:
+    - guid
+    - unique_id
+  format: uuid
+  pattern: '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+  normalize:
+    - trim
+    - lowercase
+  examples:
+    valid:
+      - f81d4fae-7dec-11d0-a765-00a0c91e6bf6
+      - F81D4FAE-7DEC-11D0-A765-00A0C91E6BF6
+    invalid:
+      - f81d4fae7dec11d0a76500a0c91e6bf6
+      - f81d4fae-7dec-11d0-a765-00a0c91e6bfg
+  standard: RFC 9562 (obsoletes RFC 4122)
+  docs: rfc9562
+  details: 'A 128-bit universal identifier, any version: primary keys and references. Which version to mint (such as
+    time-ordered v7) is a generation option, not a separate type.'
+phone:
+  base: _token
+  level: core
+  label: Phone number
+  hint: Start with + and your country code
+  error: Start with + and the country code, no spaces, like +14155552671.
+  aliases:
+    - tel
+    - telephone
+    - mobile
+    - phone_number
+  pattern: '^\+[1-9][0-9]{1,14}$'
+  normalize:
+    - trim
+    - remove_spaces
+    - remove_hyphens
+  examples:
+    valid:
+      - '+14155552671'
+      - '+442071838750'
+    invalid:
+      - '4155552671'
+      - +1 415 555 2671
+  standard: ITU-T E.164
+  docs: itu_e164
+  details: 'An E.164 phone number (+country code, digits only): dialing and SMS. Store normalized; display formatting is
+    presentation, not data.'
+binary:
+  base: _bytes
+  level: core
+  label: File
+  hint: Upload a file
+  error: Please choose a file.
+  aliases:
+    - bytes
+    - file
+    - blob
+  examples:
+    valid:
+      - SGVsbG8gd29ybGQ=
+      - ''
+  standard: OpenAPI 3.2 binary data / RFC 4648 Section 4 (base64 in JSON)
+  docs: openapi_3_2
+  anchor: '#working-with-binary-data'
+  details: 'Raw bytes: file uploads, blobs, digests. Inside JSON they travel as standard base64 (RFC 4648); storage keeps
+    the decoded bytes.'
+secret:
+  base: _token
+  level: core
+  label: Secret
+  hint: Kept hidden, like a password
+  error: Please type the secret.
+  aliases:
+    - password
+    - api_key
+  format: password
+  examples:
+    valid:
+      - ••••••••
+      - correct horse battery staple
+  standard: OpenAPI Format Registry (display hint only, not a guarantee)
+  docs: openapi_formats
+  details: 'Sensitive text that must never be displayed or logged: passwords, API keys. The format is a masking hint, not
+    protection - hash or encrypt at rest.'
+media_type:
+  base: _token
+  level: core
+  label: File type
+  hint: What kind of file, like application/json
+  error: Please write kind/subkind, like application/json.
+  aliases:
+    - mime_type
+    - content_type
+  pattern: '^[A-Za-z0-9!#$&^_.+-]+/[A-Za-z0-9!#$&^_.+-]+(;[^\x00-\x1F\x7F]*)?$'
+  examples:
+    valid:
+      - application/json
+      - text/html; charset=utf-8
+      - image/svg+xml
+    invalid:
+      - json
+      - application/
+  standard: RFC 6838 / IANA Media Types
+  docs: iana_media_types
+  details: 'A concrete media type like application/json: labeling stored content.'
+slug:
+  base: _token
+  level: core
+  label: Web address name
+  hint: Small letters, digits and dashes
+  error: Use small letters, digits and single dashes, like getting-started.
+  aliases:
+    - permalink
+    - url_name
+  pattern: '^[a-z0-9]+(-[a-z0-9]+)*$'
+  normalize:
+    - trim
+    - lowercase
+  examples:
+    valid:
+      - getting-started
+      - a
+      - v2-release-notes
+    invalid:
+      - Getting-Started
+      - getting--started
+  standard: RFC 3986 (path segment)
+  docs: rfc3986
+  anchor: '#section-3.3'
+  details: 'A lowercase-hyphen URL token (getting-started): readable path segments derived from a title. Presentation
+    identity only - prefer uuid as the real key.'
+country:
+  base: _token
+  level: core
+  label: Country
+  hint: Pick a country
+  error: Please use the 2-letter country code, like US.
+  aliases:
+    - country_code
+  pattern: '^[A-Z]{2}$'
+  enum:
+    [
+      AD, AE, AF, AG, AI, AL, AM, AO, AQ, AR, AS, AT, AU, AW, AX, AZ, BA, BB, BD, BE, BF, BG, BH, BI, BJ, BL, BM, BN,
+      BO, BQ, BR, BS, BT, BV, BW, BY, BZ, CA, CC, CD, CF, CG, CH, CI, CK, CL, CM, CN, CO, CR, CU, CV, CW, CX, CY, CZ,
+      DE, DJ, DK, DM, DO, DZ, EC, EE, EG, EH, ER, ES, ET, FI, FJ, FK, FM, FO, FR, GA, GB, GD, GE, GF, GG, GH, GI, GL,
+      GM, GN, GP, GQ, GR, GS, GT, GU, GW, GY, HK, HM, HN, HR, HT, HU, ID, IE, IL, IM, IN, IO, IQ, IR, IS, IT, JE, JM,
+      JO, JP, KE, KG, KH, KI, KM, KN, KP, KR, KW, KY, KZ, LA, LB, LC, LI, LK, LR, LS, LT, LU, LV, LY, MA, MC, MD, ME,
+      MF, MG, MH, MK, ML, MM, MN, MO, MP, MQ, MR, MS, MT, MU, MV, MW, MX, MY, MZ, NA, NC, NE, NF, NG, NI, NL, 'NO', NP,
+      NR, NU, NZ, OM, PA, PE, PF, PG, PH, PK, PL, PM, PN, PR, PS, PT, PW, PY, QA, RE, RO, RS, RU, RW, SA, SB, SC, SD,
+      SE, SG, SH, SI, SJ, SK, SL, SM, SN, SO, SR, SS, ST, SV, SX, SY, SZ, TC, TD, TF, TG, TH, TJ, TK, TL, TM, TN, TO,
+      TR, TT, TV, TW, TZ, UA, UG, UM, US, UY, UZ, VA, VC, VE, VG, VI, VN, VU, WF, WS, YE, YT, ZA, ZM, ZW
+    ]
+  normalize:
+    - trim
+    - uppercase
+  examples:
+    valid:
+      - US
+      - DE
+    invalid:
+      - us
+      - USA
+    list_invalid:
+      - XX
+      - QQ
+  standard: ISO 3166-1 alpha-2
+  docs: iso3166
+  details: 'An ISO 3166-1 alpha-2 country code (US): the interchange default for countries. The list: ISO 3166-1 alpha-2
+    codes currently assigned, from Debian iso-codes v4.20.1 (data/iso_3166-1.json), copied 2026-11-21.'
+currency:
+  base: _token
+  level: core
+  label: Currency
+  hint: Pick a currency, like USD or EUR
+  error: Please use the 3-letter currency code, like USD.
+  aliases:
+    - currency_code
+  pattern: '^[A-Z]{3}$'
+  enum:
+    [
+      AED, AFN, ALL, AMD, AOA, ARS, AUD, AWG, AZN, BAM, BBD, BDT, BHD, BIF, BMD, BND, BOB, BOV, BRL, BSD, BTN, BWP, BYN,
+      BZD, CAD, CDF, CHE, CHF, CHW, CLF, CLP, CNY, COP, COU, CRC, CUP, CVE, CZK, DJF, DKK, DOP, DZD, EGP, ERN, ETB, EUR,
+      FJD, FKP, GBP, GEL, GHS, GIP, GMD, GNF, GTQ, GYD, HKD, HNL, HTG, HUF, IDR, ILS, INR, IQD, IRR, ISK, JMD, JOD, JPY,
+      KES, KGS, KHR, KMF, KPW, KRW, KWD, KYD, KZT, LAK, LBP, LKR, LRD, LSL, LYD, MAD, MDL, MGA, MKD, MMK, MNT, MOP, MRU,
+      MUR, MVR, MWK, MXN, MXV, MYR, MZN, NAD, NGN, NIO, NOK, NPR, NZD, OMR, PAB, PEN, PGK, PHP, PKR, PLN, PYG, QAR, RON,
+      RSD, RUB, RWF, SAR, SBD, SCR, SDG, SEK, SGD, SHP, SLE, SOS, SRD, SSP, STN, SVC, SYP, SZL, THB, TJS, TMT, TND, TOP,
+      TRY, TTD, TWD, TZS, UAH, UGX, USD, USN, UYI, UYU, UYW, UZS, VED, VES, VND, VUV, WST, XAD, XAF, XAG, XAU, XBA, XBB,
+      XBC, XBD, XCD, XCG, XDR, XOF, XPD, XPF, XPT, XSU, XTS, XUA, XXX, YER, ZAR, ZMW, ZWG
+    ]
+  normalize:
+    - trim
+    - uppercase
+  examples:
+    valid:
+      - USD
+      - EUR
+    invalid:
+      - usd
+      - US
+    list_invalid:
+      - QQQ
+      - HRK
+  standard: ISO 4217 alpha-3
+  docs: iso4217
+  details: 'An ISO 4217 currency code (USD): pair it with a decimal amount to represent money. Never derive it from
+    country or locale - people transact across borders. The list: ISO 4217 List One active codes (with the X codes it
+    assigns), from SIX list-one.xml published 2026-09-17, copied 2026-11-21.'
+locale:
+  base: _token
+  level: core
+  label: Language and region
+  hint: Like en-US or es-419
+  error: Please use a language code, like en-US.
+  aliases:
+    - language_tag
+    - lang
+  format: language
+  pattern: '^[a-zA-Z]{2,3}(-[a-zA-Z]{4})?(-([a-zA-Z]{2}|[0-9]{3}))?$'
+  examples:
+    valid:
+      - en-US
+      - en
+      - zh-Hant-TW
+      - es-419
+    invalid:
+      - english
+      - en_US
+  standard: BCP 47 / RFC 5646
+  docs: rfc5646
+  details: 'A BCP 47 language tag (en, en-US): a language with optional script and region, for formatting, translations,
+    and user preferences.'
+color:
+  base: _token
+  level: core
+  label: Color
+  hint: Pick a color
+  error: 'Please use # and 6 small hex digits, like #1a2b3c.'
+  aliases:
+    - colour
+    - rgb
+    - hex_color
+  pattern: '^#[0-9a-f]{6}([0-9a-f]{2})?$'
+  normalize:
+    - trim
+    - lowercase
+  examples:
+    valid:
+      - '#1a2b3c'
+      - '#1a2b3c80'
+      - '#000000'
+    invalid:
+      - '#ABC'
+      - '#1A2B3C'
+      - red
+  standard: CSS Color Module Level 4 (hex notation), canonical lowercase
+  docs: css_color_4
+  anchor: '#hex-notation'
+  details: 'An sRGB color as lowercase #rrggbb or #rrggbbaa - the exact form <input type="color"> produces, so it
+    round-trips through forms, JSON, JS/TS and SQL unchanged. Prefer css_color only for wide-gamut or design-token
+    values.'
+char:
+  base: string
+  level: advanced
+  label: Single character
+  hint: Exactly one character
+  error: Please type exactly one character, like A.
+  aliases:
+    - character
+    - letter
+  format: char
+  examples:
+    valid:
+      - A
+      - é
+    invalid:
+      - ''
+      - AB
+  standard: OpenAPI Format Registry
+  docs: openapi_formats
+  details: 'Exactly one character: a grade, flag, or single-letter code. Prefer string for anything that can grow, and
+    enum when the values form a closed set.'
+  minLength: 1
+  maxLength: 1
+int8:
+  base: int32
+  level: advanced
+  label: Tiny whole number
+  hint: From -128 to 127
+  error: Please use a whole number from -128 to 127.
+  aliases:
+    - tinyint
+    - byte
+  format: int8
+  minimum: -128
+  maximum: 127
+  examples:
+    valid:
+      - -7
+      - -128
+      - 127
+    invalid:
+      - 128
+      - -129
+  standard: OpenAPI Format Registry
+  docs: openapi_formats
+  details: Tiny signed integers (-128..127) where the bound is part of the contract. Prefer int32 as the general-purpose
+    default.
+int16:
+  base: int32
+  level: advanced
+  label: Small whole number
+  hint: From -32768 to 32767
+  error: Please use a whole number from -32768 to 32767.
+  aliases:
+    - smallint
+    - short
+  format: int16
+  minimum: -32768
+  maximum: 32767
+  examples:
+    valid:
+      - 1024
+      - -32768
+    invalid:
+      - 32768
+      - -32769
+  standard: OpenAPI Format Registry
+  docs: openapi_formats
+  details: 'Signed 16-bit integers: compact numeric codes and small bounded quantities. Prefer int32 as the
+    general-purpose default.'
+uint8:
+  base: int32
+  level: advanced
+  label: Tiny count
+  hint: From 0 to 255
+  error: Please use a whole number from 0 to 255.
+  aliases:
+    - ubyte
+  format: uint8
+  minimum: 0
+  maximum: 255
+  examples:
+    valid:
+      - 200
+      - 0
+      - 255
+    invalid:
+      - 256
+      - -1
+  standard: OpenAPI Format Registry
+  docs: openapi_formats
+  details: 'Unsigned bytes (0..255): color channels, small numeric codes. Prefer int32 unless the byte range is intrinsic
+    to the data.'
+uint16:
+  base: int32
+  level: advanced
+  label: Small count
+  hint: From 0 to 65535
+  error: Please use a whole number from 0 to 65535.
+  aliases:
+    - ushort
+  format: uint16
+  minimum: 0
+  maximum: 65535
+  examples:
+    valid:
+      - 8080
+      - 65535
+    invalid:
+      - 65536
+      - -1
+  standard: OpenAPI Format Registry
+  docs: openapi_formats
+  details: Unsigned 16-bit integers (0..65535). Prefer port for network ports specifically, and int32 when a negative
+    value could ever appear.
+uint32:
+  base: int32
+  level: advanced
+  alternative: int64
+  label: Count
+  hint: From 0 to 4294967295
+  error: Please use a whole number from 0 to 4294967295.
+  aliases:
+    - uint
+    - unsigned
+  format: uint32
+  minimum: 0
+  maximum: 4294967295
+  examples:
+    valid:
+      - 3000000000
+      - 4294967295
+    invalid:
+      - 4294967296
+      - -1
+  standard: OpenAPI Format Registry
+  docs: openapi_formats
+  details: 'Unsigned 32-bit integers: large counters and IDs from systems that use them. Prefer int64 in new designs;
+    signed types survive arithmetic and language boundaries better.'
+uint64:
+  base: int64
+  level: advanced
+  label: Huge count
+  hint: Digits only, no minus sign
+  error: Please use only digits, up to 18446744073709551615.
+  aliases:
+    - ulong
+  format: uint64
+  pattern: '^[0-9]+$'
+  check: uint64_range
+  params:
+    - precision
+    - scale
+  examples:
+    valid:
+      - '18446744073709551615'
+      - '0'
+    invalid:
+      - '-1'
+      - '1.5'
+    db_invalid:
+      - '18446744073709551616'
+    check_invalid:
+      - '18446744073709551616'
+      - '99999999999999999999'
+  standard: OpenAPI Format Registry
+  docs: openapi_formats
+  details: "The full unsigned 64-bit range: hashes and foreign systems' identifiers. Most languages and JSON cannot
+    represent the upper half natively, so values travel as strings; prefer int64 unless the source really uses all 64
+    bits."
+double_int:
+  base: int32
+  level: advanced
+  alternative: int64
+  label: Safe whole number
+  hint: Whole number JavaScript keeps exact
+  error: Please use a whole number between ±9007199254740991.
+  aliases:
+    - safe_integer
+  format: double-int
+  minimum: -9007199254740991
+  maximum: 9007199254740991
+  examples:
+    valid:
+      - 9007199254740991
+      - -9007199254740991
+    invalid:
+      - 9007199254740992
+      - 1.5
+  standard: OpenAPI Format Registry (integer exactly representable as a double)
+  docs: openapi_formats
+  details: 'Integers exactly representable in an IEEE double (up to 2^53-1): safe as a plain number for every JSON
+    consumer, including JavaScript. Prefer int64 when the full 64-bit range matters and consumers accept strings.'
+float32:
+  base: float64
+  level: advanced
+  label: Small-precision number
+  hint: Any number, stored with ~7 digits
+  error: Please type a number, like 3.14.
+  aliases:
+    - real
+    - single
+  format: float
+  examples:
+    valid:
+      - 3.14
+      - -1.5
+    invalid:
+      - '3.14'
+  standard: IEEE 754 (binary32) / OpenAPI Format Registry
+  docs: ieee754
+  details: 'Single-precision floats: bulk sensor readings or ML weights where memory beats precision. Prefer float64 as
+    the default floating-point type.'
+decimal128:
+  base: decimal
+  level: advanced
+  label: Very exact number
+  hint: Up to 34 significant digits
+  error: Please use digits and one dot, like 1234.567890123456789012345678901234.
+  aliases:
+    - dec128
+  format: decimal128
+  params:
+    - precision
+    - scale
+  examples:
+    valid:
+      - '1234.567890123456789012345678901234'
+      - '-1'
+    invalid:
+      - '1e10'
+      - abc
+  standard: IEEE 754-2019 (decimal128) / OpenAPI Format Registry
+  docs: ieee754
+  details: 'IEEE 754 decimal128: exact decimals with a defined 34-significant-digit width, for interchange with
+    fixed-width financial systems. Prefer decimal when arbitrary precision is acceptable.'
+time:
+  base: time_local
+  level: advanced
+  label: Time with offset
+  hint: Like 14:30:00Z or 14:30:00+02:00
+  error: Please add the zone offset, like 14:30:00Z.
+  aliases:
+    - timetz
+    - offset_time
+  format: time
+  pattern: '^[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?([Zz]|[+-][0-9]{2}:[0-9]{2})$'
+  params:
+    - fractional_seconds
+  examples:
+    valid:
+      - 14:30:00Z
+      - 09:05:30.250+05:30
+    invalid:
+      - '14:30:00'
+      - 2:30 PM
+    db_invalid:
+      - 24:30:00Z
+  standard: ISO 8601 / RFC 3339 full-time
+  docs: rfc3339
+  anchor: '#section-5.6'
+  details: A wall-clock time with an explicit UTC offset. Prefer time_local for schedules that float with the local zone.
+unix_time:
+  base: int32
+  level: advanced
+  alternative: date_time
+  label: Unix timestamp
+  hint: Seconds since 1970-01-01
+  error: Please use whole seconds since 1970, like 1786000000.
+  aliases:
+    - epoch
+    - epoch_seconds
+  format: unixtime
+  minimum: -9007199254740991
+  maximum: 9007199254740991
+  examples:
+    valid:
+      - 1786000000
+      - 0
+      - -86400
+    invalid:
+      - 9007199254740992
+      - 1.5
+  standard: POSIX.1-2024 (IEEE Std 1003.1-2024) seconds since the Epoch
+  docs: posix_epoch
+  anchor: '#tag_04_19'
+  details: 'Seconds since the Unix epoch as an integer: compact machine timestamps and TTLs. Prefer date_time for anything
+    humans or APIs read directly.'
+idn_email:
+  base: _token
+  level: advanced
+  alternative: email
+  label: International email
+  hint: Email that may use any alphabet
+  error: That email looks wrong. Try ñoño@ejemplo.es.
+  aliases:
+    - unicode_email
+  format: idn-email
+  examples:
+    valid:
+      - 用户@例子.广告
+      - ñoño@ejemplo.es
+  standard: RFC 6531 (internationalized email)
+  docs: rfc6531
+  details: 'An internationalized email address: non-ASCII local parts and domains. Prefer email when every consumer
+    requires ASCII.'
+idn_hostname:
+  base: _token
+  level: advanced
+  alternative: hostname
+  label: International website name
+  hint: A domain in any alphabet
+  error: That domain looks wrong. Try bücher.example.
+  aliases:
+    - unicode_domain
+  format: idn-hostname
+  examples:
+    valid:
+      - 例子.广告
+      - bücher.example
+  standard: RFC 5890 (IDNA2008)
+  docs: rfc5890
+  details: An internationalized (IDNA2008) hostname. Prefer hostname when values are guaranteed ASCII or already
+    punycode-encoded.
+ipv4_cidr:
+  base: cidr
+  level: advanced
+  label: IPv4 network range
+  hint: Like 192.0.2.0/24
+  error: Please use an IPv4 address, a slash and 0-32, like 192.0.2.0/24.
+  aliases:
+    - ipv4_subnet
+  format: ipv4-cidr
+  pattern: '^((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])/(3[0-2]|[12]?[0-9])$'
+  examples:
+    valid:
+      - 192.0.2.0/24
+      - 0.0.0.0/0
+    invalid:
+      - 192.0.2.0/33
+      - 192.0.2.0
+    db_invalid:
+      - 192.0.2.1/24
+  standard: RFC 4632 (CIDR)
+  docs: rfc4632
+  details: An IPv4 network prefix like 192.0.2.0/24. Prefer cidr when either family may appear, and ipv4 for a single host.
+ipv6_cidr:
+  base: cidr
+  level: advanced
+  label: IPv6 network range
+  hint: Like 2001:db8::/32
+  error: Please use an IPv6 address, a slash and 0-128, like 2001:db8::/32.
+  aliases:
+    - ipv6_subnet
+  format: ipv6-cidr
+  examples:
+    valid:
+      - 2001:db8::/32
+      - ::/0
+    db_invalid:
+      - 2001:db8::1/32
+  standard: RFC 4291 Section 2.3 (IPv6 address prefix)
+  docs: rfc4291
+  anchor: '#section-2.3'
+  details: An IPv6 network prefix like 2001:db8::/32. Prefer cidr when either family may appear, and ipv6 for a single host.
+mac_address:
+  base: _token
+  level: advanced
+  label: Hardware address
+  hint: Six pairs of hex digits
+  error: 'Please use six hex pairs with : or -, like 00:1b:44:11:3a:b7.'
+  aliases:
+    - mac
+    - mac_addr
+  pattern: '^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$'
+  examples:
+    valid:
+      - 00:1b:44:11:3a:b7
+      - 00-1B-44-11-3A-B7
+    invalid:
+      - 00:1b:44:11:3a
+      - 00:1b:44:11:3a:zz
+  standard: IEEE 802 (EUI-48)
+  docs: ieee802
+  details: 'An EUI-48 hardware address: device inventory, DHCP leases. Never an identity for people or accounts - MACs are
+    spoofable and privacy-sensitive.'
+uri_reference:
+  base: _token
+  level: advanced
+  alternative: uri
+  label: Link or path
+  hint: A full link or a path like /a/b
+  error: That link or path looks wrong. Try /a/b?c=1.
+  aliases:
+    - relative_url
+    - href
+  format: uri-reference
+  examples:
+    valid:
+      - /a/b?c=1
+      - ../up
+      - '#fragment'
+  standard: RFC 3986 Section 4.1
+  docs: rfc3986
+  anchor: '#section-4.1'
+  details: 'A URI reference, absolute or relative: redirect targets, in-site paths. Prefer uri when an absolute,
+    scheme-carrying value is required.'
+iri:
+  base: _token
+  level: advanced
+  alternative: uri
+  label: International link
+  hint: A link that may use any alphabet
+  error: That link looks wrong. Try https://bücher.example/straße.
+  aliases:
+    - unicode_url
+  format: iri
+  examples:
+    valid:
+      - https://例子.广告/路径
+      - https://bücher.example/straße
+  standard: RFC 3987 (internationalized URI)
+  docs: rfc3987
+  details: 'An internationalized absolute URI: user-facing links in any script, unencoded. Prefer uri when consumers
+    require ASCII with percent-encoding.'
+iri_reference:
+  base: _token
+  level: advanced
+  alternative: uri
+  label: International link or path
+  hint: A link or path in any alphabet
+  error: That link or path looks wrong. Try ../straße.
+  aliases:
+    - unicode_href
+  format: iri-reference
+  examples:
+    valid:
+      - /路径?c=1
+      - ../straße
+  standard: RFC 3987 Section 2.2 (internationalized URI reference)
+  docs: rfc3987
+  anchor: '#section-2.2'
+  details: An internationalized URI reference, absolute or relative. Prefer iri for absolute-only values and uri_reference
+    for ASCII-only ones.
+uuid_v7:
+  base: uuid
+  level: advanced
+  label: Time-ordered ID
+  hint: A unique ID that sorts by time
+  error: It needs a 7 after the second dash, like 018f4b2c-9c1e-7a3b-8f2d-1a2b3c4d5e6f.
+  aliases:
+    - uuidv7
+  pattern: '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$'
+  examples:
+    valid:
+      - 018f4b2c-9c1e-7a3b-8f2d-1a2b3c4d5e6f
+      - 018F4B2C-9C1E-7A3B-BF2D-1A2B3C4D5E6F
+    invalid:
+      - f81d4fae-7dec-11d0-a765-00a0c91e6bf6
+      - 018f4b2c-9c1e-7a3b-cf2d-1a2b3c4d5e6f
+  standard: RFC 9562 Section 5.7 (time-ordered)
+  docs: rfc9562
+  anchor: '#section-5.7'
+  details: 'A time-ordered UUID: new primary keys that index and sort by creation time. Prefer uuid when accepting
+    identifiers you did not mint.'
+ulid:
+  base: _token
+  level: advanced
+  alternative: uuid
+  label: Sortable ID
+  hint: 26 letters and digits
+  error: Please use 26 letters and digits, like 01ARZ3NDEKTSV4RRFFQ69G5FAV.
+  aliases:
+    - sortable_id
+  pattern: '^[0-7][0-9A-HJKMNP-TV-Z]{25}$'
+  examples:
+    valid:
+      - 01ARZ3NDEKTSV4RRFFQ69G5FAV
+      - 7ZZZZZZZZZZZZZZZZZZZZZZZZZ
+    invalid:
+      - 01ARZ3NDEKTSV4RRFFQ69G5FA
+      - 81ARZ3NDEKTSV4RRFFQ69G5FAV
+      - 01ARZ3NDEKTSV4RRFFQ69G5FAI
+  standard: ULID specification (Crockford Base32)
+  docs: ulid
+  details: 'A lexically sortable 128-bit ID in Crockford Base32: time-ordered keys that stay readable as text. Prefer
+    uuid_v7 where native UUID column types and tooling matter.'
+base64:
+  base: binary
+  level: advanced
+  label: Base64 data
+  hint: Bytes written as letters, + and /
+  error: Please use base64 with = padding, like SGVsbG8gd29ybGQ=.
+  aliases:
+    - b64
+  pattern: '^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$'
+  contentEncoding: null
+  examples:
+    valid:
+      - SGVsbG8gd29ybGQ=
+      - ''
+      - YQ==
+    invalid:
+      - SGVsbG8gd29ybGQ
+      - SGVsbG8_d29ybGQ=
+  standard: 'RFC 4648 Section 4 (OpenAPI 3.2: contentEncoding base64)'
+  docs: rfc4648
+  anchor: '#section-4'
+  details: 'Binary content as standard base64 text: payloads embedded in JSON. Prefer binary for raw transport and
+    base64url when the value travels in URLs or filenames.'
+base64url:
+  base: binary
+  level: advanced
+  label: URL-safe base64
+  hint: Bytes written as letters, - and _
+  error: Please use letters, digits, - and _, like SGVsbG8gd29ybGQ.
+  aliases:
+    - b64url
+  pattern: '^[A-Za-z0-9_-]*={0,2}$'
+  contentEncoding: null
+  examples:
+    valid:
+      - SGVsbG8gd29ybGQ
+      - YQ
+      - -_-_
+    invalid:
+      - SGVsbG8+d29ybGQ
+      - SGVs/bG8
+  standard: 'RFC 4648 Section 5 (OpenAPI 3.2: contentEncoding base64url)'
+  docs: rfc4648
+  anchor: '#section-5'
+  details: 'URL-safe base64 (no + or /): tokens and digests placed in URLs. Prefer base64 for ordinary embedded payloads.'
+css_color:
+  base: _token
+  level: advanced
+  alternative: color
+  label: CSS color
+  hint: Any CSS color, like oklch(70% 0.15 250)
+  error: That doesn't look like a CSS color. Try oklch(70% 0.15 250).
+  aliases:
+    - css_colour
+  pattern: '^(#[0-9a-fA-F]{3,4}|#[0-9a-fA-F]{6}|#[0-9a-fA-F]{8}|[a-zA-Z]+|(rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\([^()]*\))$'
+  examples:
+    valid:
+      - oklch(70% 0.15 250)
+      - '#fff'
+      - rebeccapurple
+      - color(display-p3 1 0.5 0)
+      - rgb(10 20 30 / 50%)
+    invalid:
+      - color-mix(in srgb, red, blue)
+      - oklch(from var(--brand) l c h)
+      - '#12'
+  standard: CSS Color Module Level 4
+  docs: css_color_4
+  details: "Any single CSS Color 4 value: hex, named, rgb(), hsl(), hwb(), lab(), lch(), oklab(), oklch() or
+    color(display-p3 ...). The pattern only checks the shape; validate for real with CSS.supports('color', value). Level
+    5 expressions (color-mix(), relative colors, light-dark(), var()) are computed in context and are deliberately not
+    data."
+commonmark:
+  base: text
+  level: advanced
+  label: Markdown
+  hint: 'Text with # headings and **bold**'
+  error: Please type some Markdown text.
+  aliases:
+    - markdown
+    - md
+  format: commonmark
+  examples:
+    valid:
+      - |-
+        # Title
+
+        Some **bold** text.
+      - |-
+        - one
+        - two
+  standard: CommonMark 0.31.2
+  docs: commonmark
+  details: 'Markdown (CommonMark) source: user-authored rich content stored as written. Prefer html for already-rendered
+    markup and text for plain prose.'
+html:
+  base: text
+  level: advanced
+  label: HTML
+  hint: Web page markup, like <p>Hello</p>
+  error: Please type some HTML.
+  aliases:
+    - markup
+  format: html
+  examples:
+    valid:
+      - <p>Hello</p>
+      - <ul><li>one</li></ul>
+  standard: WHATWG HTML Living Standard
+  docs: whatwg_html
+  details: 'HTML markup stored as-is: rendered output, email bodies. Sanitize on the way in; prefer commonmark when users
+    author the content.'
+json_pointer:
+  base: _token
+  level: advanced
+  label: JSON Pointer
+  hint: A path inside a document, like /users/0
+  error: Start with / for each step, like /users/0/email.
+  aliases:
+    - pointer
+  format: json-pointer
+  pattern: '^(/([^~/]|~[01])*)*$'
+  examples:
+    valid:
+      - /users/0/email
+      - ''
+      - /a~1b/~0c
+    invalid:
+      - users/0
+      - /a~2b
+  standard: RFC 6901
+  docs: rfc6901
+  details: 'An absolute JSON Pointer (/users/0/email): addressing a location inside a document from its root.'
+relative_json_pointer:
+  base: _token
+  level: advanced
+  label: Relative JSON Pointer
+  hint: Steps up, then a path, like 1/name
+  error: Please start with a number, like 1/name.
+  aliases:
+    - relative_pointer
+  format: relative-json-pointer
+  pattern: '^(0|[1-9][0-9]*)(#|(/([^~/]|~[01])*)*)$'
+  examples:
+    valid:
+      - 1/name
+      - '0'
+      - 2#
+    invalid:
+      - /name
+      - 01/name
+  standard: JSON Schema 2020-12 (relative-json-pointer)
+  docs: json_schema_validation
+  anchor: '#name-relative-json-pointer'
+  details: A JSON Pointer relative to a known position (1/name). Prefer json_pointer when addressing from the document root.
+uri_template:
+  base: _token
+  level: advanced
+  alternative: uri
+  label: Link template
+  hint: A link with {placeholders}
+  error: That template looks wrong. Try /users/{id}.
+  aliases:
+    - url_template
+  format: uri-template
+  examples:
+    valid:
+      - /users/{id}{?fields}
+      - https://api.example.com{/version}/items
+  standard: RFC 6570
+  docs: rfc6570
+  details: 'An RFC 6570 URL pattern with {variables}: route and link templates. Prefer uri for concrete, already-expanded
+    links.'
+regex:
+  base: _token
+  level: advanced
+  label: Text pattern
+  hint: A regular expression, like ^[a-z]+$
+  error: That regular expression looks wrong. Try ^[a-z]+$.
+  aliases:
+    - regexp
+    - regular_expression
+  format: regex
+  examples:
+    valid:
+      - ^[a-z][a-z0-9_]*$
+      - \d+
+  standard: ECMA-262 regular expressions
+  docs: ecma262
+  anchor: '#sec-regexp-regular-expression-objects'
+  details: 'An ECMA-262 regular expression source: validation rules and matchers stored as data. Prefer enum when the
+    acceptable values are simply a closed set.'
+semver:
+  base: _token
+  level: advanced
+  label: Version number
+  hint: Major.minor.patch, like 1.4.2
+  error: Please use three numbers with dots, like 1.4.2-rc.1.
+  aliases:
+    - version
+    - semantic_version
+  pattern: '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$'
+  examples:
+    valid:
+      - 1.4.2-rc.1
+      - 0.0.1
+      - 2.0.0+build.5
+    invalid:
+      - '1.4'
+      - 01.4.2
+  standard: Semantic Versioning 2.0.0
+  docs: semver
+  details: 'A Semantic Version (1.4.2-rc.1): package and API versions with defined precedence. Prefer string for
+    version-ish labels that do not follow SemVer.'
+jwt:
+  base: secret
+  level: advanced
+  label: Login token
+  hint: Three parts joined by dots
+  error: Please paste the whole token, like eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.sig.
+  aliases:
+    - json_web_token
+    - bearer_token
+  format: null
+  pattern: '^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]*$'
+  examples:
+    valid:
+      - eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.sig
+      - eyJhbGciOiJub25lIn0.eyJzdWIiOiIxIn0.
+    invalid:
+      - eyJhbGciOiJIUzI1NiJ9
+      - not a token
+  standard: RFC 7519 (JSON Web Token)
+  docs: rfc7519
+  details: 'A compact JSON Web Token: signed claims passed between parties. Handle like secret in storage and logs; prefer
+    secret for opaque credentials.'
+sha256:
+  base: _token
+  level: advanced
+  label: SHA-256 hash
+  hint: 64 hex characters
+  error: Needs 64 hex characters, like e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.
+  aliases:
+    - hash
+    - digest
+  pattern: '^[A-Fa-f0-9]{64}$'
+  examples:
+    valid:
+      - e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+      - E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855
+    invalid:
+      - e3b0
+      - zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
+  standard: FIPS 180-4 (SHA-256), hex-encoded
+  docs: fips180_4
+  details: 'A SHA-256 digest: content addressing, integrity checks, dedup keys. Never for passwords - those take a
+    dedicated password hash stored as secret.'
+port:
+  base: int32
+  level: advanced
+  label: Port number
+  hint: From 0 to 65535, like 5432
+  error: Please use a whole number from 0 to 65535.
+  aliases:
+    - port_number
+  format: uint16
+  minimum: 0
+  maximum: 65535
+  examples:
+    valid:
+      - 5432
+      - 0
+      - 65535
+    invalid:
+      - 65536
+      - -1
+  standard: RFC 6335 (IANA port numbers)
+  docs: rfc6335
+  details: 'A TCP/UDP port number (0..65535): service endpoints and configuration. Prefer uint16 for 16-bit values that
+    are not ports.'
+cron:
+  base: _token
+  level: advanced
+  label: Schedule
+  hint: Five fields, like 0 3 * * *
+  error: Please use five fields, like 0 3 * * * (3 AM daily).
+  aliases:
+    - cron_expression
+    - crontab
+  examples:
+    valid:
+      - 0 3 * * *
+      - '*/15 9-17 * * 1-5'
+  standard: POSIX.1-2024 crontab (IEEE Std 1003.1-2024)
+  docs: posix_crontab
+  details: 'A POSIX crontab expression (0 3 * * *): recurring schedules. Prefer duration for simple intervals and
+    date_time for one-shot schedules.'
+country_alpha3:
+  base: country
+  level: advanced
+  label: Country (3-letter)
+  hint: Three capital letters, like USA
+  error: Please use the 3-letter country code, like USA.
+  aliases:
+    - country_code3
+  pattern: '^[A-Z]{3}$'
+  enum:
+    [
+      ABW, AFG, AGO, AIA, ALA, ALB, AND, ARE, ARG, ARM, ASM, ATA, ATF, ATG, AUS, AUT, AZE, BDI, BEL, BEN, BES, BFA, BGD,
+      BGR, BHR, BHS, BIH, BLM, BLR, BLZ, BMU, BOL, BRA, BRB, BRN, BTN, BVT, BWA, CAF, CAN, CCK, CHE, CHL, CHN, CIV, CMR,
+      COD, COG, COK, COL, COM, CPV, CRI, CUB, CUW, CXR, CYM, CYP, CZE, DEU, DJI, DMA, DNK, DOM, DZA, ECU, EGY, ERI, ESH,
+      ESP, EST, ETH, FIN, FJI, FLK, FRA, FRO, FSM, GAB, GBR, GEO, GGY, GHA, GIB, GIN, GLP, GMB, GNB, GNQ, GRC, GRD, GRL,
+      GTM, GUF, GUM, GUY, HKG, HMD, HND, HRV, HTI, HUN, IDN, IMN, IND, IOT, IRL, IRN, IRQ, ISL, ISR, ITA, JAM, JEY, JOR,
+      JPN, KAZ, KEN, KGZ, KHM, KIR, KNA, KOR, KWT, LAO, LBN, LBR, LBY, LCA, LIE, LKA, LSO, LTU, LUX, LVA, MAC, MAF, MAR,
+      MCO, MDA, MDG, MDV, MEX, MHL, MKD, MLI, MLT, MMR, MNE, MNG, MNP, MOZ, MRT, MSR, MTQ, MUS, MWI, MYS, MYT, NAM, NCL,
+      NER, NFK, NGA, NIC, NIU, NLD, NOR, NPL, NRU, NZL, OMN, PAK, PAN, PCN, PER, PHL, PLW, PNG, POL, PRI, PRK, PRT, PRY,
+      PSE, PYF, QAT, REU, ROU, RUS, RWA, SAU, SDN, SEN, SGP, SGS, SHN, SJM, SLB, SLE, SLV, SMR, SOM, SPM, SRB, SSD, STP,
+      SUR, SVK, SVN, SWE, SWZ, SXM, SYC, SYR, TCA, TCD, TGO, THA, TJK, TKL, TKM, TLS, TON, TTO, TUN, TUR, TUV, TWN, TZA,
+      UGA, UKR, UMI, URY, USA, UZB, VAT, VCT, VEN, VGB, VIR, VNM, VUT, WLF, WSM, YEM, ZAF, ZMB, ZWE
+    ]
+  examples:
+    valid:
+      - USA
+      - DEU
+    invalid:
+      - usa
+      - US
+    list_invalid:
+      - XXX
+      - QQQ
+  standard: ISO 3166-1 alpha-3
+  docs: iso3166
+  details: 'An ISO 3166-1 alpha-3 country code (USA): feeds and standards that require three letters. Prefer country
+    (alpha-2) as the default. The list: ISO 3166-1 alpha-3 codes currently assigned, from Debian iso-codes v4.20.1
+    (data/iso_3166-1.json), copied 2026-11-21.'
+subdivision:
+  base: _token
+  level: advanced
+  label: State or region
+  hint: Country, dash, region, like US-CA
+  error: Please use country-region, like US-CA.
+  aliases:
+    - region
+    - state
+    - province
+  pattern: '^[A-Z]{2}-[A-Z0-9]{1,3}$'
+  normalize:
+    - trim
+    - uppercase
+  examples:
+    valid:
+      - US-CA
+      - GB-ENG
+      - FR-75C
+    invalid:
+      - US_CA
+      - US-
+  standard: ISO 3166-2 (country subdivision)
+  docs: iso3166_2
+  details: 'An ISO 3166-2 subdivision code (US-CA): states, provinces, regions. Carries its country prefix, so no separate
+    country field is needed to interpret it.'
+language:
+  base: locale
+  level: advanced
+  label: Language
+  hint: Two or three small letters, like en
+  error: Please use the language code, like en.
+  aliases:
+    - language_code
+  pattern: '^[a-z]{2,3}$'
+  enum:
+    [
+      aa, aaa, aab, aac, aad, aae, aaf, aag, aah, aai, aak, aal, aan, aao, aap, aaq, aas, aat, aau, aav, aaw, aax, aaz,
+      ab, aba, abb, abc, abd, abe, abf, abg, abh, abi, abj, abl, abm, abn, abo, abp, abq, abr, abs, abt, abu, abv, abw,
+      abx, aby, abz, aca, acb, acd, ace, acf, ach, aci, ack, acl, acm, acn, acp, acq, acr, acs, act, acu, acv, acw, acx,
+      acy, acz, ada, adb, add, ade, adf, adg, adh, adi, adj, adl, adn, ado, adq, adr, ads, adt, adu, adw, adx, ady, adz,
+      ae, aea, aeb, aec, aed, aee, aek, ael, aem, aen, aeq, aer, aes, aeu, aew, aey, aez, af, afa, afb, afd, afe, afg,
+      afh, afi, afk, afn, afo, afp, afs, aft, afu, afz, aga, agb, agc, agd, age, agf, agg, agh, agi, agj, agk, agl, agm,
+      agn, ago, agq, agr, ags, agt, agu, agv, agw, agx, agy, agz, aha, ahb, ahg, ahh, ahi, ahk, ahl, ahm, ahn, aho, ahp,
+      ahr, ahs, aht, aia, aib, aic, aid, aie, aif, aig, aih, aii, aij, aik, ail, aim, ain, aio, aip, aiq, air, ait, aiw,
+      aix, aiy, aja, ajg, aji, ajn, ajs, aju, ajw, ajz, ak, akb, akc, akd, ake, akf, akg, akh, aki, akj, akk, akl, akm,
+      ako, akp, akq, akr, aks, akt, aku, akv, akw, akx, aky, akz, ala, alc, ald, ale, alf, alg, alh, ali, alj, alk, all,
+      alm, aln, alo, alp, alq, alr, als, alt, alu, alv, alw, alx, aly, alz, am, ama, amb, amc, ame, amf, amg, ami, amj,
+      amk, aml, amm, amn, amo, amp, amq, amr, ams, amt, amu, amv, amw, amx, amy, amz, an, ana, anb, anc, and, ane, anf,
+      ang, anh, ani, anj, ank, anl, anm, ann, ano, anp, anq, anr, ans, ant, anu, anv, anw, anx, any, anz, aoa, aob, aoc,
+      aod, aoe, aof, aog, aoi, aoj, aok, aol, aom, aon, aor, aos, aot, aou, aox, aoz, apa, apb, apc, apd, ape, apf, apg,
+      aph, api, apj, apk, apl, apm, apn, apo, app, apq, apr, aps, apt, apu, apv, apw, apx, apy, apz, aqa, aqc, aqd, aqg,
+      aqk, aql, aqm, aqn, aqp, aqr, aqt, aqz, ar, arb, arc, ard, are, arh, ari, arj, ark, arl, arn, aro, arp, arq, arr,
+      ars, art, aru, arv, arw, arx, ary, arz, as, asa, asb, asc, ase, asf, asg, ash, asi, asj, ask, asl, asn, aso, asp,
+      asq, asr, ass, ast, asu, asv, asw, asx, asy, asz, ata, atb, atc, atd, ate, atg, ath, ati, atj, atk, atl, atm, atn,
+      ato, atp, atq, atr, ats, att, atu, atv, atw, atx, aty, atz, aua, aub, auc, aud, auf, aug, auh, aui, auj, auk, aul,
+      aum, aun, auo, aup, auq, aur, aus, aut, auu, auw, aux, auy, auz, av, avb, avd, avi, avk, avl, avm, avn, avo, avs,
+      avt, avu, avv, awa, awb, awc, awd, awe, awg, awh, awi, awk, awm, awn, awo, awr, aws, awt, awu, awv, aww, awx, awy,
+      axb, axe, axg, axk, axl, axm, axx, ay, aya, ayb, ayc, ayd, aye, ayg, ayh, ayi, ayk, ayl, ayn, ayo, ayp, ayq, ayr,
+      ays, ayt, ayu, ayz, az, aza, azb, azc, azd, azg, azj, azm, azn, azo, azt, azz, ba, baa, bab, bac, bad, bae, baf,
+      bag, bah, bai, baj, bal, ban, bao, bap, bar, bas, bat, bau, bav, baw, bax, bay, bba, bbb, bbc, bbd, bbe, bbf, bbg,
+      bbh, bbi, bbj, bbk, bbl, bbm, bbn, bbo, bbp, bbq, bbr, bbs, bbt, bbu, bbv, bbw, bbx, bby, bca, bcb, bcc, bcd, bce,
+      bcf, bcg, bch, bci, bcj, bck, bcl, bcm, bcn, bco, bcp, bcq, bcr, bcs, bct, bcu, bcv, bcw, bcy, bcz, bda, bdb, bdc,
+      bdd, bde, bdf, bdg, bdh, bdi, bdj, bdk, bdl, bdm, bdn, bdo, bdp, bdq, bdr, bds, bdt, bdu, bdv, bdw, bdx, bdy, bdz,
+      be, bea, beb, bec, bed, bee, bef, beg, beh, bei, bej, bek, bem, beo, bep, beq, ber, bes, bet, beu, bev, bew, bex,
+      bey, bez, bfa, bfb, bfc, bfd, bfe, bff, bfg, bfh, bfi, bfj, bfk, bfl, bfm, bfn, bfo, bfp, bfq, bfr, bfs, bft, bfu,
+      bfw, bfx, bfy, bfz, bg, bga, bgb, bgc, bgd, bge, bgf, bgg, bgi, bgj, bgk, bgl, bgn, bgo, bgp, bgq, bgr, bgs, bgt,
+      bgu, bgv, bgw, bgx, bgy, bgz, bha, bhb, bhc, bhd, bhe, bhf, bhg, bhh, bhi, bhj, bhl, bhm, bhn, bho, bhp, bhq, bhr,
+      bhs, bht, bhu, bhv, bhw, bhx, bhy, bhz, bi, bia, bib, bid, bie, bif, big, bih, bik, bil, bim, bin, bio, bip, biq,
+      bir, bit, biu, biv, biw, bix, biy, biz, bja, bjb, bjc, bje, bjf, bjg, bjh, bji, bjj, bjk, bjl, bjm, bjn, bjo, bjp,
+      bjr, bjs, bjt, bju, bjv, bjw, bjx, bjy, bjz, bka, bkc, bkd, bkf, bkg, bkh, bki, bkj, bkk, bkl, bkm, bkn, bko, bkp,
+      bkq, bkr, bks, bkt, bku, bkv, bkw, bkx, bky, bkz, bla, blb, blc, bld, ble, blf, blh, bli, blj, blk, bll, blm, bln,
+      blo, blp, blq, blr, bls, blt, blv, blw, blx, bly, blz, bm, bma, bmb, bmc, bmd, bme, bmf, bmg, bmh, bmi, bmj, bmk,
+      bml, bmm, bmn, bmo, bmp, bmq, bmr, bms, bmt, bmu, bmv, bmw, bmx, bmz, bn, bna, bnb, bnc, bnd, bne, bnf, bng, bni,
+      bnj, bnk, bnl, bnm, bnn, bno, bnp, bnq, bnr, bns, bnt, bnu, bnv, bnw, bnx, bny, bnz, bo, boa, bob, boe, bof, bog,
+      boh, boi, boj, bok, bol, bom, bon, boo, bop, boq, bor, bot, bou, bov, bow, box, boy, boz, bpa, bpc, bpd, bpe, bpg,
+      bph, bpi, bpj, bpk, bpl, bpm, bpn, bpo, bpp, bpq, bpr, bps, bpt, bpu, bpv, bpw, bpx, bpy, bpz, bqa, bqb, bqc, bqd,
+      bqf, bqg, bqh, bqi, bqj, bqk, bql, bqm, bqn, bqo, bqp, bqq, bqr, bqs, bqt, bqu, bqv, bqw, bqx, bqy, bqz, br, bra,
+      brb, brc, brd, brf, brg, brh, bri, brj, brk, brl, brm, brn, bro, brp, brq, brr, brs, brt, bru, brv, brw, brx, bry,
+      brz, bs, bsa, bsb, bsc, bse, bsf, bsg, bsh, bsi, bsj, bsk, bsl, bsm, bsn, bso, bsp, bsq, bsr, bss, bst, bsu, bsv,
+      bsw, bsx, bsy, bta, btc, btd, bte, btf, btg, bth, bti, btj, btk, btm, btn, bto, btp, btq, btr, bts, btt, btu, btv,
+      btw, btx, bty, btz, bua, bub, buc, bud, bue, buf, bug, buh, bui, buj, buk, bum, bun, buo, bup, buq, bus, but, buu,
+      buv, buw, bux, buy, buz, bva, bvb, bvc, bvd, bve, bvf, bvg, bvh, bvi, bvj, bvk, bvl, bvm, bvn, bvo, bvp, bvq, bvr,
+      bvt, bvu, bvv, bvw, bvx, bvy, bvz, bwa, bwb, bwc, bwd, bwe, bwf, bwg, bwh, bwi, bwj, bwk, bwl, bwm, bwn, bwo, bwp,
+      bwq, bwr, bws, bwt, bwu, bww, bwx, bwy, bwz, bxa, bxb, bxc, bxd, bxe, bxf, bxg, bxh, bxi, bxj, bxk, bxl, bxm, bxn,
+      bxo, bxp, bxq, bxr, bxs, bxu, bxv, bxw, bxz, bya, byb, byc, byd, bye, byf, byg, byh, byi, byj, byk, byl, bym, byn,
+      byo, byp, byq, byr, bys, byt, byv, byw, byx, byz, bza, bzb, bzc, bzd, bze, bzf, bzg, bzh, bzi, bzj, bzk, bzl, bzm,
+      bzn, bzo, bzp, bzq, bzr, bzs, bzt, bzu, bzv, bzw, bzx, bzy, bzz, ca, caa, cab, cac, cad, cae, caf, cag, cah, cai,
+      caj, cak, cal, cam, can, cao, cap, caq, car, cas, cau, cav, caw, cax, cay, caz, cba, cbb, cbc, cbd, cbg, cbi, cbj,
+      cbk, cbl, cbn, cbo, cbq, cbr, cbs, cbt, cbu, cbv, cbw, cby, ccc, ccd, cce, ccg, cch, ccj, ccl, ccm, ccn, cco, ccp,
+      ccr, ccs, cda, cdc, cdd, cde, cdf, cdh, cdi, cdj, cdm, cdn, cdo, cdr, cds, cdy, cdz, ce, cea, ceb, ceg, cek, cel,
+      cen, cet, cey, cfa, cfd, cfg, cfm, cga, cgc, cgg, cgk, ch, chb, chc, chd, chf, chg, chh, chj, chk, chl, chm, chn,
+      cho, chp, chq, chr, cht, chw, chx, chy, chz, cia, cib, cic, cid, cie, cih, cik, cim, cin, cip, cir, ciw, ciy, cja,
+      cje, cjh, cji, cjk, cjm, cjn, cjo, cjp, cjs, cjv, cjy, ckb, ckh, ckl, ckm, ckn, cko, ckq, ckr, cks, ckt, cku, ckv,
+      ckx, cky, ckz, cla, clc, cld, cle, clh, cli, clj, clk, cll, clm, clo, cls, clt, clu, clw, cly, cma, cmc, cme, cmg,
+      cmi, cml, cmm, cmn, cmo, cmr, cms, cmt, cna, cnb, cnc, cng, cnh, cni, cnk, cnl, cno, cnp, cnq, cnr, cns, cnt, cnu,
+      cnw, cnx, co, coa, cob, coc, cod, coe, cof, cog, coh, coj, cok, col, com, con, coo, cop, coq, cot, cou, cov, cow,
+      cox, coz, cpa, cpb, cpc, cpe, cpf, cpg, cpi, cpn, cpo, cpp, cps, cpu, cpx, cpy, cqd, cr, cra, crb, crc, crd, crf,
+      crg, crh, cri, crj, crk, crl, crm, crn, cro, crp, crq, crr, crs, crt, crv, crw, crx, cry, crz, cs, csa, csb, csc,
+      csd, cse, csf, csg, csh, csi, csj, csk, csl, csm, csn, cso, csp, csq, csr, css, cst, csu, csv, csw, csx, csy, csz,
+      cta, ctc, ctd, cte, ctg, cth, ctl, ctm, ctn, cto, ctp, cts, ctt, ctu, cty, ctz, cu, cua, cub, cuc, cuh, cui, cuj,
+      cuk, cul, cuo, cup, cuq, cur, cus, cut, cuu, cuv, cuw, cux, cuy, cv, cvg, cvn, cwa, cwb, cwd, cwe, cwg, cwt, cxh,
+      cy, cya, cyb, cyo, czh, czk, czn, czo, czt, da, daa, dac, dad, dae, dag, dah, dai, daj, dak, dal, dam, dao, daq,
+      dar, das, dau, dav, daw, dax, day, daz, dba, dbb, dbd, dbe, dbf, dbg, dbi, dbj, dbl, dbm, dbn, dbo, dbp, dbq, dbr,
+      dbt, dbu, dbv, dbw, dby, dcc, dcr, dda, ddd, dde, ddg, ddi, ddj, ddn, ddo, ddr, dds, ddw, de, dec, ded, dee, def,
+      deg, deh, dei, del, dem, den, dep, deq, der, des, dev, dez, dga, dgb, dgc, dgd, dge, dgg, dgh, dgi, dgk, dgl, dgn,
+      dgo, dgr, dgs, dgt, dgw, dgx, dgz, dhd, dhg, dhi, dhl, dhm, dhn, dho, dhr, dhs, dhu, dhv, dhw, dhx, dia, dib, dic,
+      did, dif, dig, dih, dii, dij, dik, dil, dim, din, dio, dip, diq, dir, dis, diu, diw, dix, diy, diz, dja, djb, djc,
+      djd, dje, djf, dji, djj, djk, djm, djn, djo, djr, dju, djw, dka, dkg, dkk, dkr, dks, dkx, dlg, dlk, dlm, dln, dma,
+      dmb, dmc, dmd, dme, dmf, dmg, dmk, dml, dmm, dmn, dmo, dmr, dms, dmu, dmv, dmw, dmx, dmy, dna, dnd, dne, dng, dni,
+      dnj, dnk, dnn, dno, dnr, dnt, dnu, dnv, dnw, dny, doa, dob, doc, doe, dof, doh, doi, dok, dol, don, doo, dop, doq,
+      dor, dos, dot, dov, dow, dox, doy, doz, dpp, dra, drb, drc, drd, dre, drg, dri, drl, drn, dro, drq, drs, drt, dru,
+      dry, dsb, dse, dsh, dsi, dsk, dsl, dsn, dso, dsq, dsz, dta, dtb, dtd, dth, dti, dtk, dtm, dtn, dto, dtp, dtr, dts,
+      dtt, dtu, dty, dua, dub, duc, due, duf, dug, duh, dui, duk, dul, dum, dun, duo, dup, duq, dur, dus, duu, duv, duw,
+      dux, duy, duz, dv, dva, dwa, dwk, dwr, dws, dwu, dww, dwy, dwz, dya, dyb, dyd, dyg, dyi, dyl, dym, dyn, dyo, dyr,
+      dyu, dyy, dz, dza, dzd, dze, dzg, dzl, dzn, eaa, ebc, ebg, ebk, ebo, ebr, ebu, ecr, ecs, ecy, ee, eee, efa, efe,
+      efi, ega, egl, egm, ego, egx, egy, ehs, ehu, eip, eit, eiv, eja, eka, eke, ekg, eki, ekk, ekl, ekm, eko, ekp, ekr,
+      eky, el, ele, elh, eli, elk, elm, elo, elu, elx, ema, emb, eme, emg, emi, emk, emm, emn, emp, emq, ems, emu, emw,
+      emx, emy, emz, en, ena, enb, enc, end, enf, enh, enl, enm, enn, eno, enq, enr, enu, env, enw, enx, eo, eot, epi,
+      era, erg, erh, eri, erk, ero, err, ers, ert, erw, es, ese, esg, esh, esi, esk, esl, esm, esn, eso, esq, ess, esu,
+      esx, esy, et, etb, etc, eth, etn, eto, etr, ets, ett, etu, etx, etz, eu, eud, euq, eve, evh, evn, ewo, ext, eya,
+      eyo, eza, eze, fa, faa, fab, fad, faf, fag, fah, fai, faj, fak, fal, fam, fan, fap, far, fat, fau, fax, fay, faz,
+      fbl, fcs, fer, ff, ffi, ffm, fgr, fi, fia, fie, fif, fil, fip, fir, fit, fiu, fiw, fj, fkk, fkv, fla, flh, fli,
+      fll, fln, flr, fly, fmp, fmu, fnb, fng, fni, fo, fod, foi, fom, fon, for, fos, fox, fpe, fqs, fr, frc, frd, frk,
+      frm, fro, frp, frq, frr, frs, frt, fse, fsl, fss, fub, fuc, fud, fue, fuf, fuh, fui, fuj, fum, fun, fuq, fur, fut,
+      fuu, fuv, fuy, fvr, fwa, fwe, fy, ga, gaa, gab, gac, gad, gae, gaf, gag, gah, gai, gaj, gak, gal, gam, gan, gao,
+      gap, gaq, gar, gas, gat, gau, gaw, gax, gay, gaz, gba, gbb, gbd, gbe, gbf, gbg, gbh, gbi, gbj, gbk, gbl, gbm, gbn,
+      gbo, gbp, gbq, gbr, gbs, gbu, gbv, gbw, gbx, gby, gbz, gcc, gcd, gce, gcf, gcl, gcn, gcr, gct, gd, gda, gdb, gdc,
+      gdd, gde, gdf, gdg, gdh, gdi, gdj, gdk, gdl, gdm, gdn, gdo, gdq, gdr, gds, gdt, gdu, gdx, gea, geb, gec, ged, gef,
+      geg, geh, gei, gej, gek, gel, gem, geq, ges, gev, gew, gex, gey, gez, gfk, gft, gga, ggb, ggd, gge, ggg, ggk, ggl,
+      ggt, ggu, ggw, gha, ghc, ghe, ghh, ghk, ghl, ghn, gho, ghr, ghs, ght, gia, gib, gic, gid, gie, gig, gih, gii, gil,
+      gim, gin, gip, giq, gir, gis, git, giu, giw, gix, giy, giz, gjk, gjm, gjn, gjr, gju, gka, gkd, gke, gkn, gko, gkp,
+      gku, gl, glb, glc, gld, glh, glj, glk, gll, glo, glr, glu, glw, gly, gma, gmb, gmd, gme, gmg, gmh, gml, gmm, gmn,
+      gmq, gmr, gmu, gmv, gmw, gmx, gmy, gmz, gn, gna, gnb, gnc, gnd, gne, gng, gnh, gni, gnj, gnk, gnl, gnm, gnn, gno,
+      gnq, gnr, gnt, gnu, gnw, gnz, goa, gob, goc, god, goe, gof, gog, goh, goi, goj, gok, gol, gom, gon, goo, gop, goq,
+      gor, gos, got, gou, gov, gow, gox, goy, goz, gpa, gpe, gpn, gqa, gqi, gqn, gqr, gqu, gra, grb, grc, grd, grg, grh,
+      gri, grj, grk, grm, gro, grq, grr, grs, grt, gru, grv, grw, grx, gry, grz, gse, gsg, gsl, gsm, gsn, gso, gsp, gss,
+      gsw, gta, gtu, gu, gua, gub, guc, gud, gue, guf, gug, guh, gui, guk, gul, gum, gun, guo, gup, guq, gur, gus, gut,
+      guu, guw, gux, guz, gv, gva, gvc, gve, gvf, gvj, gvl, gvm, gvn, gvo, gvp, gvr, gvs, gvy, gwa, gwb, gwc, gwd, gwe,
+      gwf, gwg, gwi, gwj, gwm, gwn, gwr, gwt, gwu, gww, gwx, gxx, gya, gyb, gyd, gye, gyf, gyg, gyi, gyl, gym, gyn, gyo,
+      gyr, gyy, gyz, gza, gzi, gzn, ha, haa, hab, hac, had, hae, haf, hag, hah, hai, haj, hak, hal, ham, han, hao, hap,
+      haq, har, has, hav, haw, hax, hay, haz, hba, hbb, hbn, hbo, hbu, hca, hch, hdn, hds, hdy, he, hea, hed, heg, heh,
+      hei, hem, hgm, hgw, hhi, hhr, hhy, hi, hia, hib, hid, hif, hig, hih, hii, hij, hik, hil, him, hio, hir, hit, hiw,
+      hix, hji, hka, hke, hkh, hkk, hkn, hks, hla, hlb, hld, hle, hlt, hlu, hma, hmb, hmc, hmd, hme, hmf, hmg, hmh, hmi,
+      hmj, hmk, hml, hmm, hmn, hmp, hmq, hmr, hms, hmt, hmu, hmv, hmw, hmx, hmy, hmz, hna, hnd, hne, hng, hnh, hni, hnj,
+      hnm, hnn, hno, hns, hnu, ho, hoa, hob, hoc, hod, hoe, hoh, hoi, hoj, hok, hol, hom, hoo, hop, hor, hos, hot, hov,
+      how, hoy, hoz, hpo, hps, hr, hra, hrc, hre, hrk, hrm, hro, hrp, hrt, hru, hrw, hrx, hrz, hsb, hsh, hsl, hsn, hss,
+      ht, hti, hto, hts, htu, htx, hu, hub, huc, hud, hue, huf, hug, huh, hui, huj, huk, hul, hum, huo, hup, huq, hur,
+      hus, hut, huu, huv, huw, hux, huy, huz, hvc, hve, hvk, hvn, hvv, hwa, hwc, hwo, hy, hya, hyw, hyx, hz, ia, iai,
+      ian, iar, iba, ibb, ibd, ibe, ibg, ibh, ibl, ibm, ibn, ibr, ibu, iby, ica, ich, icl, icr, id, ida, idb, idc, idd,
+      ide, idi, idr, ids, idt, idu, ie, ifa, ifb, ife, iff, ifk, ifm, ifu, ify, ig, igb, ige, igg, igl, igm, ign, igo,
+      igs, igw, ihb, ihi, ihp, ihw, ii, iin, iir, ijc, ije, ijj, ijn, ijo, ijs, ik, ike, ikh, iki, ikk, ikl, iko, ikp,
+      ikr, iks, ikt, ikv, ikw, ikx, ikz, ila, ilb, ilg, ili, ilk, ilm, ilo, ilp, ils, ilu, ilv, ima, imi, iml, imn, imo,
+      imr, ims, imt, imy, inb, inc, ine, ing, inh, inj, inl, inm, inn, ino, inp, ins, int, inz, io, ior, iou, iow, ipi,
+      ipo, iqu, iqw, ira, ire, irh, iri, irk, irn, iro, irr, iru, irx, iry, is, isa, isc, isd, ise, isg, ish, isi, isk,
+      ism, isn, iso, isr, ist, isu, isv, it, itb, itc, itd, ite, iti, itk, itl, itm, ito, itr, its, itt, itv, itw, itx,
+      ity, itz, iu, ium, ivb, ivv, iwk, iwm, iwo, iws, ixc, ixl, iya, iyo, iyx, izh, izm, izr, izz, ja, jaa, jab, jac,
+      jad, jae, jaf, jah, jaj, jak, jal, jam, jan, jao, jaq, jas, jat, jau, jax, jay, jaz, jbe, jbi, jbj, jbk, jbm, jbn,
+      jbo, jbr, jbt, jbu, jbw, jcs, jct, jda, jdg, jdt, jeb, jee, jeh, jei, jek, jel, jen, jer, jet, jeu, jgb, jge, jgk,
+      jgo, jhi, jhs, jia, jib, jic, jid, jie, jig, jih, jii, jil, jim, jio, jiq, jit, jiu, jiv, jiy, jje, jjr, jka, jkm,
+      jko, jkp, jkr, jks, jku, jle, jls, jma, jmb, jmc, jmd, jmi, jml, jmn, jmr, jms, jmw, jmx, jna, jnd, jng, jni, jnj,
+      jnl, jns, job, jod, jog, jor, jos, jow, jpa, jpr, jpx, jqr, jra, jrb, jrr, jrt, jru, jsl, jua, jub, juc, jud, juh,
+      jui, juk, jul, jum, jun, juo, jup, jur, jus, jut, juu, juw, juy, jv, jvd, jvn, jwi, jya, jye, jyy, ka, kaa, kab,
+      kac, kad, kae, kaf, kag, kah, kai, kaj, kak, kam, kao, kap, kaq, kar, kav, kaw, kax, kay, kba, kbb, kbc, kbd, kbe,
+      kbg, kbh, kbi, kbj, kbk, kbl, kbm, kbn, kbo, kbp, kbq, kbr, kbs, kbt, kbu, kbv, kbw, kbx, kby, kbz, kca, kcb, kcc,
+      kcd, kce, kcf, kcg, kch, kci, kcj, kck, kcl, kcm, kcn, kco, kcp, kcq, kcr, kcs, kct, kcu, kcv, kcw, kcx, kcy, kcz,
+      kda, kdc, kdd, kde, kdf, kdg, kdh, kdi, kdj, kdk, kdl, kdm, kdn, kdo, kdp, kdq, kdr, kdt, kdu, kdw, kdx, kdy, kdz,
+      kea, keb, kec, ked, kee, kef, keg, keh, kei, kej, kek, kel, kem, ken, keo, kep, keq, ker, kes, ket, keu, kev, kew,
+      kex, key, kez, kfa, kfb, kfc, kfd, kfe, kff, kfg, kfh, kfi, kfj, kfk, kfl, kfm, kfn, kfo, kfp, kfq, kfr, kfs, kft,
+      kfu, kfv, kfw, kfx, kfy, kfz, kg, kga, kgb, kge, kgf, kgg, kgi, kgj, kgk, kgl, kgn, kgo, kgp, kgq, kgr, kgs, kgt,
+      kgu, kgv, kgw, kgx, kgy, kha, khb, khc, khd, khe, khf, khg, khh, khi, khj, khk, khl, khn, kho, khp, khq, khr, khs,
+      kht, khu, khv, khw, khx, khy, khz, ki, kia, kib, kic, kid, kie, kif, kig, kih, kii, kij, kil, kim, kio, kip, kiq,
+      kis, kit, kiu, kiv, kiw, kix, kiy, kiz, kj, kja, kjb, kjc, kjd, kje, kjg, kjh, kji, kjj, kjk, kjl, kjm, kjn, kjo,
+      kjp, kjq, kjr, kjs, kjt, kju, kjv, kjx, kjy, kjz, kk, kka, kkb, kkc, kkd, kke, kkf, kkg, kkh, kki, kkj, kkk, kkl,
+      kkm, kkn, kko, kkp, kkq, kkr, kks, kkt, kku, kkv, kkw, kkx, kky, kkz, kl, kla, klb, klc, kld, kle, klf, klg, klh,
+      kli, klj, klk, kll, klm, kln, klo, klp, klq, klr, kls, klt, klu, klv, klw, klx, kly, klz, km, kma, kmb, kmc, kmd,
+      kme, kmf, kmg, kmh, kmi, kmj, kmk, kml, kmm, kmn, kmo, kmp, kmq, kmr, kms, kmt, kmu, kmv, kmw, kmx, kmy, kmz, kn,
+      kna, knb, knc, knd, kne, knf, kng, kni, knj, knk, knl, knm, knn, kno, knp, knq, knr, kns, knt, knu, knv, knw, knx,
+      kny, knz, ko, koa, koc, kod, koe, kof, kog, koh, koi, kok, kol, koo, kop, koq, kos, kot, kou, kov, kow, koy, koz,
+      kpa, kpb, kpc, kpd, kpe, kpf, kpg, kph, kpi, kpj, kpk, kpl, kpm, kpn, kpo, kpq, kpr, kps, kpt, kpu, kpv, kpw, kpx,
+      kpy, kpz, kqa, kqb, kqc, kqd, kqe, kqf, kqg, kqh, kqi, kqj, kqk, kql, kqm, kqn, kqo, kqp, kqq, kqr, kqs, kqt, kqu,
+      kqv, kqw, kqx, kqy, kqz, kr, kra, krb, krc, krd, kre, krf, krh, kri, krj, krk, krl, krn, kro, krp, krr, krs, krt,
+      kru, krv, krw, krx, kry, krz, ks, ksb, ksc, ksd, kse, ksf, ksg, ksh, ksi, ksj, ksk, ksl, ksm, ksn, kso, ksp, ksq,
+      ksr, kss, kst, ksu, ksv, ksw, ksx, ksy, ksz, kta, ktb, ktc, ktd, kte, ktf, ktg, kth, kti, ktj, ktk, ktl, ktm, ktn,
+      kto, ktp, ktq, kts, ktt, ktu, ktv, ktw, ktx, kty, ktz, ku, kub, kuc, kud, kue, kuf, kug, kuh, kui, kuj, kuk, kul,
+      kum, kun, kuo, kup, kuq, kus, kut, kuu, kuv, kuw, kux, kuy, kuz, kv, kva, kvb, kvc, kvd, kve, kvf, kvg, kvh, kvi,
+      kvj, kvk, kvl, kvm, kvn, kvo, kvp, kvq, kvr, kvt, kvu, kvv, kvw, kvx, kvy, kvz, kw, kwa, kwb, kwc, kwd, kwe, kwf,
+      kwg, kwh, kwi, kwj, kwk, kwl, kwm, kwn, kwo, kwp, kwr, kws, kwt, kwu, kwv, kww, kwx, kwy, kwz, kxa, kxb, kxc, kxd,
+      kxf, kxh, kxi, kxj, kxk, kxm, kxn, kxo, kxp, kxq, kxr, kxs, kxt, kxv, kxw, kxx, kxy, kxz, ky, kya, kyb, kyc, kyd,
+      kye, kyf, kyg, kyh, kyi, kyj, kyk, kyl, kym, kyn, kyo, kyp, kyq, kyr, kys, kyt, kyu, kyv, kyw, kyx, kyy, kyz, kza,
+      kzb, kzc, kzd, kze, kzf, kzg, kzi, kzk, kzl, kzm, kzn, kzo, kzp, kzq, kzr, kzs, kzu, kzv, kzw, kzx, kzy, kzz, la,
+      laa, lab, lac, lad, lae, laf, lag, lah, lai, laj, lal, lam, lan, lap, laq, lar, las, lau, law, lax, lay, laz, lb,
+      lbb, lbc, lbe, lbf, lbg, lbi, lbj, lbk, lbl, lbm, lbn, lbo, lbq, lbr, lbs, lbt, lbu, lbv, lbw, lbx, lby, lbz, lcc,
+      lcd, lce, lcf, lch, lcl, lcm, lcp, lcq, lcs, lda, ldb, ldd, ldg, ldh, ldi, ldj, ldk, ldl, ldm, ldn, ldo, ldp, ldq,
+      lea, leb, lec, led, lee, lef, leh, lei, lej, lek, lel, lem, len, leo, lep, leq, ler, les, let, leu, lev, lew, lex,
+      ley, lez, lfa, lfb, lfn, lg, lga, lgb, lgg, lgh, lgi, lgk, lgl, lgm, lgn, lgo, lgq, lgr, lgs, lgt, lgu, lgz, lha,
+      lhh, lhi, lhl, lhm, lhn, lhp, lhs, lht, lhu, li, lia, lib, lic, lid, lie, lif, lig, lih, lij, lik, lil, lio, lip,
+      liq, lir, lis, liu, liv, liw, lix, liy, liz, lja, lje, lji, ljl, ljp, ljw, ljx, lka, lkb, lkc, lkd, lke, lkh, lki,
+      lkj, lkl, lkm, lkn, lko, lkr, lks, lkt, lku, lky, lla, llb, llc, lld, lle, llf, llg, llh, lli, llj, llk, lll, llm,
+      lln, llp, llq, lls, llu, llx, lma, lmb, lmc, lmd, lme, lmf, lmg, lmh, lmi, lmj, lmk, lml, lmn, lmo, lmp, lmq, lmr,
+      lmu, lmv, lmw, lmx, lmy, ln, lna, lnb, lnd, lng, lnh, lni, lnj, lnl, lnm, lnn, lns, lnu, lnw, lnz, lo, loa, lob,
+      loc, loe, lof, log, loh, loi, loj, lok, lol, lom, lon, loo, lop, loq, lor, los, lot, lou, lov, low, lox, loy, loz,
+      lpa, lpe, lpn, lpo, lpx, lqr, lra, lrc, lre, lrg, lri, lrk, lrl, lrm, lrn, lro, lrr, lrt, lrv, lrz, lsa, lsb, lsc,
+      lsd, lse, lsh, lsi, lsl, lsm, lsn, lso, lsp, lsr, lss, lst, lsv, lsw, lsy, lt, ltc, ltg, lth, lti, ltn, lto, lts,
+      ltu, lu, lua, luc, lud, lue, luf, luh, lui, luj, luk, lul, lum, lun, luo, lup, luq, lur, lus, lut, luu, luv, luw,
+      luy, luz, lv, lva, lvi, lvk, lvl, lvs, lvu, lwa, lwe, lwg, lwh, lwl, lwm, lwo, lws, lwt, lwu, lww, lxm, lya, lyg,
+      lyn, lzh, lzl, lzn, lzz, maa, mab, mad, mae, maf, mag, mai, maj, mak, mam, man, map, maq, mas, mat, mau, mav, maw,
+      max, maz, mba, mbb, mbc, mbd, mbe, mbf, mbh, mbi, mbj, mbk, mbl, mbm, mbn, mbo, mbp, mbq, mbr, mbs, mbt, mbu, mbv,
+      mbw, mbx, mby, mbz, mca, mcb, mcc, mcd, mce, mcf, mcg, mch, mci, mcj, mck, mcl, mcm, mcn, mco, mcp, mcq, mcr, mcs,
+      mct, mcu, mcv, mcw, mcx, mcy, mcz, mda, mdb, mdc, mdd, mde, mdf, mdg, mdh, mdi, mdj, mdk, mdl, mdm, mdn, mdp, mdq,
+      mdr, mds, mdt, mdu, mdv, mdw, mdx, mdy, mdz, mea, meb, mec, med, mee, mef, meh, mei, mej, mek, mel, mem, men, meo,
+      mep, meq, mer, mes, met, meu, mev, mew, mey, mez, mfa, mfb, mfc, mfd, mfe, mff, mfg, mfh, mfi, mfj, mfk, mfl, mfm,
+      mfn, mfo, mfp, mfq, mfr, mfs, mft, mfu, mfv, mfw, mfx, mfy, mfz, mg, mga, mgb, mgc, mgd, mge, mgf, mgg, mgh, mgi,
+      mgj, mgk, mgl, mgm, mgn, mgo, mgp, mgq, mgr, mgs, mgt, mgu, mgv, mgw, mgy, mgz, mh, mha, mhb, mhc, mhd, mhe, mhf,
+      mhg, mhi, mhj, mhk, mhl, mhm, mhn, mho, mhp, mhq, mhr, mhs, mht, mhu, mhw, mhx, mhy, mhz, mi, mia, mib, mic, mid,
+      mie, mif, mig, mih, mii, mij, mik, mil, mim, min, mio, mip, miq, mir, mis, mit, miu, miw, mix, miy, miz, mjb, mjc,
+      mjd, mje, mjg, mjh, mji, mjj, mjk, mjl, mjm, mjn, mjo, mjp, mjq, mjr, mjs, mjt, mju, mjv, mjw, mjx, mjy, mjz, mk,
+      mka, mkb, mkc, mke, mkf, mkg, mkh, mki, mkj, mkk, mkl, mkm, mkn, mko, mkp, mkq, mkr, mks, mkt, mku, mkv, mkw, mkx,
+      mky, mkz, ml, mla, mlb, mlc, mle, mlf, mlh, mli, mlj, mlk, mll, mlm, mln, mlo, mlp, mlq, mlr, mls, mlu, mlv, mlw,
+      mlx, mlz, mma, mmb, mmc, mmd, mme, mmf, mmg, mmh, mmi, mmj, mmk, mml, mmm, mmn, mmo, mmp, mmq, mmr, mmt, mmu, mmv,
+      mmw, mmx, mmy, mmz, mn, mna, mnb, mnc, mnd, mne, mnf, mng, mnh, mni, mnj, mnk, mnl, mnm, mnn, mno, mnp, mnq, mnr,
+      mns, mnu, mnv, mnw, mnx, mny, mnz, moa, moc, mod, moe, mog, moh, moi, moj, mok, mom, moo, mop, moq, mor, mos, mot,
+      mou, mov, mow, mox, moy, moz, mpa, mpb, mpc, mpd, mpe, mpg, mph, mpi, mpj, mpk, mpl, mpm, mpn, mpo, mpp, mpq, mpr,
+      mps, mpt, mpu, mpv, mpw, mpx, mpy, mpz, mqa, mqb, mqc, mqe, mqf, mqg, mqh, mqi, mqj, mqk, mql, mqm, mqn, mqo, mqp,
+      mqq, mqr, mqs, mqt, mqu, mqv, mqw, mqx, mqy, mqz, mr, mra, mrb, mrc, mre, mrf, mrg, mrh, mrj, mrk, mrl, mrm, mrn,
+      mro, mrp, mrq, mrr, mrs, mrt, mru, mrv, mrw, mrx, mry, mrz, ms, msb, msc, msd, mse, msf, msg, msh, msi, msj, msk,
+      msl, msm, msn, mso, msp, msq, msr, mss, msu, msv, msw, msx, msy, msz, mt, mta, mtb, mtc, mtd, mte, mtf, mtg, mth,
+      mti, mtj, mtk, mtl, mtm, mtn, mto, mtp, mtq, mtr, mts, mtt, mtu, mtv, mtw, mtx, mty, mua, mub, muc, mud, mue, mug,
+      muh, mui, muj, muk, mul, mum, mun, muo, mup, muq, mur, mus, mut, muu, muv, mux, muy, muz, mva, mvb, mvd, mve, mvf,
+      mvg, mvh, mvi, mvk, mvl, mvn, mvo, mvp, mvq, mvr, mvs, mvt, mvu, mvv, mvw, mvx, mvy, mvz, mwa, mwb, mwc, mwe, mwf,
+      mwg, mwh, mwi, mwk, mwl, mwm, mwn, mwo, mwp, mwq, mwr, mws, mwt, mwu, mwv, mww, mwz, mxa, mxb, mxc, mxd, mxe, mxf,
+      mxg, mxh, mxi, mxj, mxk, mxl, mxm, mxn, mxo, mxp, mxq, mxr, mxs, mxt, mxu, mxv, mxw, mxx, mxy, mxz, my, myb, myc,
+      mye, myf, myg, myh, myj, myk, myl, mym, myn, myo, myp, myr, mys, myu, myv, myw, myx, myy, myz, mza, mzb, mzc, mzd,
+      mze, mzg, mzh, mzi, mzj, mzk, mzl, mzm, mzn, mzo, mzp, mzq, mzr, mzs, mzt, mzu, mzv, mzw, mzx, mzy, mzz, na, naa,
+      nab, nac, nae, naf, nag, nah, nai, naj, nak, nal, nam, nan, nao, nap, naq, nar, nas, nat, naw, nax, nay, naz, nb,
+      nba, nbb, nbc, nbd, nbe, nbg, nbh, nbi, nbj, nbk, nbm, nbn, nbo, nbp, nbq, nbr, nbs, nbt, nbu, nbv, nbw, nby, nca,
+      ncb, ncc, ncd, nce, ncf, ncg, nch, nci, ncj, nck, ncl, ncm, ncn, nco, ncq, ncr, ncs, nct, ncu, ncx, ncz, nd, nda,
+      ndb, ndc, ndd, ndf, ndg, ndh, ndi, ndj, ndk, ndl, ndm, ndn, ndp, ndq, ndr, nds, ndt, ndu, ndv, ndw, ndx, ndy, ndz,
+      ne, nea, neb, nec, ned, nee, nef, neg, neh, nei, nej, nek, nem, nen, neo, neq, ner, nes, net, neu, nev, new, nex,
+      ney, nez, nfa, nfd, nfl, nfr, nfu, ng, nga, ngb, ngc, ngd, nge, ngf, ngg, ngh, ngi, ngj, ngk, ngl, ngm, ngn, ngp,
+      ngq, ngr, ngs, ngt, ngu, ngv, ngw, ngx, ngy, ngz, nha, nhb, nhc, nhd, nhe, nhf, nhg, nhh, nhi, nhk, nhm, nhn, nho,
+      nhp, nhq, nhr, nht, nhu, nhv, nhw, nhx, nhy, nhz, nia, nib, nic, nid, nie, nif, nig, nih, nii, nij, nik, nil, nim,
+      nin, nio, niq, nir, nis, nit, niu, niv, niw, nix, niy, niz, nja, njb, njd, njh, nji, njj, njl, njm, njn, njo, njr,
+      njs, njt, nju, njx, njy, njz, nka, nkb, nkc, nkd, nke, nkf, nkg, nkh, nki, nkj, nkk, nkm, nkn, nko, nkp, nkq, nkr,
+      nks, nkt, nku, nkv, nkw, nkx, nkz, nl, nla, nlc, nle, nlg, nli, nlj, nlk, nll, nlm, nlo, nlq, nlu, nlv, nlw, nlx,
+      nly, nlz, nma, nmb, nmc, nmd, nme, nmf, nmg, nmh, nmi, nmj, nmk, nml, nmm, nmn, nmo, nmp, nmq, nmr, nms, nmt, nmu,
+      nmv, nmw, nmx, nmy, nmz, nn, nna, nnb, nnc, nnd, nne, nnf, nng, nnh, nni, nnj, nnk, nnl, nnm, nnn, nnp, nnq, nnr,
+      nnt, nnu, nnv, nnw, nny, nnz, 'no', noa, noc, nod, noe, nof, nog, noh, noi, noj, nok, nol, non, nop, noq, nos,
+      not, nou, nov, now, noy, noz, npa, npb, npg, nph, npi, npl, npn, npo, nps, npu, npx, npy, nqg, nqk, nql, nqm, nqn,
+      nqo, nqq, nqt, nqy, nr, nra, nrb, nrc, nre, nrf, nrg, nri, nrk, nrl, nrm, nrn, nrp, nrr, nrt, nru, nrx, nrz, nsa,
+      nsb, nsc, nsd, nse, nsf, nsg, nsh, nsi, nsk, nsl, nsm, nsn, nso, nsp, nsq, nsr, nss, nst, nsu, nsv, nsw, nsx, nsy,
+      nsz, ntd, ntg, nti, ntj, ntk, ntm, nto, ntp, ntr, ntu, ntw, ntx, nty, ntz, nua, nub, nuc, nud, nue, nuf, nug, nuh,
+      nui, nuj, nuk, nul, num, nun, nuo, nup, nuq, nur, nus, nut, nuu, nuv, nuw, nux, nuy, nuz, nv, nvh, nvm, nvo, nwa,
+      nwb, nwc, nwe, nwg, nwi, nwm, nwo, nwr, nww, nwx, nwy, nxa, nxd, nxe, nxg, nxi, nxk, nxl, nxm, nxn, nxo, nxq, nxr,
+      nxx, ny, nyb, nyc, nyd, nye, nyf, nyg, nyh, nyi, nyj, nyk, nyl, nym, nyn, nyo, nyp, nyq, nyr, nys, nyt, nyu, nyv,
+      nyw, nyx, nyy, nza, nzb, nzd, nzi, nzk, nzm, nzr, nzs, nzu, nzy, nzz, oaa, oac, oak, oar, oav, obi, obk, obl, obm,
+      obo, obr, obt, obu, oc, oca, och, ocm, oco, ocu, oda, odk, odt, odu, ofo, ofs, ofu, ogb, ogc, oge, ogg, ogo, ogu,
+      oht, ohu, oia, oie, oin, oj, ojb, ojc, ojg, ojp, ojs, ojv, ojw, oka, okb, okc, okd, oke, okg, okh, oki, okj, okk,
+      okl, okm, okn, oko, okr, oks, oku, okv, okx, okz, ola, olb, old, ole, olk, olm, olo, olr, olt, olu, om, oma, omb,
+      omc, omg, omi, omk, oml, omn, omo, omp, omq, omr, omt, omu, omv, omw, omx, omy, ona, onb, one, ong, oni, onj, onk,
+      onn, ono, onp, onr, ons, ont, onu, onw, onx, ood, oog, oon, oor, oos, opa, opk, opm, opo, opt, opy, or, ora, orc,
+      ore, org, orh, orn, oro, orr, ors, ort, oru, orv, orw, orx, ory, orz, os, osa, osc, osd, osi, osn, oso, osp, ost,
+      osu, osx, ota, otb, otd, ote, oti, otk, otl, otm, otn, oto, otq, otr, ots, ott, otu, otw, otx, oty, otz, oua, oub,
+      oue, oui, oum, ovd, owi, owl, oyb, oyd, oym, oyy, ozm, pa, paa, pab, pac, pad, pae, paf, pag, pah, pai, pak, pal,
+      pam, pao, pap, paq, par, pas, pau, pav, paw, pax, pay, paz, pbb, pbc, pbe, pbf, pbg, pbh, pbi, pbl, pbm, pbn, pbo,
+      pbp, pbr, pbs, pbt, pbu, pbv, pby, pca, pcb, pcc, pcd, pce, pcf, pcg, pch, pci, pcj, pck, pcl, pcm, pcn, pcp, pcw,
+      pda, pdc, pdi, pdn, pdo, pdt, pdu, pea, peb, ped, pee, pef, peg, peh, pei, pej, pek, pel, pem, peo, pep, peq, pes,
+      pev, pex, pey, pez, pfa, pfe, pfl, pga, pgd, pgg, pgi, pgk, pgl, pgn, pgs, pgu, pgz, pha, phd, phg, phh, phi, phj,
+      phk, phl, phm, phn, pho, phq, phr, pht, phu, phv, phw, pi, pia, pib, pic, pid, pie, pif, pig, pih, pij, pil, pim,
+      pin, pio, pip, pir, pis, pit, piu, piv, piw, pix, piy, piz, pjt, pka, pkb, pkc, pkg, pkh, pkn, pko, pkp, pkr, pks,
+      pkt, pku, pl, pla, plb, plc, pld, ple, plf, plg, plh, plk, pll, pln, plo, plq, plr, pls, plt, plu, plv, plw, ply,
+      plz, pma, pmb, pmd, pme, pmf, pmh, pmi, pmj, pml, pmm, pmn, pmo, pmq, pmr, pms, pmt, pmw, pmx, pmy, pmz, pna, pnb,
+      pnc, pnd, pne, png, pnh, pni, pnj, pnk, pnl, pnm, pnn, pno, pnp, pnq, pnr, pns, pnt, pnu, pnv, pnw, pnx, pny, pnz,
+      poc, poe, pof, pog, poh, poi, pok, pom, pon, poo, pop, poq, pos, pot, pov, pow, pox, poy, poz, ppe, ppi, ppk, ppl,
+      ppm, ppn, ppo, ppp, ppq, pps, ppt, ppu, pqa, pqe, pqm, pqw, pra, prc, prd, pre, prf, prg, prh, pri, prk, prl, prm,
+      prn, pro, prq, prr, prs, prt, pru, prw, prx, prz, ps, psa, psc, psd, pse, psg, psh, psi, psl, psm, psn, pso, psp,
+      psq, psr, pss, pst, psu, psw, psy, pt, pta, pth, pti, ptn, pto, ptp, ptq, ptr, ptt, ptu, ptv, ptw, pty, pua, pub,
+      puc, pud, pue, puf, pug, pui, puj, pum, puo, pup, puq, pur, put, puu, puw, pux, puy, pwa, pwb, pwg, pwi, pwm, pwn,
+      pwo, pwr, pww, pxm, pye, pym, pyn, pys, pyu, pyx, pyy, pze, pzh, pzn, qu, qua, qub, quc, qud, quf, qug, quh, qui,
+      quk, qul, qum, qun, qup, quq, qur, qus, quv, quw, qux, quy, quz, qva, qvc, qve, qvh, qvi, qvj, qvl, qvm, qvn, qvo,
+      qvp, qvs, qvw, qvy, qvz, qwa, qwc, qwe, qwh, qwm, qws, qwt, qxa, qxc, qxh, qxl, qxn, qxo, qxp, qxq, qxr, qxs, qxt,
+      qxu, qxw, qya, qyp, raa, rab, rac, rad, raf, rag, rah, rai, raj, rak, ral, ram, ran, rao, rap, raq, rar, ras, rat,
+      rau, rav, raw, rax, ray, raz, rbb, rbk, rbl, rbp, rcf, rdb, rea, reb, ree, reg, rei, rej, rel, rem, ren, rer, res,
+      ret, rey, rga, rge, rgk, rgn, rgr, rgs, rgu, rhg, rhp, ria, rib, rif, ril, rim, rin, rir, rit, riu, rjg, rji, rjs,
+      rka, rkb, rkh, rki, rkm, rkt, rkw, rm, rma, rmb, rmc, rmd, rme, rmf, rmg, rmh, rmi, rmk, rml, rmm, rmn, rmo, rmp,
+      rmq, rms, rmt, rmu, rmv, rmw, rmx, rmy, rmz, rn, rnb, rnd, rng, rnl, rnn, rnp, rnr, rnw, ro, roa, rob, roc, rod,
+      roe, rof, rog, rol, rom, roo, rop, ror, rou, row, rpn, rpt, rri, rrm, rro, rrt, rsb, rsk, rsl, rsm, rsn, rsw, rtc,
+      rth, rtm, rts, rtw, ru, rub, ruc, rue, ruf, rug, ruh, rui, ruk, ruo, rup, ruq, rut, ruu, ruy, ruz, rw, rwa, rwk,
+      rwl, rwm, rwo, rwr, rxd, rxw, ryn, rys, ryu, rzh, sa, saa, sab, sac, sad, sae, saf, sah, sai, saj, sak, sal, sam,
+      sao, saq, sar, sas, sat, sau, sav, saw, sax, say, saz, sba, sbb, sbc, sbd, sbe, sbf, sbg, sbh, sbi, sbj, sbk, sbl,
+      sbm, sbn, sbo, sbp, sbq, sbr, sbs, sbt, sbu, sbv, sbw, sbx, sby, sbz, sc, scb, sce, scf, scg, sch, sci, sck, scl,
+      scn, sco, scp, scq, scs, sct, scu, scv, scw, scx, scz, sd, sda, sdb, sdc, sde, sdf, sdg, sdh, sdj, sdk, sdl, sdn,
+      sdo, sdp, sdq, sdr, sds, sdt, sdu, sdv, sdx, sdz, se, sea, seb, sec, sed, see, sef, seg, seh, sei, sej, sek, sel,
+      sem, sen, seo, sep, seq, ser, ses, set, seu, sev, sew, sey, sez, sfb, sfe, sfm, sfs, sfw, sg, sga, sgb, sgc, sgd,
+      sge, sgg, sgh, sgi, sgj, sgk, sgm, sgn, sgp, sgr, sgs, sgt, sgu, sgw, sgx, sgy, sgz, sh, sha, shb, shc, shd, she,
+      shg, shh, shi, shj, shk, shm, shn, sho, shp, shq, shr, shs, sht, shu, shv, shw, shx, shy, shz, si, sia, sib, sid,
+      sie, sif, sig, sih, sii, sij, sik, sil, sim, sio, sip, siq, sir, sis, sit, siu, siv, siw, six, siy, siz, sja, sjb,
+      sjc, sjd, sje, sjg, sjk, sjl, sjm, sjn, sjo, sjp, sjr, sjs, sjt, sju, sjw, sk, ska, skb, skc, skd, ske, skf, skg,
+      skh, ski, skj, skm, skn, sko, skp, skq, skr, sks, skt, sku, skv, skw, skx, sky, skz, sl, sla, slc, sld, sle, slf,
+      slg, slh, sli, slj, sll, slm, sln, slp, slr, sls, slt, slu, slw, slx, sly, slz, sm, sma, smb, smc, smf, smg, smh,
+      smi, smj, smk, sml, smm, smn, smp, smq, smr, sms, smt, smu, smv, smw, smx, smy, smz, sn, snc, sne, snf, sng, sni,
+      snj, snk, snl, snm, snn, sno, snp, snq, snr, sns, snu, snv, snw, snx, sny, snz, so, soa, sob, soc, sod, soe, sog,
+      soh, soi, soj, sok, sol, son, soo, sop, soq, sor, sos, sou, sov, sow, sox, soy, soz, spb, spc, spd, spe, spg, spi,
+      spk, spl, spm, spn, spo, spp, spq, spr, sps, spt, spu, spv, spx, spy, sq, sqa, sqh, sqj, sqk, sqm, sqn, sqo, sqq,
+      sqr, sqs, sqt, squ, sqx, sr, sra, srb, src, sre, srf, srg, srh, sri, srk, srl, srm, srn, sro, srq, srr, srs, srt,
+      sru, srv, srw, srx, sry, srz, ss, ssa, ssb, ssc, ssd, sse, ssf, ssg, ssh, ssi, ssj, ssk, ssl, ssm, ssn, sso, ssp,
+      ssq, ssr, sss, sst, ssu, ssv, ssx, ssy, ssz, st, sta, stb, std, ste, stf, stg, sth, sti, stj, stk, stl, stm, stn,
+      sto, stp, stq, str, sts, stt, stu, stv, stw, sty, su, sua, sub, suc, sue, sug, sui, suj, suk, suo, suq, sur, sus,
+      sut, suv, suw, sux, suy, suz, sv, sva, svb, svc, sve, svk, svm, svs, svx, sw, swb, swc, swf, swg, swh, swi, swj,
+      swk, swl, swm, swn, swo, swp, swq, swr, sws, swt, swu, swv, sww, swx, swy, sxb, sxc, sxe, sxg, sxk, sxl, sxm, sxn,
+      sxo, sxr, sxs, sxu, sxw, sya, syb, syc, syd, syi, syk, syl, sym, syn, syo, syr, sys, syw, syx, syy, sza, szb, szc,
+      sze, szg, szl, szn, szp, szs, szv, szw, szy, ta, taa, tab, tac, tad, tae, taf, tag, tai, taj, tak, tal, tan, tao,
+      tap, taq, tar, tas, tau, tav, taw, tax, tay, taz, tba, tbc, tbd, tbe, tbf, tbg, tbh, tbi, tbj, tbk, tbl, tbm, tbn,
+      tbo, tbp, tbq, tbr, tbs, tbt, tbu, tbv, tbw, tbx, tby, tbz, tca, tcb, tcc, tcd, tce, tcf, tcg, tch, tci, tck, tcl,
+      tcm, tcn, tco, tcp, tcq, tcs, tct, tcu, tcw, tcx, tcy, tcz, tda, tdb, tdc, tdd, tde, tdf, tdg, tdh, tdi, tdj, tdk,
+      tdl, tdm, tdn, tdo, tdq, tdr, tds, tdt, tdv, tdx, tdy, te, tea, teb, tec, ted, tee, tef, teg, teh, tei, tek, tem,
+      ten, teo, tep, teq, ter, tes, tet, teu, tev, tew, tex, tey, tez, tfi, tfn, tfo, tfr, tft, tg, tga, tgb, tgc, tgd,
+      tge, tgf, tgh, tgi, tgj, tgn, tgo, tgp, tgq, tgr, tgs, tgt, tgu, tgv, tgw, tgx, tgy, tgz, th, thd, the, thf, thh,
+      thi, thk, thl, thm, thn, thp, thq, thr, ths, tht, thu, thv, thy, thz, ti, tia, tic, tif, tig, tih, tii, tij, tik,
+      til, tim, tin, tio, tip, tiq, tis, tit, tiu, tiv, tiw, tix, tiy, tiz, tja, tjg, tji, tjj, tjl, tjm, tjn, tjo, tjp,
+      tjs, tju, tjw, tk, tka, tkb, tkd, tke, tkf, tkg, tkl, tkm, tkn, tkp, tkq, tkr, tks, tkt, tku, tkv, tkw, tkx, tkz,
+      tl, tla, tlb, tlc, tld, tlf, tlg, tlh, tli, tlj, tlk, tll, tlm, tln, tlo, tlp, tlq, tlr, tls, tlt, tlu, tlv, tlx,
+      tly, tma, tmb, tmc, tmd, tme, tmf, tmg, tmh, tmi, tmj, tml, tmm, tmn, tmo, tmq, tmr, tms, tmt, tmu, tmv, tmw, tmy,
+      tmz, tn, tna, tnb, tnc, tnd, tng, tnh, tni, tnk, tnl, tnm, tnn, tno, tnp, tnq, tnr, tns, tnt, tnu, tnv, tnw, tnx,
+      tny, tnz, to, tob, toc, tod, tof, tog, toh, toi, toj, tok, tol, tom, too, top, toq, tor, tos, tou, tov, tow, tox,
+      toy, toz, tpa, tpc, tpe, tpf, tpg, tpi, tpj, tpk, tpl, tpm, tpn, tpo, tpp, tpq, tpr, tpt, tpu, tpv, tpx, tpy, tpz,
+      tqb, tql, tqm, tqn, tqo, tqp, tqq, tqr, tqt, tqu, tqw, tr, tra, trb, trc, trd, tre, trf, trg, trh, tri, trj, trk,
+      trl, trm, trn, tro, trp, trq, trr, trs, trt, tru, trv, trw, trx, try, trz, ts, tsa, tsb, tsc, tsd, tse, tsg, tsh,
+      tsi, tsj, tsk, tsl, tsm, tsp, tsq, tsr, tss, tst, tsu, tsv, tsw, tsx, tsy, tsz, tt, tta, ttb, ttc, ttd, tte, ttf,
+      ttg, tth, tti, ttj, ttk, ttl, ttm, ttn, tto, ttp, ttq, ttr, tts, ttt, ttu, ttv, ttw, tty, ttz, tua, tub, tuc, tud,
+      tue, tuf, tug, tuh, tui, tuj, tul, tum, tun, tuo, tup, tuq, tus, tut, tuu, tuv, tuw, tux, tuy, tuz, tva, tvd, tve,
+      tvg, tvi, tvk, tvl, tvm, tvn, tvo, tvs, tvt, tvu, tvw, tvx, tvy, tw, twa, twb, twc, twd, twe, twf, twg, twh, twl,
+      twm, twn, two, twp, twq, twr, twt, twu, tww, twx, twy, txa, txb, txc, txe, txg, txh, txi, txj, txm, txn, txo, txq,
+      txr, txs, txt, txu, txx, txy, ty, tya, tye, tyh, tyi, tyj, tyl, tyn, typ, tyr, tys, tyt, tyu, tyv, tyx, tyy, tyz,
+      tza, tzh, tzj, tzl, tzm, tzn, tzo, tzx, uam, uan, uar, uba, ubi, ubl, ubr, ubu, uby, uda, ude, udg, udi, udj, udl,
+      udm, udu, ues, ufi, ug, uga, ugb, uge, ugh, ugn, ugo, ugy, uha, uhn, uis, uiv, uji, uk, uka, ukg, ukh, uki, ukk,
+      ukl, ukp, ukq, uks, uku, ukv, ukw, uky, ula, ulb, ulc, ule, ulf, uli, ulk, ull, ulm, uln, ulu, ulw, uly, uma, umb,
+      umc, umd, umg, umi, umm, umn, umo, ump, umr, ums, umu, una, und, une, ung, uni, unk, unm, unn, unr, unu, unx, unz,
+      uon, upi, upv, ur, ura, urb, urc, ure, urf, urg, urh, uri, urj, urk, url, urm, urn, uro, urp, urr, urt, uru, urv,
+      urw, urx, ury, urz, usa, ush, usi, usk, usp, uss, usu, uta, ute, uth, utp, utr, utu, uum, uur, uuu, uve, uvh, uvl,
+      uwa, uya, uz, uzn, uzs, vaa, vae, vaf, vag, vah, vai, vaj, val, vam, van, vao, vap, var, vas, vau, vav, vay, vbb,
+      vbk, ve, vec, ved, vel, vem, veo, vep, ver, vgr, vgt, vi, vic, vid, vif, vig, vil, vin, vis, vit, viv, vjk, vka,
+      vkj, vkk, vkl, vkm, vkn, vko, vkp, vkt, vku, vkz, vlp, vls, vma, vmb, vmc, vmd, vme, vmf, vmg, vmh, vmi, vmj, vmk,
+      vml, vmm, vmp, vmq, vmr, vms, vmu, vmv, vmw, vmx, vmy, vmz, vnk, vnm, vnp, vo, vor, vot, vra, vro, vrs, vrt, vsi,
+      vsl, vsn, vsv, vto, vum, vun, vut, vwa, wa, waa, wab, wac, wad, wae, waf, wag, wah, wai, waj, wak, wal, wam, wan,
+      wao, wap, waq, war, was, wat, wau, wav, waw, wax, way, waz, wba, wbb, wbe, wbf, wbh, wbi, wbj, wbk, wbl, wbm, wbp,
+      wbq, wbr, wbs, wbt, wbv, wbw, wca, wci, wdd, wdg, wdj, wdk, wdt, wdu, wdy, wea, wec, wed, weg, weh, wei, wem, wen,
+      weo, wep, wer, wes, wet, weu, wew, wfg, wga, wgb, wgg, wgi, wgo, wgu, wgy, wha, whg, whk, whu, wib, wic, wie, wif,
+      wig, wih, wii, wij, wik, wil, wim, win, wir, wiu, wiv, wiy, wja, wji, wka, wkb, wkd, wkl, wkr, wku, wkw, wky, wla,
+      wlc, wle, wlg, wlh, wli, wlk, wll, wlm, wlo, wlr, wls, wlu, wlv, wlw, wlx, wly, wma, wmb, wmc, wmd, wme, wmg, wmh,
+      wmi, wmm, wmn, wmo, wms, wmt, wmw, wmx, wnb, wnc, wnd, wne, wng, wni, wnk, wnm, wnn, wno, wnp, wnu, wnw, wny, wo,
+      woa, wob, woc, wod, woe, wof, wog, woi, wok, wom, won, woo, wor, wos, wow, woy, wpc, wrb, wrg, wrh, wri, wrk, wrl,
+      wrm, wrn, wro, wrp, wrr, wrs, wru, wrv, wrw, wrx, wry, wrz, wsa, wsg, wsi, wsk, wsr, wss, wsu, wsv, wtb, wtf, wth,
+      wti, wtk, wtm, wtw, wua, wub, wud, wuh, wul, wum, wun, wur, wut, wuu, wuv, wux, wuy, wwa, wwb, wwo, wwr, www, wxa,
+      wxw, wyb, wyi, wym, wyn, wyr, wyy, xaa, xab, xac, xad, xae, xag, xai, xaj, xak, xal, xam, xan, xao, xap, xaq, xar,
+      xas, xat, xau, xav, xaw, xay, xbb, xbc, xbd, xbe, xbg, xbi, xbj, xbm, xbn, xbo, xbp, xbr, xbw, xby, xcb, xcc, xce,
+      xcg, xch, xcl, xcm, xcn, xco, xcr, xct, xcu, xcv, xcw, xcy, xda, xdc, xdk, xdm, xdo, xdq, xdy, xeb, xed, xeg, xel,
+      xem, xep, xer, xes, xet, xeu, xfa, xga, xgb, xgd, xgf, xgg, xgi, xgl, xgm, xgn, xgr, xgu, xgw, xh, xha, xhc, xhd,
+      xhe, xhm, xhr, xht, xhu, xhv, xib, xii, xil, xin, xir, xis, xiv, xiy, xjb, xjt, xka, xkb, xkc, xkd, xke, xkf, xkg,
+      xki, xkj, xkk, xkl, xkn, xko, xkp, xkq, xkr, xks, xkt, xku, xkv, xkw, xkx, xky, xkz, xla, xlb, xlc, xld, xle, xlg,
+      xli, xln, xlo, xlp, xls, xlu, xly, xma, xmb, xmc, xmd, xme, xmf, xmg, xmh, xmj, xmk, xml, xmm, xmn, xmo, xmp, xmq,
+      xmr, xms, xmt, xmu, xmv, xmw, xmx, xmy, xmz, xna, xnb, xnd, xng, xnh, xni, xnj, xnk, xnm, xnn, xno, xnq, xnr, xns,
+      xnt, xnu, xny, xnz, xoc, xod, xog, xoi, xok, xom, xon, xoo, xop, xor, xow, xpa, xpb, xpc, xpd, xpe, xpf, xpg, xph,
+      xpi, xpj, xpk, xpl, xpm, xpn, xpo, xpp, xpq, xpr, xps, xpt, xpu, xpv, xpw, xpx, xpy, xpz, xqa, xqt, xra, xrb, xrd,
+      xre, xrg, xri, xrm, xrn, xrr, xrt, xru, xrw, xsa, xsb, xsc, xsd, xse, xsh, xsi, xsj, xsl, xsm, xsn, xso, xsp, xsq,
+      xsr, xsu, xsv, xsy, xta, xtb, xtc, xtd, xte, xtg, xth, xti, xtj, xtl, xtm, xtn, xto, xtp, xtq, xtr, xts, xtt, xtu,
+      xtv, xtw, xty, xua, xub, xud, xug, xuj, xul, xum, xun, xuo, xup, xur, xut, xuu, xve, xvi, xvn, xvo, xvs, xwa, xwc,
+      xwd, xwe, xwg, xwj, xwk, xwl, xwo, xwr, xwt, xww, xxb, xxk, xxm, xxr, xxt, xya, xyb, xyj, xyk, xyl, xyt, xyy, xzh,
+      xzm, xzp, yaa, yab, yac, yad, yae, yaf, yag, yah, yai, yaj, yak, yal, yam, yan, yao, yap, yaq, yar, yas, yat, yau,
+      yav, yaw, yax, yay, yaz, yba, ybb, ybe, ybh, ybi, ybj, ybk, ybl, ybm, ybn, ybo, ybx, yby, ych, ycl, ycn, ycp, ycr,
+      yda, ydd, yde, ydg, ydk, yea, yec, yee, yei, yej, yel, yer, 'yes', yet, yeu, yev, yey, yga, ygi, ygl, ygm, ygp,
+      ygr, ygs, ygu, ygw, yha, yhd, yhl, yhs, yi, yia, yif, yig, yih, yii, yij, yik, yil, yim, yin, yip, yiq, yir, yis,
+      yit, yiu, yiv, yix, yiz, yka, ykg, ykh, yki, ykk, ykl, ykm, ykn, yko, ykr, ykt, yku, yky, yla, ylb, yle, ylg, yli,
+      yll, ylm, yln, ylo, ylr, ylu, yly, ymb, ymc, ymd, yme, ymg, ymh, ymi, ymk, yml, ymm, ymn, ymo, ymp, ymq, ymr, yms,
+      ymx, ymz, yna, ynb, ynd, yne, yng, ynk, ynl, ynn, yno, ynq, yns, ynu, yo, yob, yog, yoi, yok, yom, yon, yot, yox,
+      yoy, ypa, ypb, ypg, yph, ypk, ypm, ypn, ypo, ypp, ypz, yra, yrb, yre, yrk, yrl, yrm, yrn, yro, yrs, yrw, yry, ysc,
+      ysd, ysg, ysl, ysm, ysn, yso, ysp, ysr, yss, ysy, yta, ytl, ytp, ytw, yty, yua, yub, yuc, yud, yue, yuf, yug, yui,
+      yuj, yuk, yul, yum, yun, yup, yuq, yur, yut, yuw, yux, yuy, yuz, yva, yvt, ywa, ywg, ywl, ywn, ywq, ywr, ywt, ywu,
+      yww, yxa, yxg, yxl, yxm, yxu, yxy, yyr, yyu, yyz, yzg, yzk, za, zaa, zab, zac, zad, zae, zaf, zag, zah, zai, zaj,
+      zak, zal, zam, zao, zap, zaq, zar, zas, zat, zau, zav, zaw, zax, zay, zaz, zba, zbc, zbe, zbl, zbt, zbu, zbw, zca,
+      zcd, zch, zdj, zea, zeg, zeh, zem, zen, zga, zgb, zgh, zgm, zgn, zgr, zh, zhb, zhd, zhi, zhk, zhn, zhw, zhx, zia,
+      zib, zik, zil, zim, zin, ziw, ziz, zka, zkd, zkg, zkh, zkk, zkn, zko, zkp, zkr, zkt, zku, zkv, zkz, zla, zle, zlj,
+      zlm, zln, zlq, zls, zlu, zlw, zma, zmb, zmc, zmd, zme, zmf, zmg, zmh, zmi, zmj, zmk, zml, zmm, zmn, zmo, zmp, zmq,
+      zmr, zms, zmt, zmu, zmv, zmw, zmx, zmy, zmz, zna, znd, zne, zng, znk, zns, zoc, zoh, zom, zoo, zoq, zor, zos, zpa,
+      zpb, zpc, zpd, zpe, zpf, zpg, zph, zpi, zpj, zpk, zpl, zpm, zpn, zpo, zpp, zpq, zpr, zps, zpt, zpu, zpv, zpw, zpx,
+      zpy, zpz, zqe, zra, zrg, zrn, zro, zrp, zrs, zsa, zsk, zsl, zsm, zsr, zsu, zte, ztg, ztl, ztm, ztn, ztp, ztq, zts,
+      ztt, ztu, ztx, zty, zu, zuh, zum, zun, zuy, zwa, zxx, zyb, zyg, zyj, zyn, zyp, zza, zzj
+    ]
+  examples:
+    valid:
+      - en
+      - haw
+      - mul
+      - cmn
+    invalid:
+      - EN
+      - english
+    list_invalid:
+      - xx
+      - fra
+      - iw
+  standard: BCP 47 (IANA Language Subtag Registry)
+  docs: iana_language
+  details: 'A BCP 47 language code (en): tagging what language content is in, with the 2-letter code where one exists.
+    Prefer locale when region or script variants matter. The list: current language subtags (not deprecated, not
+    private-use) from the IANA Language Subtag Registry, File-Date 2026-11-18, copied 2026-11-21.'
+http_date:
+  base: date_time
+  level: domain
+  label: HTTP date
+  hint: Like Sun, 16 Aug 2026 14:30:00 GMT
+  error: Please use the HTTP date form, like Sun, 16 Aug 2026 14:30:00 GMT.
+  aliases:
+    - imf_fixdate
+  format: http-date
+  pattern: '^(Mon|Tue|Wed|Thu|Fri|Sat|Sun), [0-9]{2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [0-9]{4}
+    [0-9]{2}:[0-9]{2}:[0-9]{2} GMT$'
+  params:
+    - fractional_seconds
+  examples:
+    valid:
+      - Sun, 16 Aug 2026 14:30:00 GMT
+      - Mon, 01 Jan 2024 00:00:00 GMT
+    invalid:
+      - '2026-08-16T14:30:00Z'
+      - Sun, 16 Aug 2026 14:30:00 UTC
+  standard: RFC 9110 Section 5.6.7 (IMF-fixdate)
+  docs: rfc9110
+  anchor: '#section-5.6.7'
+  details: 'The HTTP header date format (IMF-fixdate): Last-Modified, Expires, and friends. HTTP interchange only - prefer
+    date_time everywhere else.'
+wikidata_qid:
+  base: _token
+  level: domain
+  label: Wikidata ID
+  hint: Q and a number, like Q42
+  error: Please use Q and a number, like Q42.
+  aliases:
+    - qid
+  pattern: '^Q[1-9][0-9]*$'
+  examples:
+    valid:
+      - Q42
+      - Q1
+    invalid:
+      - Q0
+      - '42'
+  standard: Wikidata entity identifier
+  docs: wikidata
+  details: 'A Wikidata entity ID (Q42): linking records to globally known entities. Prefer the domain registry when one
+    exists - doi, orcid, lei, isbn.'
+doi:
+  base: _token
+  level: domain
+  label: DOI
+  hint: A paper ID, like 10.1000/182
+  error: Please start with 10., like 10.1000/182.
+  aliases:
+    - doi_name
+  pattern: '^10\.[0-9]{4,9}/[-._;()/:A-Za-z0-9]+$'
+  examples:
+    valid:
+      - 10.1000/182
+      - 10.1038/nphys1170
+    invalid:
+      - 10.1/182
+      - doi:10.1000/182
+  standard: ISO 26324 (Digital Object Identifier)
+  docs: doi
+  details: 'A Digital Object Identifier: citations to papers, datasets, publications. Prefer uri only for links that are
+    not registered DOIs.'
+orcid:
+  base: _token
+  level: domain
+  label: ORCID iD
+  hint: Four groups of four digits
+  error: 'Please check the iD: four groups of 4 with dashes, like 0000-0002-1825-0097.'
+  aliases:
+    - orcid_id
+  pattern: '^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{3}[0-9X]$'
+  check: iso7064_mod11_2
+  examples:
+    valid:
+      - 0000-0002-1825-0097
+      - 0000-0002-9079-593X
+    invalid:
+      - 0000-0002-1825-009
+      - '0000000218250097'
+    check_invalid:
+      - 0000-0002-1825-0098
+      - 0000-0002-9079-5930
+  standard: ORCID iD (ISO 27729 ISNI block)
+  docs: orcid
+  details: An ORCID iD identifying a researcher. Prefer lei for organizations and wikidata_qid for entities outside
+    scholarly identity.
+lei:
+  base: _token
+  level: domain
+  label: Legal Entity ID
+  hint: 20 capital letters and digits
+  error: 'Please check the ID: 20 capital letters and digits, like 5493001KJTIIGC8Y1R12.'
+  aliases:
+    - legal_entity_identifier
+  pattern: '^[A-Z0-9]{18}[0-9]{2}$'
+  check: iso7064_mod97_10
+  examples:
+    valid:
+      - 5493001KJTIIGC8Y1R12
+      - 529900T8BM49AURSDO55
+    invalid:
+      - 5493001KJTIIGC8Y1R1
+      - 5493001kjtiigc8y1r12
+    check_invalid:
+      - 5493001KJTIIGC8Y1R13
+      - 529900T8BM49AURSDO56
+  standard: ISO 17442 (Legal Entity Identifier)
+  docs: iso17442
+  details: 'A Legal Entity Identifier: organizations in financial and regulatory contexts. Identity, not routing - prefer
+    bic for payment routing.'
+media_range:
+  base: media_type
+  level: domain
+  label: Accepted file types
+  hint: Like text/html or image/*
+  error: Please use kind/subkind or a *, like text/html;q=0.9.
+  aliases:
+    - accept
+  format: media-range
+  pattern: '^(\*/\*|[A-Za-z0-9!#$&^_.+-]+/\*|[A-Za-z0-9!#$&^_.+-]+/[A-Za-z0-9!#$&^_.+-]+)([\x09\x20]*;[^\x00-\x1F\x7F]*)?$'
+  examples:
+    valid:
+      - text/html;q=0.9
+      - '*/*'
+      - image/*
+    invalid:
+      - '*/html'
+      - text
+  standard: RFC 9110 Section 12.5.1 (media-range)
+  docs: rfc9110
+  anchor: '#section-12.5.1'
+  details: 'An HTTP media range with wildcards and parameters: Accept-style negotiation. Prefer media_type for one
+    concrete type.'
+sf_integer:
+  base: int32
+  level: domain
+  alternative: int64
+  label: Header number
+  hint: Up to 15 digits
+  error: Please use a whole number with up to 15 digits.
+  aliases:
+    - structured_integer
+  format: sf-integer
+  minimum: -999999999999999
+  maximum: 999999999999999
+  examples:
+    valid:
+      - 42
+      - -999999999999999
+    invalid:
+      - 1000000000000000
+      - 1.5
+  standard: RFC 9651 Section 3.3.1 (Structured Fields integer)
+  docs: rfc9651
+  anchor: '#section-3.3.1'
+  details: 'An HTTP Structured Fields integer (15 digits max): numeric members of structured headers. Prefer int64 outside
+    header serialization.'
+sf_decimal:
+  base: float64
+  level: domain
+  alternative: decimal
+  label: Header decimal
+  hint: Up to 3 digits after the dot
+  error: Please use a number with at most 3 decimals, like 4.5.
+  aliases:
+    - structured_decimal
+  format: sf-decimal
+  params:
+    - precision
+    - scale
+  examples:
+    valid:
+      - 4.5
+      - -999999999999.999
+    invalid:
+      - '4.5'
+    db_invalid:
+      - 1.2345
+  standard: RFC 9651 Section 3.3.2 (Structured Fields decimal)
+  docs: rfc9651
+  anchor: '#section-3.3.2'
+  details: 'An HTTP Structured Fields decimal (three fractional digits): weights and q-values in headers. Prefer decimal
+    outside header serialization.'
+sf_string:
+  base: _token
+  level: domain
+  label: Header text
+  hint: Plain ASCII characters only
+  error: Please use plain ASCII characters, like hello world.
+  aliases:
+    - structured_string
+  format: sf-string
+  pattern: '^[\x20-\x7E]*$'
+  examples:
+    valid:
+      - hello world
+      - ''
+    invalid:
+      - tab	here
+      - café
+  standard: RFC 9651 Section 3.3.3 (Structured Fields string)
+  docs: rfc9651
+  anchor: '#section-3.3.3'
+  details: 'An HTTP Structured Fields quoted string (printable ASCII): textual members of structured headers. Prefer
+    string outside header serialization.'
+sf_token:
+  base: _token
+  level: domain
+  label: Header token
+  hint: A short word like gzip
+  error: Please start with a letter, no spaces, like gzip.
+  aliases:
+    - structured_token
+  format: sf-token
+  pattern: '^[A-Za-z*][A-Za-z0-9:/!#$%&''*+\-.^_`|~]*$'
+  examples:
+    valid:
+      - gzip
+      - '*'
+      - text/html
+    invalid:
+      - 1gzip
+      - gz ip
+  standard: RFC 9651 Section 3.3.4 (Structured Fields token)
+  docs: rfc9651
+  anchor: '#section-3.3.4'
+  details: 'An HTTP Structured Fields token like gzip: short symbolic header values. Prefer enum for closed sets outside HTTP.'
+sf_binary:
+  base: binary
+  level: domain
+  label: Header bytes
+  hint: Base64 between colons
+  error: Please wrap base64 in colons, like :aGVsbG8=:.
+  aliases:
+    - structured_binary
+  format: sf-binary
+  pattern: '^:[A-Za-z0-9+/]*={0,2}:$'
+  contentEncoding: null
+  examples:
+    valid:
+      - ':aGVsbG8=:'
+      - '::'
+    invalid:
+      - aGVsbG8=
+      - ::x
+  standard: RFC 9651 Section 3.3.5 (Structured Fields byte sequence)
+  docs: rfc9651
+  anchor: '#section-3.3.5'
+  details: 'An HTTP Structured Fields byte sequence (colon-delimited base64): binary members of structured headers. Prefer
+    base64 outside header serialization.'
+sf_boolean:
+  base: boolean
+  level: domain
+  label: Header yes/no
+  hint: True or false
+  error: Please pick true or false.
+  aliases:
+    - structured_boolean
+  format: sf-boolean
+  examples:
+    valid:
+      - true
+      - false
+    invalid:
+      - ?1
+  standard: RFC 9651 Section 3.3.6 (Structured Fields boolean)
+  docs: rfc9651
+  anchor: '#section-3.3.6'
+  details: 'An HTTP Structured Fields boolean (?1 / ?0): flags in structured headers. Prefer boolean outside header
+    serialization.'
+iban:
+  base: _token
+  level: domain
+  label: Bank account (IBAN)
+  hint: Country code, 2 digits, then account
+  error: 'Please check the account: capitals and digits, no spaces, like DE89370400440532013000.'
+  aliases:
+    - bank_account
+  pattern: '^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$'
+  normalize:
+    - trim
+    - remove_spaces
+    - uppercase
+  check: iban
+  examples:
+    valid:
+      - DE89370400440532013000
+      - GB82WEST12345698765432
+    invalid:
+      - de89370400440532013000
+      - DE89 3704 0044 0532 0130 00
+    check_invalid:
+      - DE89370400440532013001
+      - GB82WEST12345698765433
+  standard: ISO 13616 (IBAN)
+  docs: iso13616
+  details: 'An International Bank Account Number: identifying accounts for payments. Pair with bic for cross-border
+    routing and treat as sensitive data.'
+bic:
+  base: _token
+  level: domain
+  label: Bank code (BIC)
+  hint: 8 or 11 capital letters and digits
+  error: Please use 8 or 11 capital letters and digits, like DEUTDEFF500.
+  aliases:
+    - swift
+    - swift_code
+  pattern: '^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$'
+  normalize:
+    - trim
+    - uppercase
+  examples:
+    valid:
+      - DEUTDEFF500
+      - DEUTDEFF
+    invalid:
+      - DEUTDEFF5
+      - deutdeff
+  standard: ISO 9362 (BIC / SWIFT code)
+  docs: iso9362
+  details: A BIC/SWIFT code identifying a bank for payment routing. Routing, not identity - prefer lei to identify the
+    legal entity itself.
+isbn:
+  base: _token
+  level: domain
+  label: Book number (ISBN)
+  hint: 10 or 13 digits
+  error: 'Please check the number: 10 or 13 digits, no dashes, like 9780306406157.'
+  aliases:
+    - isbn13
+    - isbn10
+  pattern: '^([0-9]{9}[0-9Xx]|97[89][0-9]{10})$'
+  normalize:
+    - remove_spaces
+    - remove_hyphens
+    - uppercase
+  check: isbn
+  examples:
+    valid:
+      - '9780306406157'
+      - 080442957X
+      - '0306406152'
+    invalid:
+      - '978030640615'
+      - 0306406152XX
+    check_invalid:
+      - '9780306406158'
+      - '0306406153'
+  standard: ISO 2108 (ISBN-10 / ISBN-13)
+  docs: isbn
+  details: An ISBN identifying a book edition. Prefer gtin for general retail products; every ISBN-13 is a GTIN, but not
+    the reverse.
+gtin:
+  base: _token
+  level: domain
+  label: Barcode number
+  hint: 8, 12, 13 or 14 digits
+  error: 'Please check the number: 8, 12, 13 or 14 digits, like 0614141000036.'
+  aliases:
+    - barcode
+    - ean
+    - upc
+  pattern: '^([0-9]{8}|[0-9]{12}|[0-9]{13}|[0-9]{14})$'
+  normalize:
+    - remove_spaces
+    - remove_hyphens
+  check: gs1_mod10
+  examples:
+    valid:
+      - '0614141000036'
+      - '96385074'
+    invalid:
+      - '123456789'
+      - 0614141000036A
+    check_invalid:
+      - '0614141000037'
+      - '96385075'
+  standard: GS1 GTIN (ISO/IEC 15459 family)
+  docs: gs1_gtin
+  details: A GS1 GTIN (UPC/EAN family) identifying a retail product. Prefer isbn when the domain is specifically books.
+gln:
+  base: _token
+  level: domain
+  label: Location number (GLN)
+  hint: 13 digits
+  error: 'Please check the number: 13 digits, like 0614141000012.'
+  aliases:
+    - location_number
+    - global_location_number
+  pattern: '^[0-9]{13}$'
+  normalize:
+    - remove_spaces
+    - remove_hyphens
+  check: gs1_mod10
+  examples:
+    valid:
+      - '0614141000012'
+      - '4000001000005'
+    invalid:
+      - '061414100001'
+      - '06141410000123'
+    check_invalid:
+      - '0614141000013'
+      - '4000001000006'
+  standard: GS1 GLN (Global Location Number)
+  docs: gs1_gln
+  details: 'A GS1 GLN identifying a party or place: a company, a warehouse, a store, a dock door. Use gtin for the
+    products themselves and lei for legal entities in finance.'

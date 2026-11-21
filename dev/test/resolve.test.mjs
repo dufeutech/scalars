@@ -5,6 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import Ajv2020 from "ajv/dist/2020.js";
 import { loadSources, resolve } from "../lib/resolve.mjs";
+import { readSource } from "../lib/source.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "../..");
@@ -131,30 +132,31 @@ test("file schemas validate", () => {
     const ajv = new Ajv2020({ allErrors: true, validateFormats: false });
     const load = (f) => JSON.parse(fs.readFileSync(path.join(root, "schema", f), "utf8"));
     const checks = [
-        ["scalar.schema.json", path.join(miniDir, "scalar.json")],
-        ["html.schema.json", path.join(miniDir, "targets/html.json")],
-        ["postgres.schema.json", path.join(miniDir, "targets/postgres.json")],
+        ["scalar.schema.json", path.join(miniDir, "scalar.yaml")],
+        ["html.schema.json", path.join(miniDir, "targets/html.yaml")],
+        ["postgres.schema.json", path.join(miniDir, "targets/postgres.yaml")],
     ];
     for (const [schemaFile, dataFile] of checks) {
         const validate = ajv.compile(load(schemaFile));
-        const ok = validate(JSON.parse(fs.readFileSync(dataFile, "utf8")));
+        const ok = validate(readSource(dataFile));
         assert.ok(ok, `${dataFile}: ${JSON.stringify(validate.errors)}`);
     }
     const validate = ajv.getSchema(load("scalar.schema.json").$id);
     assert.equal(validate({ x: { level: "core", typo: 1 } }), false, "unknown keys are rejected");
 });
 
-test("repo root is pure JSON", () => {
+test("repo root holds only data: YAML source in src/, JSON elsewhere", () => {
     // dist/ also holds the generated per-language files (dist/python, ...), so it is not walked.
     const skip = new Set(["dev", "docs", "coding", "node_modules", "dist"]);
     const allowed = new Set(["README.md", "LICENSE", "CHANGELOG.md"]);
     const bad = [];
+    const inSrc = (p) => path.relative(root, p).split(path.sep)[0] === "src";
     const walk = (dir) => {
         for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
             if (e.name.startsWith(".") || skip.has(e.name)) continue;
             const p = path.join(dir, e.name);
             if (e.isDirectory()) walk(p);
-            else if (!e.name.endsWith(".json") && !allowed.has(e.name)) bad.push(path.relative(root, p));
+            else if (!e.name.endsWith(inSrc(p) ? ".yaml" : ".json") && !allowed.has(e.name)) bad.push(path.relative(root, p));
         }
     };
     walk(root);

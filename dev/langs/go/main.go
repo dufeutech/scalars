@@ -32,6 +32,7 @@ type Type struct {
 		Valid        []any `json:"valid"`
 		Invalid      []any `json:"invalid"`
 		CheckInvalid []any `json:"check_invalid"`
+		ListInvalid  []any `json:"list_invalid"`
 	} `json:"examples"`
 }
 
@@ -321,6 +322,13 @@ func main() {
 		for _, v := range spec.Examples.CheckInvalid {
 			if r := run(t, v); r.checked && r.ok {
 				fail("%s accepts check_invalid %#v", name, v)
+			}
+		}
+		for _, v := range spec.Examples.ListInvalid {
+			if r := run(t, v); !r.checked || r.ok {
+				fail("%s accepts list_invalid %#v", name, v)
+			} else if e, isScalar := r.err.(*scalars.ScalarError); !isScalar || e.Reason != scalars.ReasonNotInList {
+				fail("%s on list_invalid %#v: %v, want not_in_list", name, v, r.err)
 			}
 		}
 		for _, alias := range spec.Aliases {

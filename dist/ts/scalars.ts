@@ -198,6 +198,7 @@ export interface ScalarInit {
     readonly steps?: readonly Step[];
     readonly pattern?: string;
     readonly check?: Check;
+    readonly list?: readonly string[];
     readonly minLen?: number;
     readonly maxLen?: number;
     readonly minimum?: number;
@@ -230,6 +231,7 @@ export class Scalar<T> {
     private readonly early: boolean; // a maxLen and no step that shortens text: refuse overlong text once trimmed
     private readonly pattern: string | undefined;
     private readonly test: ((s: string) => boolean) | undefined;
+    private readonly list: ReadonlySet<string> | undefined; // the type's enum: a closed list, checked last
     private readonly minLen: number;
     private readonly maxLen: number; // Infinity when unbounded
     private readonly minimum: number;
@@ -267,6 +269,7 @@ export class Scalar<T> {
         this.check = init.check;
         if (init.check !== undefined && !Object.hasOwn(CHECKS, init.check)) throw new Error(`unknown check "${init.check}"`);
         this.test = init.check === undefined ? undefined : CHECKS[init.check];
+        this.list = init.list === undefined ? undefined : new Set(init.list);
         this.minLen = init.minLen ?? 0;
         this.maxLen = init.maxLen ?? Infinity;
         this.minimum = init.minimum ?? -Infinity;
@@ -325,6 +328,7 @@ export class Scalar<T> {
                     if (!rx.test(s)) return FAIL.Pattern;
                 }
                 if (this.test !== undefined && !this.test(s)) return FAIL.Check;
+                if (this.list !== undefined && !this.list.has(s)) return FAIL.NotInList;
                 return s;
             }
             case "integer":
@@ -1306,13 +1310,13 @@ export const scalars = {
         examples: { valid: ["# Title\n\nSome **bold** text.","- one\n- two"], invalid: [] },
         kind: "text",
     }),
-    /** Country — Pick a country. An ISO 3166-1 alpha-2 country code (US): the interchange default for countries. */
+    /** Country — Pick a country. An ISO 3166-1 alpha-2 country code (US): the interchange default for countries. The list: ISO 3166-1 alpha-2 codes currently assigned, from Debian iso-codes v4.20.1 (data/iso_3166-1.json), copied 2026-11-21. */
     "country": new Scalar<string>({
         name: "country",
         label: "Country",
         hint: "Pick a country",
         error: "Please use the 2-letter country code, like US.",
-        details: "An ISO 3166-1 alpha-2 country code (US): the interchange default for countries.",
+        details: "An ISO 3166-1 alpha-2 country code (US): the interchange default for countries. The list: ISO 3166-1 alpha-2 codes currently assigned, from Debian iso-codes v4.20.1 (data/iso_3166-1.json), copied 2026-11-21.",
         level: "core",
         primitive: "string",
         aliases: ["country_code"],
@@ -1320,16 +1324,17 @@ export const scalars = {
         kind: "text",
         steps: ["trim","uppercase"],
         pattern: "^[A-Z]{2}$",
+        list: ["AD","AE","AF","AG","AI","AL","AM","AO","AQ","AR","AS","AT","AU","AW","AX","AZ","BA","BB","BD","BE","BF","BG","BH","BI","BJ","BL","BM","BN","BO","BQ","BR","BS","BT","BV","BW","BY","BZ","CA","CC","CD","CF","CG","CH","CI","CK","CL","CM","CN","CO","CR","CU","CV","CW","CX","CY","CZ","DE","DJ","DK","DM","DO","DZ","EC","EE","EG","EH","ER","ES","ET","FI","FJ","FK","FM","FO","FR","GA","GB","GD","GE","GF","GG","GH","GI","GL","GM","GN","GP","GQ","GR","GS","GT","GU","GW","GY","HK","HM","HN","HR","HT","HU","ID","IE","IL","IM","IN","IO","IQ","IR","IS","IT","JE","JM","JO","JP","KE","KG","KH","KI","KM","KN","KP","KR","KW","KY","KZ","LA","LB","LC","LI","LK","LR","LS","LT","LU","LV","LY","MA","MC","MD","ME","MF","MG","MH","MK","ML","MM","MN","MO","MP","MQ","MR","MS","MT","MU","MV","MW","MX","MY","MZ","NA","NC","NE","NF","NG","NI","NL","NO","NP","NR","NU","NZ","OM","PA","PE","PF","PG","PH","PK","PL","PM","PN","PR","PS","PT","PW","PY","QA","RE","RO","RS","RU","RW","SA","SB","SC","SD","SE","SG","SH","SI","SJ","SK","SL","SM","SN","SO","SR","SS","ST","SV","SX","SY","SZ","TC","TD","TF","TG","TH","TJ","TK","TL","TM","TN","TO","TR","TT","TV","TW","TZ","UA","UG","UM","US","UY","UZ","VA","VC","VE","VG","VI","VN","VU","WF","WS","YE","YT","ZA","ZM","ZW"],
         minLen: 2,
         maxLen: 2,
     }),
-    /** Country (3-letter) — Three capital letters, like USA. An ISO 3166-1 alpha-3 country code (USA): feeds and standards that require three letters. Prefer country (alpha-2) as the default. */
+    /** Country (3-letter) — Three capital letters, like USA. An ISO 3166-1 alpha-3 country code (USA): feeds and standards that require three letters. Prefer country (alpha-2) as the default. The list: ISO 3166-1 alpha-3 codes currently assigned, from Debian iso-codes v4.20.1 (data/iso_3166-1.json), copied 2026-11-21. */
     "country_alpha3": new Scalar<string>({
         name: "country_alpha3",
         label: "Country (3-letter)",
         hint: "Three capital letters, like USA",
         error: "Please use the 3-letter country code, like USA.",
-        details: "An ISO 3166-1 alpha-3 country code (USA): feeds and standards that require three letters. Prefer country (alpha-2) as the default.",
+        details: "An ISO 3166-1 alpha-3 country code (USA): feeds and standards that require three letters. Prefer country (alpha-2) as the default. The list: ISO 3166-1 alpha-3 codes currently assigned, from Debian iso-codes v4.20.1 (data/iso_3166-1.json), copied 2026-11-21.",
         level: "advanced",
         primitive: "string",
         aliases: ["country_code3"],
@@ -1337,6 +1342,7 @@ export const scalars = {
         kind: "text",
         steps: ["trim","uppercase"],
         pattern: "^[A-Z]{3}$",
+        list: ["ABW","AFG","AGO","AIA","ALA","ALB","AND","ARE","ARG","ARM","ASM","ATA","ATF","ATG","AUS","AUT","AZE","BDI","BEL","BEN","BES","BFA","BGD","BGR","BHR","BHS","BIH","BLM","BLR","BLZ","BMU","BOL","BRA","BRB","BRN","BTN","BVT","BWA","CAF","CAN","CCK","CHE","CHL","CHN","CIV","CMR","COD","COG","COK","COL","COM","CPV","CRI","CUB","CUW","CXR","CYM","CYP","CZE","DEU","DJI","DMA","DNK","DOM","DZA","ECU","EGY","ERI","ESH","ESP","EST","ETH","FIN","FJI","FLK","FRA","FRO","FSM","GAB","GBR","GEO","GGY","GHA","GIB","GIN","GLP","GMB","GNB","GNQ","GRC","GRD","GRL","GTM","GUF","GUM","GUY","HKG","HMD","HND","HRV","HTI","HUN","IDN","IMN","IND","IOT","IRL","IRN","IRQ","ISL","ISR","ITA","JAM","JEY","JOR","JPN","KAZ","KEN","KGZ","KHM","KIR","KNA","KOR","KWT","LAO","LBN","LBR","LBY","LCA","LIE","LKA","LSO","LTU","LUX","LVA","MAC","MAF","MAR","MCO","MDA","MDG","MDV","MEX","MHL","MKD","MLI","MLT","MMR","MNE","MNG","MNP","MOZ","MRT","MSR","MTQ","MUS","MWI","MYS","MYT","NAM","NCL","NER","NFK","NGA","NIC","NIU","NLD","NOR","NPL","NRU","NZL","OMN","PAK","PAN","PCN","PER","PHL","PLW","PNG","POL","PRI","PRK","PRT","PRY","PSE","PYF","QAT","REU","ROU","RUS","RWA","SAU","SDN","SEN","SGP","SGS","SHN","SJM","SLB","SLE","SLV","SMR","SOM","SPM","SRB","SSD","STP","SUR","SVK","SVN","SWE","SWZ","SXM","SYC","SYR","TCA","TCD","TGO","THA","TJK","TKL","TKM","TLS","TON","TTO","TUN","TUR","TUV","TWN","TZA","UGA","UKR","UMI","URY","USA","UZB","VAT","VCT","VEN","VGB","VIR","VNM","VUT","WLF","WSM","YEM","ZAF","ZMB","ZWE"],
         minLen: 3,
         maxLen: 3,
     }),
@@ -1368,13 +1374,13 @@ export const scalars = {
         pattern: "^(#[0-9a-fA-F]{3,4}|#[0-9a-fA-F]{6}|#[0-9a-fA-F]{8}|[a-zA-Z]+|(rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\\([^()]*\\))$",
         minLen: 1,
     }),
-    /** Currency — Pick a currency, like USD or EUR. An ISO 4217 currency code (USD): pair it with a decimal amount to represent money. Never derive it from country or locale - people transact across borders. */
+    /** Currency — Pick a currency, like USD or EUR. An ISO 4217 currency code (USD): pair it with a decimal amount to represent money. Never derive it from country or locale - people transact across borders. The list: ISO 4217 List One active codes (with the X codes it assigns), from SIX list-one.xml published 2026-09-17, copied 2026-11-21. */
     "currency": new Scalar<string>({
         name: "currency",
         label: "Currency",
         hint: "Pick a currency, like USD or EUR",
         error: "Please use the 3-letter currency code, like USD.",
-        details: "An ISO 4217 currency code (USD): pair it with a decimal amount to represent money. Never derive it from country or locale - people transact across borders.",
+        details: "An ISO 4217 currency code (USD): pair it with a decimal amount to represent money. Never derive it from country or locale - people transact across borders. The list: ISO 4217 List One active codes (with the X codes it assigns), from SIX list-one.xml published 2026-09-17, copied 2026-11-21.",
         level: "core",
         primitive: "string",
         aliases: ["currency_code"],
@@ -1382,6 +1388,7 @@ export const scalars = {
         kind: "text",
         steps: ["trim","uppercase"],
         pattern: "^[A-Z]{3}$",
+        list: ["AED","AFN","ALL","AMD","AOA","ARS","AUD","AWG","AZN","BAM","BBD","BDT","BHD","BIF","BMD","BND","BOB","BOV","BRL","BSD","BTN","BWP","BYN","BZD","CAD","CDF","CHE","CHF","CHW","CLF","CLP","CNY","COP","COU","CRC","CUP","CVE","CZK","DJF","DKK","DOP","DZD","EGP","ERN","ETB","EUR","FJD","FKP","GBP","GEL","GHS","GIP","GMD","GNF","GTQ","GYD","HKD","HNL","HTG","HUF","IDR","ILS","INR","IQD","IRR","ISK","JMD","JOD","JPY","KES","KGS","KHR","KMF","KPW","KRW","KWD","KYD","KZT","LAK","LBP","LKR","LRD","LSL","LYD","MAD","MDL","MGA","MKD","MMK","MNT","MOP","MRU","MUR","MVR","MWK","MXN","MXV","MYR","MZN","NAD","NGN","NIO","NOK","NPR","NZD","OMR","PAB","PEN","PGK","PHP","PKR","PLN","PYG","QAR","RON","RSD","RUB","RWF","SAR","SBD","SCR","SDG","SEK","SGD","SHP","SLE","SOS","SRD","SSP","STN","SVC","SYP","SZL","THB","TJS","TMT","TND","TOP","TRY","TTD","TWD","TZS","UAH","UGX","USD","USN","UYI","UYU","UYW","UZS","VED","VES","VND","VUV","WST","XAD","XAF","XAG","XAU","XBA","XBB","XBC","XBD","XCD","XCG","XDR","XOF","XPD","XPF","XPT","XSU","XTS","XUA","XXX","YER","ZAR","ZMW","ZWG"],
         minLen: 3,
         maxLen: 3,
     }),

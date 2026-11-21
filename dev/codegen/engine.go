@@ -4,6 +4,7 @@ package scalars
 import (
 	"math"
 	"regexp"
+	"slices"
 	"strings"
 	"sync"
 	"unicode/utf8"
@@ -168,6 +169,7 @@ type TextScalar struct {
 	minLen  int    // shortest length in code points
 	maxLen  int    // longest length in code points, noMax when unbounded
 	rule    checkKind
+	list    []string // the type's enum, sorted: a closed list, checked last by binary search (no map, so no init code)
 	once    sync.Once
 	re      *regexp.Regexp
 }
@@ -237,6 +239,11 @@ func (t *TextScalar) check(s string) (string, Reason) {
 	}
 	if !t.rule.passes(s) {
 		return "", ReasonCheck
+	}
+	if t.list != nil {
+		if _, found := slices.BinarySearch(t.list, s); !found {
+			return "", ReasonNotInList
+		}
 	}
 	return s, ""
 }

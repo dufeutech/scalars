@@ -151,6 +151,7 @@ class Scalar(Generic[T]):
     __slots__ = (
         "name", "label", "hint", "error", "details", "level", "primitive", "aliases", "params", "examples", "check",
         "_kind", "_steps", "_case_at", "_form_at", "_early", "_pattern", "_min_len", "_max_len", "_minimum", "_maximum", "_re", "_test",
+        "_list",
     )
 
     def __init__(
@@ -170,6 +171,7 @@ class Scalar(Generic[T]):
         steps: tuple[str, ...] = (),
         pattern: str | None = None,
         check: str | None = None,
+        list: tuple[str, ...] | None = None,  # shadows the builtin here only: the engine calls builtins as _b.x
         min_len: int = 0,
         max_len: int | None = None,
         minimum: float | None = None,
@@ -198,6 +200,7 @@ class Scalar(Generic[T]):
         self._pattern = pattern
         self.check = check  # the name of the rule beyond the pattern ($meta.checks), or None
         self._test = None if check is None else _CHECKS[check]  # a bad name fails here, not on first use
+        self._list = None if list is None else _b.frozenset(list)  # the type's enum: a closed list, checked last
         self._min_len = min_len
         self._max_len = max_len
         self._minimum = minimum
@@ -275,6 +278,9 @@ class Scalar(Generic[T]):
             test = self._test
             if test is not None and not test(v):
                 return _FAIL.CHECK
+            codes = self._list
+            if codes is not None and v not in codes:
+                return _FAIL.NOT_IN_LIST
             return v
         if kind == "integer":
             if _b.isinstance(v, _b.bool):

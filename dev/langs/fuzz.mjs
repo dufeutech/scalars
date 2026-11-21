@@ -169,7 +169,7 @@ function mutate(data, domain, fields, p) {
     const t = typeof fields[key] === "string" ? typeOf(fields[key]) : typeOf(fields[key]?.type ?? "");
     switch (int(0, 7)) {
         case 0: p[key] = pick([1.5, "x", true, {}, [], "  "]); break;
-        case 1: { const bad = t ? examples(t, "invalid").concat(examples(t, "check_invalid")) : []; p[key] = bad.length ? pick(bad) : 1.5; break; }
+        case 1: { const bad = t ? examples(t, "invalid").concat(examples(t, "check_invalid"), examples(t, "list_invalid")) : []; p[key] = bad.length ? pick(bad) : 1.5; break; }
         case 2: delete p[key]; break;
         case 3: p.zz_extra = "x"; break;
         case 4: p[key] = null; break;

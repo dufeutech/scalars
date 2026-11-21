@@ -36,6 +36,7 @@ export function modelOf(t) {
         steps: t.normalize ?? [],
         pattern,
         check: t.check ?? null,
+        list: s.enum ?? null,
         minLen,
         maxLen,
         minimum: s.minimum ?? null,
@@ -58,6 +59,7 @@ export function metaFields(m) {
     if (m.steps.length) fields.push(["steps", m.steps]);
     if (m.pattern !== null) fields.push(["pattern", m.pattern]);
     if (m.check !== null) fields.push(["check", m.check]);
+    if (m.list !== null) fields.push(["list", m.list]);
     if (m.minLen) fields.push(["minLen", m.minLen]);
     if (m.maxLen !== null) fields.push(["maxLen", m.maxLen]);
     if (m.minimum !== null) fields.push(["minimum", m.minimum]);

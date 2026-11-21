@@ -175,6 +175,7 @@ type TextScalar struct {
 	minLen  int    // shortest length in code points
 	maxLen  int    // longest length in code points, noMax when unbounded
 	rule    checkKind
+	list    []string // the type's enum, sorted: a closed list, checked last by binary search (no map, so no init code)
 	once    sync.Once
 	re      *regexp.Regexp
 }
@@ -244,6 +245,11 @@ func (t *TextScalar) check(s string) (string, Reason) {
 	}
 	if !t.rule.passes(s) {
 		return "", ReasonCheck
+	}
+	if t.list != nil {
+		if _, found := slices.BinarySearch(t.list, s); !found {
+			return "", ReasonNotInList
+		}
 	}
 	return s, ""
 }
@@ -1919,7 +1925,7 @@ var scalarCommonmark = TextScalar{
 
 // Country is Country: Pick a country.
 //
-// An ISO 3166-1 alpha-2 country code (US): the interchange default for countries.
+// An ISO 3166-1 alpha-2 country code (US): the interchange default for countries. The list: ISO 3166-1 alpha-2 codes currently assigned, from Debian iso-codes v4.20.1 (data/iso_3166-1.json), copied 2026-11-21.
 var Country = &scalarCountry
 
 var scalarCountry = TextScalar{
@@ -1928,7 +1934,7 @@ var scalarCountry = TextScalar{
 		Label:     "Country",
 		Hint:      "Pick a country",
 		Error:     "Please use the 2-letter country code, like US.",
-		Details:   "An ISO 3166-1 alpha-2 country code (US): the interchange default for countries.",
+		Details:   "An ISO 3166-1 alpha-2 country code (US): the interchange default for countries. The list: ISO 3166-1 alpha-2 codes currently assigned, from Debian iso-codes v4.20.1 (data/iso_3166-1.json), copied 2026-11-21.",
 		Level:     "core",
 		Primitive: "string",
 		Aliases:   []string{"country_code"},
@@ -1939,11 +1945,12 @@ var scalarCountry = TextScalar{
 	pattern: `^[A-Z]{2}$`,
 	minLen:  2,
 	maxLen:  2,
+	list:    []string{"AD", "AE", "AF", "AG", "AI", "AL", "AM", "AO", "AQ", "AR", "AS", "AT", "AU", "AW", "AX", "AZ", "BA", "BB", "BD", "BE", "BF", "BG", "BH", "BI", "BJ", "BL", "BM", "BN", "BO", "BQ", "BR", "BS", "BT", "BV", "BW", "BY", "BZ", "CA", "CC", "CD", "CF", "CG", "CH", "CI", "CK", "CL", "CM", "CN", "CO", "CR", "CU", "CV", "CW", "CX", "CY", "CZ", "DE", "DJ", "DK", "DM", "DO", "DZ", "EC", "EE", "EG", "EH", "ER", "ES", "ET", "FI", "FJ", "FK", "FM", "FO", "FR", "GA", "GB", "GD", "GE", "GF", "GG", "GH", "GI", "GL", "GM", "GN", "GP", "GQ", "GR", "GS", "GT", "GU", "GW", "GY", "HK", "HM", "HN", "HR", "HT", "HU", "ID", "IE", "IL", "IM", "IN", "IO", "IQ", "IR", "IS", "IT", "JE", "JM", "JO", "JP", "KE", "KG", "KH", "KI", "KM", "KN", "KP", "KR", "KW", "KY", "KZ", "LA", "LB", "LC", "LI", "LK", "LR", "LS", "LT", "LU", "LV", "LY", "MA", "MC", "MD", "ME", "MF", "MG", "MH", "MK", "ML", "MM", "MN", "MO", "MP", "MQ", "MR", "MS", "MT", "MU", "MV", "MW", "MX", "MY", "MZ", "NA", "NC", "NE", "NF", "NG", "NI", "NL", "NO", "NP", "NR", "NU", "NZ", "OM", "PA", "PE", "PF", "PG", "PH", "PK", "PL", "PM", "PN", "PR", "PS", "PT", "PW", "PY", "QA", "RE", "RO", "RS", "RU", "RW", "SA", "SB", "SC", "SD", "SE", "SG", "SH", "SI", "SJ", "SK", "SL", "SM", "SN", "SO", "SR", "SS", "ST", "SV", "SX", "SY", "SZ", "TC", "TD", "TF", "TG", "TH", "TJ", "TK", "TL", "TM", "TN", "TO", "TR", "TT", "TV", "TW", "TZ", "UA", "UG", "UM", "US", "UY", "UZ", "VA", "VC", "VE", "VG", "VI", "VN", "VU", "WF", "WS", "YE", "YT", "ZA", "ZM", "ZW"},
 }
 
 // CountryAlpha3 is Country (3-letter): Three capital letters, like USA.
 //
-// An ISO 3166-1 alpha-3 country code (USA): feeds and standards that require three letters. Prefer country (alpha-2) as the default.
+// An ISO 3166-1 alpha-3 country code (USA): feeds and standards that require three letters. Prefer country (alpha-2) as the default. The list: ISO 3166-1 alpha-3 codes currently assigned, from Debian iso-codes v4.20.1 (data/iso_3166-1.json), copied 2026-11-21.
 var CountryAlpha3 = &scalarCountryAlpha3
 
 var scalarCountryAlpha3 = TextScalar{
@@ -1952,7 +1959,7 @@ var scalarCountryAlpha3 = TextScalar{
 		Label:     "Country (3-letter)",
 		Hint:      "Three capital letters, like USA",
 		Error:     "Please use the 3-letter country code, like USA.",
-		Details:   "An ISO 3166-1 alpha-3 country code (USA): feeds and standards that require three letters. Prefer country (alpha-2) as the default.",
+		Details:   "An ISO 3166-1 alpha-3 country code (USA): feeds and standards that require three letters. Prefer country (alpha-2) as the default. The list: ISO 3166-1 alpha-3 codes currently assigned, from Debian iso-codes v4.20.1 (data/iso_3166-1.json), copied 2026-11-21.",
 		Level:     "advanced",
 		Primitive: "string",
 		Aliases:   []string{"country_code3"},
@@ -1963,6 +1970,7 @@ var scalarCountryAlpha3 = TextScalar{
 	pattern: `^[A-Z]{3}$`,
 	minLen:  3,
 	maxLen:  3,
+	list:    []string{"ABW", "AFG", "AGO", "AIA", "ALA", "ALB", "AND", "ARE", "ARG", "ARM", "ASM", "ATA", "ATF", "ATG", "AUS", "AUT", "AZE", "BDI", "BEL", "BEN", "BES", "BFA", "BGD", "BGR", "BHR", "BHS", "BIH", "BLM", "BLR", "BLZ", "BMU", "BOL", "BRA", "BRB", "BRN", "BTN", "BVT", "BWA", "CAF", "CAN", "CCK", "CHE", "CHL", "CHN", "CIV", "CMR", "COD", "COG", "COK", "COL", "COM", "CPV", "CRI", "CUB", "CUW", "CXR", "CYM", "CYP", "CZE", "DEU", "DJI", "DMA", "DNK", "DOM", "DZA", "ECU", "EGY", "ERI", "ESH", "ESP", "EST", "ETH", "FIN", "FJI", "FLK", "FRA", "FRO", "FSM", "GAB", "GBR", "GEO", "GGY", "GHA", "GIB", "GIN", "GLP", "GMB", "GNB", "GNQ", "GRC", "GRD", "GRL", "GTM", "GUF", "GUM", "GUY", "HKG", "HMD", "HND", "HRV", "HTI", "HUN", "IDN", "IMN", "IND", "IOT", "IRL", "IRN", "IRQ", "ISL", "ISR", "ITA", "JAM", "JEY", "JOR", "JPN", "KAZ", "KEN", "KGZ", "KHM", "KIR", "KNA", "KOR", "KWT", "LAO", "LBN", "LBR", "LBY", "LCA", "LIE", "LKA", "LSO", "LTU", "LUX", "LVA", "MAC", "MAF", "MAR", "MCO", "MDA", "MDG", "MDV", "MEX", "MHL", "MKD", "MLI", "MLT", "MMR", "MNE", "MNG", "MNP", "MOZ", "MRT", "MSR", "MTQ", "MUS", "MWI", "MYS", "MYT", "NAM", "NCL", "NER", "NFK", "NGA", "NIC", "NIU", "NLD", "NOR", "NPL", "NRU", "NZL", "OMN", "PAK", "PAN", "PCN", "PER", "PHL", "PLW", "PNG", "POL", "PRI", "PRK", "PRT", "PRY", "PSE", "PYF", "QAT", "REU", "ROU", "RUS", "RWA", "SAU", "SDN", "SEN", "SGP", "SGS", "SHN", "SJM", "SLB", "SLE", "SLV", "SMR", "SOM", "SPM", "SRB", "SSD", "STP", "SUR", "SVK", "SVN", "SWE", "SWZ", "SXM", "SYC", "SYR", "TCA", "TCD", "TGO", "THA", "TJK", "TKL", "TKM", "TLS", "TON", "TTO", "TUN", "TUR", "TUV", "TWN", "TZA", "UGA", "UKR", "UMI", "URY", "USA", "UZB", "VAT", "VCT", "VEN", "VGB", "VIR", "VNM", "VUT", "WLF", "WSM", "YEM", "ZAF", "ZMB", "ZWE"},
 }
 
 // Cron is Schedule: Five fields, like 0 3 * * *.
@@ -2015,7 +2023,7 @@ var scalarCssColor = TextScalar{
 
 // Currency is Currency: Pick a currency, like USD or EUR.
 //
-// An ISO 4217 currency code (USD): pair it with a decimal amount to represent money. Never derive it from country or locale - people transact across borders.
+// An ISO 4217 currency code (USD): pair it with a decimal amount to represent money. Never derive it from country or locale - people transact across borders. The list: ISO 4217 List One active codes (with the X codes it assigns), from SIX list-one.xml published 2026-09-17, copied 2026-11-21.
 var Currency = &scalarCurrency
 
 var scalarCurrency = TextScalar{
@@ -2024,7 +2032,7 @@ var scalarCurrency = TextScalar{
 		Label:     "Currency",
 		Hint:      "Pick a currency, like USD or EUR",
 		Error:     "Please use the 3-letter currency code, like USD.",
-		Details:   "An ISO 4217 currency code (USD): pair it with a decimal amount to represent money. Never derive it from country or locale - people transact across borders.",
+		Details:   "An ISO 4217 currency code (USD): pair it with a decimal amount to represent money. Never derive it from country or locale - people transact across borders. The list: ISO 4217 List One active codes (with the X codes it assigns), from SIX list-one.xml published 2026-09-17, copied 2026-11-21.",
 		Level:     "core",
 		Primitive: "string",
 		Aliases:   []string{"currency_code"},
@@ -2035,6 +2043,7 @@ var scalarCurrency = TextScalar{
 	pattern: `^[A-Z]{3}$`,
 	minLen:  3,
 	maxLen:  3,
+	list:    []string{"AED", "AFN", "ALL", "AMD", "AOA", "ARS", "AUD", "AWG", "AZN", "BAM", "BBD", "BDT", "BHD", "BIF", "BMD", "BND", "BOB", "BOV", "BRL", "BSD", "BTN", "BWP", "BYN", "BZD", "CAD", "CDF", "CHE", "CHF", "CHW", "CLF", "CLP", "CNY", "COP", "COU", "CRC", "CUP", "CVE", "CZK", "DJF", "DKK", "DOP", "DZD", "EGP", "ERN", "ETB", "EUR", "FJD", "FKP", "GBP", "GEL", "GHS", "GIP", "GMD", "GNF", "GTQ", "GYD", "HKD", "HNL", "HTG", "HUF", "IDR", "ILS", "INR", "IQD", "IRR", "ISK", "JMD", "JOD", "JPY", "KES", "KGS", "KHR", "KMF", "KPW", "KRW", "KWD", "KYD", "KZT", "LAK", "LBP", "LKR", "LRD", "LSL", "LYD", "MAD", "MDL", "MGA", "MKD", "MMK", "MNT", "MOP", "MRU", "MUR", "MVR", "MWK", "MXN", "MXV", "MYR", "MZN", "NAD", "NGN", "NIO", "NOK", "NPR", "NZD", "OMR", "PAB", "PEN", "PGK", "PHP", "PKR", "PLN", "PYG", "QAR", "RON", "RSD", "RUB", "RWF", "SAR", "SBD", "SCR", "SDG", "SEK", "SGD", "SHP", "SLE", "SOS", "SRD", "SSP", "STN", "SVC", "SYP", "SZL", "THB", "TJS", "TMT", "TND", "TOP", "TRY", "TTD", "TWD", "TZS", "UAH", "UGX", "USD", "USN", "UYI", "UYU", "UYW", "UZS", "VED", "VES", "VND", "VUV", "WST", "XAD", "XAF", "XAG", "XAU", "XBA", "XBB", "XBC", "XBD", "XCD", "XCG", "XDR", "XOF", "XPD", "XPF", "XPT", "XSU", "XTS", "XUA", "XXX", "YER", "ZAR", "ZMW", "ZWG"},
 }
 
 // Date is Date: Year-month-day, like 2026-08-16.

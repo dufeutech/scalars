@@ -82,7 +82,10 @@
         { "type": "iban", "in": "GB82 WEST 1234 5698 7654 3212 3456 7890 1234 5", "ok": false, "reason": "too_long" },
         { "type": "iban", "in": "GB82 WEST 1234 5698 7654 3212 3456 7890 1\ud800", "ok": false, "reason": "malformed", "malformed": "surrogate" },
         { "type": "iban", "in": "GB82 WEST 1234 5698 7654 3", "ok": false, "reason": "check" },
-        { "type": "country", "in": "U1", "ok": false, "reason": "pattern" }
+        { "type": "country", "in": "U1", "ok": false, "reason": "pattern" },
+        { "type": "country", "in": " xx ", "ok": false, "reason": "not_in_list" },
+        { "type": "currency", "in": "HRK", "ok": false, "reason": "not_in_list" },
+        { "type": "country_alpha3", "in": "usa", "ok": true, "out": "USA" }
     ],
     "hostile": [
         { "type": "email", "prefix": "a@", "repeat": ".", "count": 200000, "suffix": "@", "ok": false, "reason": "pattern" },

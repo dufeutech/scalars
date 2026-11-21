@@ -183,6 +183,20 @@ test("a text type taking precision needs a digits pattern", () => {
     assert.deepEqual(r.amount.params, ["precision", "scale"]);
 });
 
+test("enum is inherited, and the build checks every list", () => {
+    const code = { base: "string", level: "core", pattern: "^[A-Z]{2}$", normalize: ["trim", "uppercase"] };
+    const r = resolve(patched({ code: { ...code, enum: ["DE", "US"] }, code_too: { base: "code", level: "advanced" } }));
+    assert.deepEqual(r.code_too.enum, ["DE", "US"]);
+    const fails = (patch, re) => assert.throws(() => resolve(patched(patch)), re);
+    fails({ code: { ...code, enum: ["DE", "usa"] } }, /enum value "usa" does not match its pattern/);
+    fails({ code: { ...code, enum: ["US", "DE"] } }, /enum must be sorted/);
+    fails({ code: { ...code, enum: ["DE", "DE"] } }, /enum must be sorted, with no repeats/);
+    fails({ code: { ...code, normalize: ["trim", "lowercase"], pattern: "^[A-Za-z]{2}$", enum: ["DE"] } }, /enum value "DE" is changed by its normalize/);
+    fails({ integer: { level: "core", type: "integer", enum: ["1"] } }, /only text types may have an enum/);
+    // A child with its own pattern that keeps the parent's list fails through the pattern rule.
+    fails({ code: { ...code, enum: ["DE", "US"] }, code3: { base: "code", level: "advanced", pattern: "^[A-Z]{3}$" } }, /Type "code3": enum value "DE" does not match its pattern/);
+});
+
 test("unknown check fails the build", () => {
     assert.throws(
         () => resolve(patched({ slug: { base: "string", level: "core", check: "nope" } })),

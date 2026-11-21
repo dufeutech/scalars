@@ -183,7 +183,8 @@
         "element": "select",
         "options": {
             "source": "ISO 3166-1 alpha-2",
-            "js": "new Intl.DisplayNames([locale], { type: 'region' })"
+            "note": "The options are schema.enum.",
+            "js": "new Intl.DisplayNames([locale], { type: 'region' }).of(code)"
         }
     },
     "currency": {
@@ -195,7 +196,8 @@
         "element": "select",
         "options": {
             "source": "ISO 4217",
-            "js": "Intl.supportedValuesOf('currency')"
+            "note": "The options are schema.enum.",
+            "js": "new Intl.DisplayNames([locale], { type: 'currency' }).of(code)"
         }
     },
     "locale": {
@@ -322,9 +324,10 @@
             "autocomplete": null
         },
         "options": {
-            "source": "ISO 3166-1 alpha-3"
-        },
-        "note": "Intl has no alpha-3 list; map from alpha-2 with a lookup table."
+            "source": "ISO 3166-1 alpha-3",
+            "note": "The options are schema.enum. Intl names regions by alpha-2 only, so label each code through its alpha-2 sibling (a lookup table between country's and country_alpha3's lists).",
+            "js": "new Intl.DisplayNames([locale], { type: 'region' }).of(alpha2)"
+        }
     },
     "language": {
         "options": {

@@ -35,7 +35,7 @@ test("reference gives each shared case's reason", () => {
     }
 });
 
-test("every reason except not_in_list has a shared case", () => {
+test("every reason has a shared case", () => {
     const seen = new Set(failing.map((c) => c.reason));
-    assert.deepEqual(REASONS.filter((r) => r !== "not_in_list" && !seen.has(r)), []);
+    assert.deepEqual(REASONS.filter((r) => !seen.has(r)), []);
 });

@@ -2,6 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { applyGenerated } from "./derive.mjs";
+import { normalize } from "./reference.mjs";
 
 /** The closed set every type maps to, read from the dist schema so it is written in one place. */
 export const PRIMITIVES = new Set(JSON.parse(fs.readFileSync(new URL("../../schema/dist.schema.json", import.meta.url), "utf8"))
@@ -12,7 +13,7 @@ export const CHECK_NAMES = new Set(JSON.parse(fs.readFileSync(new URL("../../sch
     .$defs.check.oneOf.map((c) => c.const));
 
 /** Core keys a child takes from its base unless it overrides them (null deletes). */
-const INHERITED = ["type", "format", "pattern", "minLength", "maxLength", "minimum", "maximum", "contentEncoding", "normalize", "check"];
+const INHERITED = ["type", "format", "pattern", "minLength", "maxLength", "minimum", "maximum", "contentEncoding", "normalize", "check", "enum"];
 // Not inherited, so each type lists its own: `params`.
 /** Source-only keys that never appear in resolved output. */
 const SOURCE_ONLY = new Set(["base", "abstract", "anchor", "docs"]);
@@ -43,6 +44,21 @@ function mergeBlock(parent, own) {
         else out[k] = v;
     }
     return dropNulls(out);
+}
+
+/**
+ * A type's enum: text only, sorted with no repeats (so engines can binary-search it), and every value already
+ * valid as is: it matches the pattern (an inherited list fails here when the child's pattern differs) and its
+ * normalize leaves it unchanged.
+ */
+function checkList(name, t) {
+    if (t.type !== "string") throw new Error(`Type "${name}": only text types may have an enum`);
+    const re = t.pattern ? new RegExp(t.pattern, "u") : null;
+    t.enum.forEach((v, i) => {
+        if (i > 0 && !(t.enum[i - 1] < v)) throw new Error(`Type "${name}": enum must be sorted, with no repeats (at ${JSON.stringify(v)})`);
+        if (re && !re.test(v)) throw new Error(`Type "${name}": enum value ${JSON.stringify(v)} does not match its pattern`);
+        if (normalize(t, v) !== v) throw new Error(`Type "${name}": enum value ${JSON.stringify(v)} is changed by its normalize`);
+    });
 }
 
 export function resolve({ core, targets }) {
@@ -111,6 +127,7 @@ export function resolve({ core, targets }) {
         }
 
         if (t.check !== undefined && !CHECK_NAMES.has(t.check)) throw new Error(`Type "${name}" names unknown check "${t.check}"`);
+        if (t.enum !== undefined) checkList(name, t);
         for (const p of t.params ?? []) {
             if (!params[p]) throw new Error(`Type "${name}" names unknown param "${p}"`);
         }

@@ -18,7 +18,8 @@
                 "type": ["object", "null"],
                 "properties": {
                     "source": { "type": "string" },
-                    "js": { "type": "string" }
+                    "note": { "type": "string", "description": "Where the option values come from: for a type with an enum, schema.enum." },
+                    "js": { "type": "string", "description": "How to get labels (or, for a type without an enum, the values) in the browser." }
                 },
                 "required": ["source"],
                 "additionalProperties": false

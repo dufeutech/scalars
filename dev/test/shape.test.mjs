@@ -9,7 +9,7 @@ import { build } from "../build.mjs";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const { scalars, openapi } = build(root);
 const distSchema = JSON.parse(fs.readFileSync(path.join(root, "schema/dist.schema.json"), "utf8"));
-const VALIDATION = ["type", "format", "pattern", "minLength", "maxLength", "minimum", "maximum", "contentEncoding"];
+const VALIDATION = ["type", "format", "pattern", "minLength", "maxLength", "minimum", "maximum", "contentEncoding", "enum"];
 
 function keysDeep(v, out = new Set()) {
     if (v && typeof v === "object") for (const [k, x] of Object.entries(v)) { if (!Array.isArray(v)) out.add(k); keysDeep(x, out); }
@@ -42,6 +42,11 @@ test("primitive is a closed set of 16", () => {
     const names = distSchema.$defs.type.properties.primitive.enum;
     assert.equal(names.length, 16);
     for (const t of Object.values(scalars.types)) assert.ok(names.includes(t.primitive), `${t.name}: ${t.primitive}`);
+});
+
+test("postgres CHECK for listed types is the pattern only", () => {
+    assert.equal(scalars.types.country.postgres.check, "CHECK ({column} ~ '^[A-Z]{2}$')");
+    assert.ok(scalars.types.country.schema.enum.includes("US"));
 });
 
 test("a hand-written postgres check wins", () => {

@@ -64,6 +64,7 @@ function rules(m, ids) {
                 ["min_len", String(m.minLen)],
                 ["max_len", m.maxLen === null ? "usize::MAX" : String(m.maxLen)],
                 ["rule", m.check === null ? "None" : `Some(Check::${ids.check.get(m.check)})`],
+                ["list", list(m.list ?? [], "list", "    ")],
                 ["re", "OnceLock::new()"],
             ]];
         case "integer":

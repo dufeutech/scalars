@@ -9,7 +9,7 @@ const mod = await import(pathToFileURL(path.join(path.dirname(path.resolve(distP
     console.log(`ts: cannot import the generated scalars.ts: ${e.message}`);
     process.exit(1);
 });
-const { Scalar, ScalarError } = mod;
+const { Scalar, ScalarError, Reason } = mod;
 const scalars: any = mod.default;
 
 const types: Record<string, any> = JSON.parse(fs.readFileSync(distPath, "utf8")).types;
@@ -44,6 +44,14 @@ for (const [name, spec] of Object.entries(types)) {
         if (t.isValid(v) && !(typeof v === "string" && t.normalize(v) !== v)) fails.push(`${name} accepts invalid ${show(v)}`);
     }
     for (const v of spec.examples.check_invalid ?? []) if (t.isValid(v)) fails.push(`${name} accepts check_invalid ${show(v)}`);
+    for (const v of spec.examples.list_invalid ?? []) {
+        try {
+            t.validate(v);
+            fails.push(`${name} accepts list_invalid ${show(v)}`);
+        } catch (e) {
+            if (!(e instanceof ScalarError) || e.reason !== Reason.NotInList) fails.push(`${name} on list_invalid ${show(v)}: ${(e as any).reason}, want not_in_list`);
+        }
+    }
     for (const alias of spec.aliases ?? []) if (scalars.get(alias) !== t) fails.push(`get(${show(alias)}) is not ${name}`);
 }
 

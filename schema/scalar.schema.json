@@ -215,6 +215,13 @@
                 "pattern": {
                     "$ref": "#/$defs/nullable_string"
                 },
+                "enum": {
+                    "type": ["array", "null"],
+                    "description": "The closed list of values a text type accepts, sorted, with no repeats. Each must match the pattern and be unchanged by normalize. Inherited: a child with another pattern must set its own.",
+                    "minItems": 1,
+                    "uniqueItems": true,
+                    "items": { "type": "string" }
+                },
                 "params": {
                     "type": "array",
                     "description": "Names from $defs.params this type accepts. Not inherited: list them on every type that takes them.",
@@ -272,6 +279,9 @@
                             "$ref": "#/$defs/examples"
                         },
                         "check_invalid": {
+                            "$ref": "#/$defs/examples"
+                        },
+                        "list_invalid": {
                             "$ref": "#/$defs/examples"
                         }
                     },

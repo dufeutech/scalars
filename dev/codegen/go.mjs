@@ -95,6 +95,7 @@ function rules(m, ids) {
                 ["minLen", String(m.minLen)],
                 ["maxLen", m.maxLen === null ? "noMax" : String(m.maxLen)],
                 ...(m.check === null ? [] : [["rule", ids.check.get(m.check)]]),
+                ...(m.list ? [["list", strings(m.list)]] : []),
             ];
         case "integer":
             return [["minimum", int64(m.minimum, m.name, "math.MinInt64")], ["maximum", int64(m.maximum, m.name, "math.MaxInt64")]];

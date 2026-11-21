@@ -86,8 +86,11 @@ const FAIL = Object.fromEntries(Object.keys(JSON.parse(fs.readFileSync(new URL("
  * where reason is the first rule the pass trips (REASON).
  */
 export function validate(t, v) {
-    if (!models.has(t)) models.set(t, { m: modelOf(t), re: t.schema?.pattern ? new RegExp(t.schema.pattern, "u") : null });
-    const { m, re } = models.get(t);
+    if (!models.has(t)) {
+        const list = t.schema?.enum ? new Set(t.schema.enum) : null;
+        models.set(t, { m: modelOf(t), re: t.schema?.pattern ? new RegExp(t.schema.pattern, "u") : null, list });
+    }
+    const { m, re, list } = models.get(t);
     const inRange = (n) => (m.minimum === null || n >= m.minimum) && (m.maximum === null || n <= m.maximum);
     switch (m.kind) {
         case "text": {
@@ -123,6 +126,7 @@ export function validate(t, v) {
             if (n < m.minLen) return FAIL.too_short;
             if (re && !re.test(s)) return FAIL.pattern;
             if (t.check && !CHECKS[t.check](s)) return FAIL.check;
+            if (list && !list.has(s)) return FAIL.not_in_list;
             return { ok: true, value: s };
         }
         case "integer":

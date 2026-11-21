@@ -68,6 +68,13 @@ for name, spec in types.items():
     for v in spec["examples"].get("check_invalid", []):
         if t.is_valid(v):
             fails.append(f"{name} accepts check_invalid {v!r}")
+    for v in spec["examples"].get("list_invalid", []):
+        try:
+            t.validate(v)
+            fails.append(f"{name} accepts list_invalid {v!r}")
+        except scalars.ScalarError as e:
+            if e.reason != scalars.Reason.NOT_IN_LIST:
+                fails.append(f"{name} on list_invalid {v!r}: {e.reason}, want not_in_list")
     for alias in spec.get("aliases", []):
         if scalars.get(alias) is not t:
             fails.append(f"get({alias!r}) is not {name}")

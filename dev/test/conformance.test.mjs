@@ -35,6 +35,33 @@ test("types with a check have at least 2 check_invalid examples, other types non
     assert.deepEqual(wrong, []);
 });
 
+test("types with an enum have at least 2 list_invalid examples, other types none", () => {
+    const wrong = Object.values(types)
+        .filter((t) => (t.enum ? (t.examples?.list_invalid?.length ?? 0) < 2 : t.examples?.list_invalid !== undefined))
+        .map((t) => t.name);
+    assert.deepEqual(wrong, []);
+    assert.deepEqual(Object.values(types).filter((t) => t.enum).map((t) => t.name).sort(), ["country", "country_alpha3", "currency"]);
+});
+
+for (const t of Object.values(types).filter((t) => t.enum)) {
+    test(`list: ${t.name}`, () => {
+        const validate = ajv.compile(toJsonSchema(t));
+        const distT = groupSchema(structuredClone(t));
+        const htmlRe = new RegExp(`^(?:${t.html?.attrs?.pattern ?? t.pattern.slice(1, -1)})$`, "v");
+        for (const v of t.examples.list_invalid) {
+            // Passes the pattern and normalize; only the list (JSON Schema enum, the reference, the languages) refuses it.
+            assert.ok(htmlRe.test(v), `HTML pattern rejects list_invalid ${JSON.stringify(v)}`);
+            assert.equal(validate(v), false, `JSON accepts list_invalid ${JSON.stringify(v)}`);
+            assert.deepEqual(refValidate(distT, v), { ok: false, reason: "not_in_list" }, `list_invalid ${JSON.stringify(v)}`);
+        }
+        for (const v of t.enum) {
+            const r = refValidate(distT, v);
+            assert.ok(r.ok && r.value === v, `enum value ${JSON.stringify(v)} is not valid and unchanged`);
+            assert.ok(validate(v), `JSON rejects enum value ${JSON.stringify(v)}`);
+        }
+    });
+}
+
 for (const t of Object.values(types)) {
     test(`conformance: ${t.name}`, async () => {
         const ex = t.examples ?? {};

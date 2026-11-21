@@ -197,6 +197,7 @@ export interface ScalarInit {
     readonly steps?: readonly Step[];
     readonly pattern?: string;
     readonly check?: Check;
+    readonly list?: readonly string[];
     readonly minLen?: number;
     readonly maxLen?: number;
     readonly minimum?: number;
@@ -229,6 +230,7 @@ export class Scalar<T> {
     private readonly early: boolean; // a maxLen and no step that shortens text: refuse overlong text once trimmed
     private readonly pattern: string | undefined;
     private readonly test: ((s: string) => boolean) | undefined;
+    private readonly list: ReadonlySet<string> | undefined; // the type's enum: a closed list, checked last
     private readonly minLen: number;
     private readonly maxLen: number; // Infinity when unbounded
     private readonly minimum: number;
@@ -266,6 +268,7 @@ export class Scalar<T> {
         this.check = init.check;
         if (init.check !== undefined && !Object.hasOwn(CHECKS, init.check)) throw new Error(`unknown check "${init.check}"`);
         this.test = init.check === undefined ? undefined : CHECKS[init.check];
+        this.list = init.list === undefined ? undefined : new Set(init.list);
         this.minLen = init.minLen ?? 0;
         this.maxLen = init.maxLen ?? Infinity;
         this.minimum = init.minimum ?? -Infinity;
@@ -324,6 +327,7 @@ export class Scalar<T> {
                     if (!rx.test(s)) return FAIL.Pattern;
                 }
                 if (this.test !== undefined && !this.test(s)) return FAIL.Check;
+                if (this.list !== undefined && !this.list.has(s)) return FAIL.NotInList;
                 return s;
             }
             case "integer":

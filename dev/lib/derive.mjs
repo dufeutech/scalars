@@ -78,7 +78,7 @@ export function pgCheck(t) {
 }
 
 /** The JSON Schema keywords a type's rule is made of; dist groups them under `schema`. */
-export const SCHEMA_KEYS = ["type", "format", "pattern", "minLength", "maxLength", "minimum", "maximum", "contentEncoding"];
+export const SCHEMA_KEYS = ["type", "format", "pattern", "minLength", "maxLength", "minimum", "maximum", "contentEncoding", "enum"];
 
 /** Moves a resolved type's validation keys under `schema` (mutates and returns t). */
 export function groupSchema(t) {

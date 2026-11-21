@@ -79,6 +79,7 @@ test("go: patterns, reserved names, static table", () => {
     assert.ok(tables >= 0, "the generated tables start at var paramRules");
     assert.ok(!go.slice(tables).includes("map[string]any{"), "no map literal in the table");
     assert.deepEqual(packageMaps(go), [], "no package-level map built at program start");
+    assert.ok(go.includes(`\tlist:    []string{"AD", "AE", `), "a list is a sorted slice literal, searched by binary search");
     const snake = (id) => id.replace(/[A-Z]/g, (c, i) => (i ? "_" : "") + c.toLowerCase()); // "ScalarError" -> "scalar_error"
     for (const id of RESERVED_GO) assert.throws(() => identifiers([{ name: snake(id) }], "go", RESERVED_GO), /reserved/);
 });
@@ -94,6 +95,9 @@ test("rust: patterns, reserved names, static table", () => {
     assert.ok(quoted.includes(`pattern: Some(r##"a"#b\\"c"##),`), "a pattern holding \"# takes more hashes");
     const label = emitRust([{ ...probe, pattern: null, label: "a\r\u0007\"\\" }], "0", scalars.$meta)["rust/scalars.rs"];
     assert.ok(label.includes(`label: "a\\r\\u{7}\\"\\\\",`), "string literals escape what Rust can't hold");
+    const country = rs.slice(rs.indexOf("pub static COUNTRY: Text"), rs.indexOf("};\n", rs.indexOf("pub static COUNTRY: Text")));
+    assert.ok(country.includes(`    list: &[\n        "AD",\n        "AE",\n`), "a list is a static slice, one code per line");
+    assert.ok(rs.includes("    list: &[],\n"), "a text type without a list has an empty slice");
     const upper = RESERVED_RUST.filter((id) => id === id.toUpperCase()); // only these can meet a SCREAMING_SNAKE type
     for (const id of upper) assert.throws(() => identifiers([{ name: id.toLowerCase() }], "rust", RESERVED_RUST), /reserved/);
 });

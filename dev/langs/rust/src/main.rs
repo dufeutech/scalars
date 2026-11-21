@@ -428,6 +428,12 @@ fn main() {
                 fails.push(format!("{name} accepts check_invalid {v}"));
             }
         }
+        for v in spec["examples"]["list_invalid"].as_array().into_iter().flatten() {
+            match run(kind, v, &mut fails) {
+                Some(Err(e)) if e.reason == scalars::Reason::NotInList => {}
+                other => fails.push(format!("{name} on list_invalid {v}: {other:?}, want not_in_list")),
+            }
+        }
         for alias in strs(&spec["aliases"]) {
             if !scalars::get(alias).is_some_and(|g| ptr::eq(g, m)) {
                 fails.push(format!("get({alias:?}) is not {name}"));
@@ -443,7 +449,7 @@ fn main() {
         // normalize is a method of the type, so build a probe with the case's steps and no rule.
         let list: &'static [Step] = steps(&strs(&c["steps"]), &mut fails).leak();
         let meta = Meta { name: "probe", label: "", hint: "", error: "", details: "", level: "", primitive: "string", aliases: &[], params: &[], check: None };
-        let probe = Text::new(meta, list, None, 0, usize::MAX, None);
+        let probe = Text::new(meta, list, None, 0, usize::MAX, None, &[]);
         let got = probe.normalize(input);
         if got != want {
             fails.push(format!("normalize {input:?} {list:?} = {got:?}, want {want:?}"));

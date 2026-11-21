@@ -160,11 +160,13 @@ pub struct Text {
     min_len: usize, // shortest length in code points
     max_len: usize, // longest length in code points, usize::MAX when unbounded
     rule: Option<Check>,
+    list: &'static [&'static str], // the type's enum, sorted: checked last by binary search; empty when none
     re: OnceLock<Regex>,
 }
 
 impl Text {
-    /// A text type with these steps, pattern, lengths in code points (`usize::MAX` for no limit) and check.
+    /// A text type with these steps, pattern, lengths in code points (`usize::MAX` for no limit), check and
+    /// closed list (sorted; empty for none).
     pub const fn new(
         meta: Meta,
         steps: &'static [Step],
@@ -172,6 +174,7 @@ impl Text {
         min_len: usize,
         max_len: usize,
         rule: Option<Check>,
+        list: &'static [&'static str],
     ) -> Text {
         Text {
             meta,
@@ -180,6 +183,7 @@ impl Text {
             min_len,
             max_len,
             rule,
+            list,
             re: OnceLock::new(),
         }
     }
@@ -243,6 +247,9 @@ impl Text {
         }
         if self.rule.is_some_and(|r| !r.passes(&s)) {
             return Err(Reason::Check);
+        }
+        if !self.list.is_empty() && self.list.binary_search(&&*s).is_err() {
+            return Err(Reason::NotInList);
         }
         Ok(s)
     }

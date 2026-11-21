@@ -82,7 +82,8 @@
                         "maxLength": { "type": "integer", "description": "Most characters, counted as Unicode code points." },
                         "minimum": { "type": "number" },
                         "maximum": { "type": "number" },
-                        "contentEncoding": { "type": "string" }
+                        "contentEncoding": { "type": "string" },
+                        "enum": { "type": "array", "items": { "type": "string" }, "uniqueItems": true, "description": "The closed list of values, sorted. Checked after normalize, pattern and check; Postgres keeps the pattern only, so a list update is never a migration." }
                     },
                     "additionalProperties": false
                 },
@@ -96,7 +97,8 @@
                         "valid": { "type": "array", "minItems": 1 },
                         "invalid": { "type": "array" },
                         "db_invalid": { "type": "array" },
-                        "check_invalid": { "type": "array", "description": "Values that pass the pattern but fail the type's check." }
+                        "check_invalid": { "type": "array", "description": "Values that pass the pattern but fail the type's check." },
+                        "list_invalid": { "type": "array", "description": "Values that pass the pattern and normalize but are not on the type's enum." }
                     },
                     "additionalProperties": false
                 },

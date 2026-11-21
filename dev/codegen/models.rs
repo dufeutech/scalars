@@ -241,21 +241,32 @@ fn model_int(v: &Value) -> Option<i64> {
     (f.fract() == 0.0 && (-LIMIT..LIMIT).contains(&f)).then_some(f as i64)
 }
 
-/// Runs the typed scalar on a JSON value: the cleaned value, or None when `v` is the wrong kind or breaks the
-/// type's rule.
-fn check(kind: Kind, v: &Value) -> Option<Value> {
+/// Runs the typed scalar on a JSON value: the cleaned value, or the reason it failed (`WrongKind` when `v` is not
+/// the type's kind).
+fn check(kind: Kind, v: &Value) -> Result<Value, Reason> {
+    let in_range = |ok: bool| if ok { Ok(()) } else { Err(Reason::OutOfRange) };
     match kind {
-        Kind::Text(t) => Some(Value::String(t.check(v.as_str()?)?.into_owned())),
-        Kind::Int(t) => model_int(v).filter(|&n| t.is_valid(n)).map(Value::from),
-        Kind::Number(t) => v.as_f64().is_some_and(|f| t.is_valid(f)).then(|| v.clone()),
-        Kind::Bool(_) => v.is_boolean().then(|| v.clone()),
+        Kind::Text(t) => {
+            let s = v.as_str().ok_or(Reason::WrongKind)?;
+            Ok(Value::String(t.check(s)?.into_owned()))
+        }
+        Kind::Int(t) => {
+            let n = model_int(v).ok_or(Reason::WrongKind)?;
+            in_range(t.is_valid(n)).map(|()| Value::from(n))
+        }
+        Kind::Number(t) => {
+            let f = v.as_f64().ok_or(Reason::WrongKind)?;
+            in_range(t.is_valid(f)).map(|()| v.clone())
+        }
+        Kind::Bool(_) => v.is_boolean().then(|| v.clone()).ok_or(Reason::WrongKind),
         Kind::Shape(m) => match m.primitive {
             "object" => v.is_object(),
             "array" => v.is_array(),
             "any" => true,
             p => panic!("scalars: no models check for primitive {p:?}"),
         }
-        .then(|| v.clone()),
+        .then(|| v.clone())
+        .ok_or(Reason::WrongKind),
     }
 }
 
@@ -947,7 +958,7 @@ impl<'a> Loader<'a> {
                     let mut ok = true;
                     for (i, entry) in list.iter().enumerate() {
                         let clean = entry.as_str().filter(|s| {
-                            check(kind, entry).as_ref() == Some(entry)
+                            check(kind, entry).as_ref() == Ok(entry)
                                 && rule.max_item_bytes.map_or(true, |most| s.len() <= most)
                                 && !seen.contains(s)
                         });
@@ -1195,7 +1206,7 @@ impl<'m> Walker<'m> {
         };
         match field.kind {
             FieldKind::Type { kind, meta, .. } => {
-                let Some(out) = check(kind, v) else {
+                let Ok(out) = check(kind, v) else {
                     let name = params([("type", meta.name.into())]);
                     self.report(at, "invalid", name, Some(meta.error));
                     return Value::Null;

@@ -41,10 +41,12 @@ struct ParamRule {
     max_item_bytes: Option<usize>,
 }
 
-/// A value that failed a type's rule. It displays as the type's error text.
+/// A value that failed a type's rule. It displays as the type's error text; `reason` is the first rule the
+/// value broke.
 #[derive(Debug, Clone, Copy)]
 pub struct ScalarError {
     pub scalar: &'static Meta,
+    pub reason: Reason,
 }
 
 impl fmt::Display for ScalarError {
@@ -201,15 +203,19 @@ impl Text {
     /// Normalizes `s`, then checks length and pattern. Returns the clean text, borrowed when nothing changed
     /// beyond trimming, or the type's error.
     pub fn validate<'a>(&'static self, s: &'a str) -> Result<Cow<'a, str>, ScalarError> {
-        self.check(s).ok_or(ScalarError { scalar: &self.meta })
+        self.check(s).map_err(|reason| ScalarError {
+            scalar: &self.meta,
+            reason,
+        })
     }
 
     /// Whether `validate` would succeed. It never builds an error.
     pub fn is_valid(&self, s: &str) -> bool {
-        self.check(s).is_some()
+        self.check(s).is_ok()
     }
 
-    fn check<'a>(&self, s: &'a str) -> Option<Cow<'a, str>> {
+    /// The clean text, or the first rule `s` broke.
+    fn check<'a>(&self, s: &'a str) -> Result<Cow<'a, str>, Reason> {
         // Text must be Unicode scalar values (WHATWG USVString, RFC 7493). A `&str` is always valid UTF-8 with no
         // surrogates, so there is nothing to check here; the other engines check it once trimmed.
         let mut s = Cow::Borrowed(s);
@@ -220,26 +226,29 @@ impl Text {
             if !gated && matches!(step, Step::Lowercase | Step::Uppercase) {
                 gated = true;
                 if longer_than(&s, self.max_len) {
-                    return None;
+                    return Err(Reason::TooLong);
                 }
             }
             s = apply(step, s);
         }
-        if longer_than(&s, self.max_len) || shorter_than(&s, self.min_len) {
-            return None;
+        if longer_than(&s, self.max_len) {
+            return Err(Reason::TooLong);
+        }
+        if shorter_than(&s, self.min_len) {
+            return Err(Reason::TooShort);
         }
         if let Some(pattern) = self.pattern {
             let re = self
                 .re
                 .get_or_init(|| Regex::new(pattern).expect("the build checks every pattern"));
             if !re.is_match(&s) {
-                return None;
+                return Err(Reason::Pattern);
             }
         }
         if self.rule.is_some_and(|r| !r.passes(&s)) {
-            return None;
+            return Err(Reason::Check);
         }
-        Some(s)
+        Ok(s)
     }
 }
 
@@ -257,7 +266,10 @@ impl Int {
         if self.is_valid(n) {
             Ok(n)
         } else {
-            Err(ScalarError { scalar: &self.meta })
+            Err(ScalarError {
+                scalar: &self.meta,
+                reason: Reason::OutOfRange,
+            })
         }
     }
 
@@ -281,7 +293,10 @@ impl Number {
         if self.is_valid(f) {
             Ok(f)
         } else {
-            Err(ScalarError { scalar: &self.meta })
+            Err(ScalarError {
+                scalar: &self.meta,
+                reason: Reason::OutOfRange,
+            })
         }
     }
 
@@ -722,21 +737,32 @@ fn model_int(v: &Value) -> Option<i64> {
     (f.fract() == 0.0 && (-LIMIT..LIMIT).contains(&f)).then_some(f as i64)
 }
 
-/// Runs the typed scalar on a JSON value: the cleaned value, or None when `v` is the wrong kind or breaks the
-/// type's rule.
-fn check(kind: Kind, v: &Value) -> Option<Value> {
+/// Runs the typed scalar on a JSON value: the cleaned value, or the reason it failed (`WrongKind` when `v` is not
+/// the type's kind).
+fn check(kind: Kind, v: &Value) -> Result<Value, Reason> {
+    let in_range = |ok: bool| if ok { Ok(()) } else { Err(Reason::OutOfRange) };
     match kind {
-        Kind::Text(t) => Some(Value::String(t.check(v.as_str()?)?.into_owned())),
-        Kind::Int(t) => model_int(v).filter(|&n| t.is_valid(n)).map(Value::from),
-        Kind::Number(t) => v.as_f64().is_some_and(|f| t.is_valid(f)).then(|| v.clone()),
-        Kind::Bool(_) => v.is_boolean().then(|| v.clone()),
+        Kind::Text(t) => {
+            let s = v.as_str().ok_or(Reason::WrongKind)?;
+            Ok(Value::String(t.check(s)?.into_owned()))
+        }
+        Kind::Int(t) => {
+            let n = model_int(v).ok_or(Reason::WrongKind)?;
+            in_range(t.is_valid(n)).map(|()| Value::from(n))
+        }
+        Kind::Number(t) => {
+            let f = v.as_f64().ok_or(Reason::WrongKind)?;
+            in_range(t.is_valid(f)).map(|()| v.clone())
+        }
+        Kind::Bool(_) => v.is_boolean().then(|| v.clone()).ok_or(Reason::WrongKind),
         Kind::Shape(m) => match m.primitive {
             "object" => v.is_object(),
             "array" => v.is_array(),
             "any" => true,
             p => panic!("scalars: no models check for primitive {p:?}"),
         }
-        .then(|| v.clone()),
+        .then(|| v.clone())
+        .ok_or(Reason::WrongKind),
     }
 }
 
@@ -1428,7 +1454,7 @@ impl<'a> Loader<'a> {
                     let mut ok = true;
                     for (i, entry) in list.iter().enumerate() {
                         let clean = entry.as_str().filter(|s| {
-                            check(kind, entry).as_ref() == Some(entry)
+                            check(kind, entry).as_ref() == Ok(entry)
                                 && rule.max_item_bytes.map_or(true, |most| s.len() <= most)
                                 && !seen.contains(s)
                         });
@@ -1676,7 +1702,7 @@ impl<'m> Walker<'m> {
         };
         match field.kind {
             FieldKind::Type { kind, meta, .. } => {
-                let Some(out) = check(kind, v) else {
+                let Ok(out) = check(kind, v) else {
                     let name = params([("type", meta.name.into())]);
                     self.report(at, "invalid", name, Some(meta.error));
                     return Value::Null;
@@ -1761,6 +1787,43 @@ fn fits_numeric(t: &str, p: i64, s: i64) -> bool {
     let nines = k <= n && (z..kept).all(|i| digit(i) == 9); // padding zeros aren't 9s
     let width = width + usize::from(carry && nines);
     i64::try_from(width).is_ok_and(|w| w <= p)
+}
+
+/// Why a value failed ($meta.reasons): the first rule the single pass trips, in this order.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Reason {
+    /// Not the type's primitive kind (TS, Python and models only; Go and Rust are typed by their signatures).
+    WrongKind,
+    /// Text that isn't well-formed Unicode (a lone surrogate).
+    Malformed,
+    /// More code points than the type's maxLength (or a field's length).
+    TooLong,
+    /// Fewer code points than the type's minLength.
+    TooShort,
+    /// Doesn't match the type's pattern.
+    Pattern,
+    /// Below minimum, above maximum, or a non-finite number.
+    OutOfRange,
+    /// Failed the type's check (a check digit, a 64-bit range).
+    Check,
+    /// Not on the type's enum.
+    NotInList,
+}
+
+impl Reason {
+    /// The reason's name in $meta.reasons.
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Reason::WrongKind => "wrong_kind",
+            Reason::Malformed => "malformed",
+            Reason::TooLong => "too_long",
+            Reason::TooShort => "too_short",
+            Reason::Pattern => "pattern",
+            Reason::OutOfRange => "out_of_range",
+            Reason::Check => "check",
+            Reason::NotInList => "not_in_list",
+        }
+    }
 }
 
 /// How deep models may nest, each model and each `items` one level; deeper is refused at load.

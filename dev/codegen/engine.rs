@@ -37,10 +37,12 @@ struct ParamRule {
     max_item_bytes: Option<usize>,
 }
 
-/// A value that failed a type's rule. It displays as the type's error text.
+/// A value that failed a type's rule. It displays as the type's error text; `reason` is the first rule the
+/// value broke.
 #[derive(Debug, Clone, Copy)]
 pub struct ScalarError {
     pub scalar: &'static Meta,
+    pub reason: Reason,
 }
 
 impl fmt::Display for ScalarError {
@@ -197,15 +199,19 @@ impl Text {
     /// Normalizes `s`, then checks length and pattern. Returns the clean text, borrowed when nothing changed
     /// beyond trimming, or the type's error.
     pub fn validate<'a>(&'static self, s: &'a str) -> Result<Cow<'a, str>, ScalarError> {
-        self.check(s).ok_or(ScalarError { scalar: &self.meta })
+        self.check(s).map_err(|reason| ScalarError {
+            scalar: &self.meta,
+            reason,
+        })
     }
 
     /// Whether `validate` would succeed. It never builds an error.
     pub fn is_valid(&self, s: &str) -> bool {
-        self.check(s).is_some()
+        self.check(s).is_ok()
     }
 
-    fn check<'a>(&self, s: &'a str) -> Option<Cow<'a, str>> {
+    /// The clean text, or the first rule `s` broke.
+    fn check<'a>(&self, s: &'a str) -> Result<Cow<'a, str>, Reason> {
         // Text must be Unicode scalar values (WHATWG USVString, RFC 7493). A `&str` is always valid UTF-8 with no
         // surrogates, so there is nothing to check here; the other engines check it once trimmed.
         let mut s = Cow::Borrowed(s);
@@ -216,26 +222,29 @@ impl Text {
             if !gated && matches!(step, Step::Lowercase | Step::Uppercase) {
                 gated = true;
                 if longer_than(&s, self.max_len) {
-                    return None;
+                    return Err(Reason::TooLong);
                 }
             }
             s = apply(step, s);
         }
-        if longer_than(&s, self.max_len) || shorter_than(&s, self.min_len) {
-            return None;
+        if longer_than(&s, self.max_len) {
+            return Err(Reason::TooLong);
+        }
+        if shorter_than(&s, self.min_len) {
+            return Err(Reason::TooShort);
         }
         if let Some(pattern) = self.pattern {
             let re = self
                 .re
                 .get_or_init(|| Regex::new(pattern).expect("the build checks every pattern"));
             if !re.is_match(&s) {
-                return None;
+                return Err(Reason::Pattern);
             }
         }
         if self.rule.is_some_and(|r| !r.passes(&s)) {
-            return None;
+            return Err(Reason::Check);
         }
-        Some(s)
+        Ok(s)
     }
 }
 
@@ -253,7 +262,10 @@ impl Int {
         if self.is_valid(n) {
             Ok(n)
         } else {
-            Err(ScalarError { scalar: &self.meta })
+            Err(ScalarError {
+                scalar: &self.meta,
+                reason: Reason::OutOfRange,
+            })
         }
     }
 
@@ -277,7 +289,10 @@ impl Number {
         if self.is_valid(f) {
             Ok(f)
         } else {
-            Err(ScalarError { scalar: &self.meta })
+            Err(ScalarError {
+                scalar: &self.meta,
+                reason: Reason::OutOfRange,
+            })
         }
     }
 

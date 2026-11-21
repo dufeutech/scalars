@@ -502,6 +502,8 @@ fn main() {
             Some(Err(e)) => {
                 if e.to_string() != types[name]["error"].as_str().unwrap() || !ptr::eq(e.scalar, meta(kind)) {
                     fails.push(format!("{name} error {e} is not the type's error"));
+                } else if Some(e.reason.as_str()) != c["reason"].as_str() {
+                    fails.push(format!("{name} on {shown}: reason {}, want {}", e.reason.as_str(), c["reason"]));
                 }
             }
             Some(Ok(_)) if !ok => fails.push(format!("{name} accepts {shown}")),
@@ -552,6 +554,11 @@ fn main() {
         }
         if got != c["ok"].as_bool().unwrap() {
             fails.push(format!("hostile {name}: want {}", !got));
+        }
+        if let Err(e) = t.validate(&text) {
+            if Some(e.reason.as_str()) != c["reason"].as_str() {
+                fails.push(format!("hostile {name}: reason {}, want {}", e.reason.as_str(), c["reason"]));
+            }
         }
         if ms >= 2000.0 {
             fails.push(format!("hostile {name} took {ms:.0} ms"));

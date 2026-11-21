@@ -1,6 +1,6 @@
 // Emits dist/rust/scalars.rs: the hand-written engine (engine.rs, then models.rs) followed by one generated static per type.
 // Everything is written rustfmt-clean, and every static is a plain constant expression, so nothing runs at load.
-import { header, int64, noLoneSurrogate, readEngine } from "./common.mjs";
+import { header, int64, lockedVersion, noLoneSurrogate, readEngine } from "./common.mjs";
 import { engineNames, identifiers, metaFields, paramRules } from "./model.mjs";
 
 /** Names the engine defines and the statics it uses, so no type may take them (only upper-case ones can meet a type). */
@@ -9,8 +9,8 @@ export const RESERVED_RUST = [
     "models", "Models", "Model", "ModelError", "ModelsError", "Problem",
 ];
 
-const REGEX_VERSION = "1.13.1"; // the regex crate, the version the runner tests with
-const SERDE_JSON_VERSION = "1.0.154"; // the serde_json crate, from dev/langs/rust/Cargo.lock
+const REGEX_VERSION = lockedVersion("rust/Cargo.lock", "regex"); // the versions the runner tests with
+const SERDE_JSON_VERSION = lockedVersion("rust/Cargo.lock", "serde_json");
 const RUST_VERSION = "1.97.0";
 /** The hand-written engine: the scalars, then the models (which read `PARAM_RULES` and `ERRORS`, emitted below). */
 const ENGINE = `${readEngine("engine.rs")}

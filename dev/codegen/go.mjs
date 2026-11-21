@@ -1,6 +1,6 @@
 // Emits dist/go/scalars.go (the hand-written engine.go and models.go, then one generated record per type) and its go.mod.
 // Everything is written already gofmt-clean, and the table is plain composite literals, so Go builds it statically.
-import { fail, header, int64, noLoneSurrogate, readEngine } from "./common.mjs";
+import { fail, header, int64, lockedVersion, noLoneSurrogate, readEngine } from "./common.mjs";
 import { engineNames, identifiers, metaFields, paramRules } from "./model.mjs";
 
 /** Names the engine exports, so no type may take them. */
@@ -9,7 +9,7 @@ export const RESERVED_GO = [
     "Models", "ModelSet", "Model", "ModelError", "ModelsError", "Problem",
 ];
 
-const TEXT_VERSION = "v0.21.0"; // golang.org/x/text, the version the runner tests with
+const TEXT_VERSION = lockedVersion("go/go.mod", "golang.org/x/text"); // the version the runner tests with
 
 /**
  * `main` followed by `extra`, a second file of the same package: its package clause and import block are dropped,

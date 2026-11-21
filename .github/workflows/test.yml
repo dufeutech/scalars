@@ -36,3 +36,27 @@ jobs:
       # cgo works here, unlike on the Windows dev machine.
       - run: go test -race ./...
         working-directory: dev/langs/go
+
+  # The oldest Python and Rust the generated headers promise (Python >= 3.10, Rust >= 1.80).
+  minimums:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: dev/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: dev/langs/go/go.mod
+          cache-dependency-path: dev/langs/go/go.sum
+      - uses: dtolnay/rust-toolchain@1.80
+      - run: npm ci
+      - run: npm run check:langs

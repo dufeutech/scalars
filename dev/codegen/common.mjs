@@ -10,6 +10,26 @@ export function fail(message) {
 /** The hand-written engine `dev/codegen/<file>`, with CRLF line endings turned into LF. */
 export const readEngine = (file) => fs.readFileSync(new URL(`./${file}`, import.meta.url), "utf8").replaceAll("\r\n", "\n");
 
+/**
+ * The version of `name` that a runner's lock file pins, so a generated header names what was tested: a Cargo.lock
+ * package (`name = "regex"`, then `version = "1.13.1"`) or a go.mod requirement (`golang.org/x/text v0.21.0`).
+ */
+export function lockedVersion(file, name) {
+    const lines = fs.readFileSync(new URL(`../langs/${file}`, import.meta.url), "utf8").split(/\r?\n/).map((l) => l.trim());
+    if (file.endsWith("Cargo.lock")) {
+        const i = lines.indexOf(`name = "${name}"`);
+        const m = i >= 0 ? /^version = "([^"]+)"$/.exec(lines[i + 1] ?? "") : null;
+        if (m) return m[1];
+    } else {
+        for (const line of lines) {
+            const words = line.split(/\s+/);
+            if (words[0] === "require") words.shift();
+            if (words[0] === name && words[1]?.startsWith("v")) return words[1];
+        }
+    }
+    return fail(`dev/langs/${file} pins no version of ${name}`);
+}
+
 /** Fails the build on a lone surrogate, which no Go or Rust literal can hold (it would become U+FFFD). */
 export function noLoneSurrogate(s) {
     if (/[\ud800-\udfff]/u.test(s.replace(/[\ud800-\udbff][\udc00-\udfff]/g, ""))) fail(`Lone surrogate in ${JSON.stringify(s)}`);
@@ -40,7 +60,7 @@ export function header({ file, source, version, requires }) {
             "",
         ].join("\n");
     }
-    const mark = ext === ".py" ? "#" : "//";
+    const mark = { ".py": "#", ".ts": "//" }[ext] ?? fail(`header: no comment syntax for ${file}`);
     return [
         `${mark} ${name}.`,
         `${mark} Generated from dist/scalars.json ${generated}. Do not edit: run \`npm run build\` in dev/.`,

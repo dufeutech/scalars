@@ -172,4 +172,22 @@ test("model: metaFields lists the facts every record writes, in order", () => {
         "name", "label", "hint", "error", "details", "level", "primitive", "aliases", "examples", "kind",
         "steps", "pattern", "minLen",
     ]);
+    // The optional facts, each written only when the type has it, always in the same order.
+    const tail = (name) => metaFields(modelOf(scalars.types[name])).slice(10);
+    assert.deepEqual(tail("gtin"), [
+        ["steps", ["remove_spaces", "remove_hyphens"]], ["pattern", scalars.types.gtin.schema.pattern], ["check", "gs1_mod10"],
+        ["minLen", 8], ["maxLen", 14],
+    ]);
+    assert.deepEqual(tail("int32"), [["minimum", -2147483648], ["maximum", 2147483647]]);
+    assert.deepEqual(tail("decimal").map(([k]) => k), ["params", "pattern", "minLen"]);
+    assert.deepEqual(tail("enum"), [["params", ["values"]]]);
+});
+
+test("common: lockedVersion reads what the runners pin, header knows each comment syntax", () => {
+    assert.match(common.lockedVersion("rust/Cargo.lock", "regex"), /^[0-9]+\.[0-9]+\.[0-9]+$/);
+    assert.match(common.lockedVersion("rust/Cargo.lock", "serde_json"), /^[0-9]+\.[0-9]+\.[0-9]+$/);
+    assert.match(common.lockedVersion("go/go.mod", "golang.org/x/text"), /^v[0-9]+\.[0-9]+\.[0-9]+$/);
+    assert.throws(() => common.lockedVersion("rust/Cargo.lock", "no_such_crate"), /pins no version of no_such_crate/);
+    assert.throws(() => common.header({ file: "x.c", source: "s", version: "1", requires: "r" }), /no comment syntax for x\.c/);
+    for (const file of ["a.py", "a.ts", "a.go", "a.rs"]) assert.ok(common.header({ file, source: "s", version: "1", requires: "r" }).includes("r\n"), file);
 });

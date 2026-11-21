@@ -32,12 +32,13 @@ type Meta struct {
 }
 
 // paramRule is the limits of one setting in $meta.params. A limit it does not have is the widest int64
-// (minimum, maximum) or 0 (minItems). Tables of these are arrays of literals, so Go builds them statically.
+// (minimum, maximum) or 0 (minItems, maxItemBytes). Tables of these are arrays of literals, so Go builds them statically.
 type paramRule struct {
 	name, kind string
 	minimum    int64
 	maximum    int64
-	minItems   int
+	minItems     int
+	maxItemBytes int
 }
 
 // errorTemplate is the message template of one error code in $meta.errors; "{name}" is replaced by a param.
@@ -1226,8 +1227,8 @@ func (l *loader) checkSetting(t *typeInfo, v *modelDef, k string) (any, bool) {
 		if !ok || len(list) < rule.minItems {
 			break
 		}
-		// Entries must be strings, unique, and already clean: the type's own check returns each unchanged. The
-		// list is copied, so the loaded models never alias the caller's data.
+		// Entries must be strings, unique, already clean (the type's own check returns each unchanged), and within
+		// maxItemBytes as UTF-8. The list is copied, so the loaded models never alias the caller's data.
 		out := make([]string, 0, len(list))
 		seen := make(map[string]struct{}, len(list))
 		for i, entry := range list {
@@ -1235,7 +1236,8 @@ func (l *loader) checkSetting(t *typeInfo, v *modelDef, k string) (any, bool) {
 			if isText {
 				clean, valid := check(t.scalar, s)
 				_, dup := seen[s]
-				isText = valid && clean == s && !dup
+				fits := rule.maxItemBytes == 0 || len(s) <= rule.maxItemBytes
+				isText = valid && clean == s && fits && !dup
 			}
 			if !isText {
 				l.report(v.path(key(k), segment{idx: i}), "bad_setting", nil)
@@ -1588,12 +1590,12 @@ func fitsNumeric(t string, p, s int64) bool {
 
 // paramRules holds the limits of each setting in $meta.params.
 var paramRules = [...]paramRule{
-	{"length", "integer", 1, 10485760, 0},
-	{"precision", "integer", 1, 1000, 0},
-	{"scale", "integer", -1000, 1000, 0},
-	{"fractional_seconds", "integer", 0, 6, 0},
-	{"values", "array", math.MinInt64, math.MaxInt64, 1},
-	{"nullable", "boolean", math.MinInt64, math.MaxInt64, 0},
+	{"length", "integer", 1, 10485760, 0, 0},
+	{"precision", "integer", 1, 1000, 0, 0},
+	{"scale", "integer", -1000, 1000, 0, 0},
+	{"fractional_seconds", "integer", 0, 6, 0, 0},
+	{"values", "array", math.MinInt64, math.MaxInt64, 1, 63},
+	{"nullable", "boolean", math.MinInt64, math.MaxInt64, 0, 0},
 }
 
 // errorTemplates holds the message template of each error code in $meta.errors.

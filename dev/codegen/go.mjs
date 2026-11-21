@@ -139,7 +139,7 @@ ${meta}
 /** The two tables as arrays of struct literals: no map, so nothing runs at program start. */
 function tables(meta) {
     const rules = Object.entries(paramRules(meta)).map(([name, r]) =>
-        `\t{${str(name)}, ${str(r.kind)}, ${int64(r.minimum, name, "math.MinInt64")}, ${int64(r.maximum, name, "math.MaxInt64")}, ${r.minItems ?? 0}},\n`);
+        `\t{${str(name)}, ${str(r.kind)}, ${int64(r.minimum, name, "math.MinInt64")}, ${int64(r.maximum, name, "math.MaxInt64")}, ${r.minItems ?? 0}, ${r.maxItemBytes ?? 0}},\n`);
     const errors = Object.entries(meta.errors).map(([code, text]) => `\t{${str(code)}, ${str(text)}},\n`);
     return `// paramRules holds the limits of each setting in $meta.params.
 var paramRules = [...]paramRule{

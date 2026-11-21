@@ -89,8 +89,9 @@
             "values": {
                 "type": "array",
                 "minItems": 1,
+                "maxItemBytes": 63,
                 "level": "core",
-                "description": "The allowed values, in order; the order is also the sort order. HTML: the select options. Postgres: CREATE TYPE ... AS ENUM (...); values can be added later, never removed."
+                "description": "The allowed values, in order; the order is also the sort order. Each is at most 63 bytes as UTF-8, the Postgres limit for an enum label. HTML: the select options. Postgres: CREATE TYPE ... AS ENUM (...); values can be added later, never removed."
             },
             "nullable": {
                 "type": "boolean",

@@ -70,7 +70,7 @@ export const paramRules = (meta) =>
     Object.fromEntries(
         Object.entries(meta.params).map(([name, p]) => [
             name,
-            { kind: p.type, minimum: p.minimum ?? null, maximum: p.maximum ?? null, minItems: p.minItems ?? null },
+            { kind: p.type, minimum: p.minimum ?? null, maximum: p.maximum ?? null, minItems: p.minItems ?? null, maxItemBytes: p.maxItemBytes ?? null },
         ]),
     );
 

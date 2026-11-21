@@ -9,6 +9,16 @@ const DIGIT_SETTINGS: readonly string[] = ["precision", "scale"];
 /** The key only models() holds: a Model or Models built by hand would skip load's checks. */
 const INTERNAL: unique symbol = Symbol("models()");
 
+/** The UTF-8 length of well-formed text, counted over its UTF-16 code units: each half of a pair is 2 bytes. */
+function utf8Length(s: string): number {
+    let n = 0;
+    for (let i = 0; i < s.length; i++) {
+        const c = s.charCodeAt(i);
+        n += c < 0x80 ? 1 : c < 0x800 || (c >= 0xd800 && c <= 0xdfff) ? 2 : 3;
+    }
+    return n;
+}
+
 /** Refuses a constructor call from outside this module. */
 function internalOnly(key: unknown, what: string): void {
     if (key !== INTERNAL) throw new TypeError(`${what} is built by models(), not by new`);
@@ -451,11 +461,14 @@ class Loader {
                 && (rule.minimum === null || value >= rule.minimum) && (rule.maximum === null || value <= rule.maximum);
         } else if (rule.kind === "array") {
             ok = Array.isArray(value) && (rule.minItems === null || value.length >= rule.minItems);
-            // Entries must be strings, unique, and already clean: the type's validate returns each unchanged.
+            // Entries must be strings, unique, already clean (the type's validate returns each unchanged), and
+            // within maxItemBytes as UTF-8.
             if (ok) {
                 const seen = new Set<string>();
+                const most = rule.maxItemBytes;
                 (value as unknown[]).forEach((entry, i) => {
-                    if (typeof entry === "string" && (type as Scalar<unknown>)["run"](entry) === entry && !seen.has(entry)) seen.add(entry);
+                    if (typeof entry === "string" && (type as Scalar<unknown>)["run"](entry) === entry && (most === null || utf8Length(entry) <= most)
+                        && !seen.has(entry)) seen.add(entry);
                     else {
                         this.report(v.path(key, i), "bad_setting");
                         ok = false;

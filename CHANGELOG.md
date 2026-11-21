@@ -7,6 +7,7 @@
 - Field settings are now enforced in models: `length`, `values`, `precision` and `scale` (what Postgres `numeric(p, s)` refuses), `nullable`, and `items` on `array`.
 - Errors have a fixed `code`, an RFC 6901 `pointer` and `params`, so they drop into an RFC 9457 response and can be translated. `ModelError` (payload) and `ModelsError` (file) list every problem, sorted by location. The English templates are new in `$meta.errors` in `dist/scalars.json`. In Rust, `serde_json::Value::from(&problem)` gives the JSON object.
 - `schema/models.schema.json`, a JSON Schema for models files.
+- `$meta.params.values` has `maxItemBytes: 63`: each enum value is at most 63 bytes as UTF-8, the longest label Postgres `CREATE TYPE ... AS ENUM` takes. Models refuse a longer one with `bad_setting`.
 - **Rust now needs `serde_json`** (as well as `regex`) for models data and payloads.
 
 ### Fixed

@@ -759,8 +759,8 @@ func (l *loader) checkSetting(t *typeInfo, v *modelDef, k string) (any, bool) {
 		if !ok || len(list) < rule.minItems {
 			break
 		}
-		// Entries must be strings, unique, and already clean: the type's own check returns each unchanged. The
-		// list is copied, so the loaded models never alias the caller's data.
+		// Entries must be strings, unique, already clean (the type's own check returns each unchanged), and within
+		// maxItemBytes as UTF-8. The list is copied, so the loaded models never alias the caller's data.
 		out := make([]string, 0, len(list))
 		seen := make(map[string]struct{}, len(list))
 		for i, entry := range list {
@@ -768,7 +768,8 @@ func (l *loader) checkSetting(t *typeInfo, v *modelDef, k string) (any, bool) {
 			if isText {
 				clean, valid := check(t.scalar, s)
 				_, dup := seen[s]
-				isText = valid && clean == s && !dup
+				fits := rule.maxItemBytes == 0 || len(s) <= rule.maxItemBytes
+				isText = valid && clean == s && fits && !dup
 			}
 			if !isText {
 				l.report(v.path(key(k), segment{idx: i}), "bad_setting", nil)

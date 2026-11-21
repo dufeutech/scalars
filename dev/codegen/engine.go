@@ -25,12 +25,13 @@ type Meta struct {
 }
 
 // paramRule is the limits of one setting in $meta.params. A limit it does not have is the widest int64
-// (minimum, maximum) or 0 (minItems). Tables of these are arrays of literals, so Go builds them statically.
+// (minimum, maximum) or 0 (minItems, maxItemBytes). Tables of these are arrays of literals, so Go builds them statically.
 type paramRule struct {
 	name, kind string
 	minimum    int64
 	maximum    int64
-	minItems   int
+	minItems     int
+	maxItemBytes int
 }
 
 // errorTemplate is the message template of one error code in $meta.errors; "{name}" is replaced by a param.

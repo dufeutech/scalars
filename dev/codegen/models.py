@@ -468,12 +468,15 @@ class _Loader:
         elif kind == "array":
             least = rule["minItems"]
             ok = _b.isinstance(value, _b.list) and (least is None or _b.len(value) >= least)
-            # Entries must be strings, unique, and already clean: the type's validate returns each unchanged.
+            # Entries must be strings, unique, already clean (the type's validate returns each unchanged), and
+            # within maxItemBytes as UTF-8.
             if ok:
                 seen: set[str] = _b.set()
+                most = rule["maxItemBytes"]
                 for i, entry in _b.enumerate(value):
                     r = typ._check(entry) if _b.isinstance(entry, _b.str) else _NO  # type: ignore[union-attr]
-                    if r is not _NO and r == entry and entry not in seen:
+                    fits = r is not _NO and (most is None or _b.len(entry.encode("utf-8")) <= most)
+                    if fits and r == entry and entry not in seen:
                         seen.add(entry)
                     else:
                         self.report(v.path(key, i), "bad_setting")

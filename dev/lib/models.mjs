@@ -289,12 +289,14 @@ export function loadModels(data, scalars) {
                 && (rule.minimum === null || value >= rule.minimum) && (rule.maximum === null || value <= rule.maximum);
         } else if (rule.kind === "array") {
             ok = Array.isArray(value) && (rule.minItems === null || value.length >= rule.minItems);
-            // Entries must be strings, unique, and already clean: the type's validate returns each unchanged.
+            // Entries must be strings, unique, already clean (the type's validate returns each unchanged), and
+            // within maxItemBytes as UTF-8.
             if (ok) {
                 const seen = new Set();
                 value.forEach((entry, i) => {
                     const r = typeof entry === "string" ? validate(type, entry) : null;
-                    if (r?.ok && r.value === entry && !seen.has(entry)) seen.add(entry);
+                    const fits = rule.maxItemBytes === null || (r?.ok && Buffer.byteLength(entry, "utf8") <= rule.maxItemBytes);
+                    if (r?.ok && r.value === entry && fits && !seen.has(entry)) seen.add(entry);
                     else { report(pathOf(v, key, i), "bad_setting"); ok = false; }
                 });
                 return ok;

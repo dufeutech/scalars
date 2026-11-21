@@ -247,3 +247,42 @@ test("schema setting keys are the $meta.params keys plus items", () => {
     assert.equal(new RegExp(modelsSchema.$defs.name.pattern).source, NAME.source);
     assert.equal(new RegExp(modelsSchema.$defs.reference.pattern).source, REF.source);
 });
+
+test("schema settings have the $meta.params kinds and limits", () => {
+    const props = modelsSchema.$defs.field.oneOf.find((s) => s.type === "object").properties;
+    for (const [name, p] of Object.entries(scalars.$meta.params)) {
+        const s = props[name];
+        assert.equal(s.type, p.type, `${name}.type`);
+        for (const k of ["minimum", "maximum", "minItems"]) assert.equal(s[k], p[k], `${name}.${k}`);
+        if (p.type === "array") {
+            assert.equal(s.uniqueItems, true, `${name}: entries are unique`);
+            assert.equal(s.items.type, "string", `${name}: entries are strings`);
+        }
+        // maxLength counts code points, at most one per byte, so it may be no tighter than the byte limit.
+        if (p.maxItemBytes !== undefined) assert.equal(s.items.maxLength, p.maxItemBytes, `${name}: maxLength bounds maxItemBytes`);
+    }
+});
+
+test("schema refuses out-of-range settings and bad values entries", async () => {
+    const validate = await validateFile();
+    const field = (settings) => ({ app: { user: { x: { type: "string", ...settings } } } });
+    for (const [name, p] of Object.entries(scalars.$meta.params)) {
+        if (p.minimum !== undefined) assert.ok(!validate(field({ [name]: p.minimum - 1 })), `${name} below minimum`);
+        if (p.maximum !== undefined) assert.ok(!validate(field({ [name]: p.maximum + 1 })), `${name} above maximum`);
+        if (p.type === "integer") assert.ok(!validate(field({ [name]: 1.5 })), `${name} not an integer`);
+    }
+    assert.ok(!validate(field({ values: [] })), "no values");
+    assert.ok(!validate(caseNamed("enum_dup_value").data), "a duplicate value");
+    assert.ok(!validate(caseNamed("enum_non_string_value").data), "a non-string value");
+    assert.ok(!validate(field({ values: ["a".repeat(64)] })), "a value over 63 characters");
+});
+
+test("maxItemBytes is the Postgres enum label limit", async () => {
+    const { PGlite } = await import("@electric-sql/pglite");
+    const db = new PGlite();
+    const most = scalars.$meta.params.values.maxItemBytes;
+    const label = (bytes) => "é".repeat(Math.floor(bytes / 2)) + "a".repeat(bytes % 2); // 2-byte characters
+    await db.exec(`CREATE TYPE fits AS ENUM ('${label(most)}')`);
+    await assert.rejects(db.exec(`CREATE TYPE too_long AS ENUM ('${label(most + 1)}')`), /invalid enum label/);
+    await db.close();
+});

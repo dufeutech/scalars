@@ -34,6 +34,7 @@ struct ParamRule {
     minimum: Option<i64>,
     maximum: Option<i64>,
     min_items: Option<usize>,
+    max_item_bytes: Option<usize>,
 }
 
 /// A value that failed a type's rule. It displays as the type's error text.

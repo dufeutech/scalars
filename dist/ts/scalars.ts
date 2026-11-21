@@ -167,6 +167,7 @@ interface ParamRule {
     readonly minimum: number | null;
     readonly maximum: number | null;
     readonly minItems: number | null;
+    readonly maxItemBytes: number | null;
 }
 
 /** The fields a type is built from. */
@@ -369,6 +370,16 @@ const MAX_DEPTH = 64;
 const DIGIT_SETTINGS: readonly string[] = ["precision", "scale"];
 /** The key only models() holds: a Model or Models built by hand would skip load's checks. */
 const INTERNAL: unique symbol = Symbol("models()");
+
+/** The UTF-8 length of well-formed text, counted over its UTF-16 code units: each half of a pair is 2 bytes. */
+function utf8Length(s: string): number {
+    let n = 0;
+    for (let i = 0; i < s.length; i++) {
+        const c = s.charCodeAt(i);
+        n += c < 0x80 ? 1 : c < 0x800 || (c >= 0xd800 && c <= 0xdfff) ? 2 : 3;
+    }
+    return n;
+}
 
 /** Refuses a constructor call from outside this module. */
 function internalOnly(key: unknown, what: string): void {
@@ -812,11 +823,14 @@ class Loader {
                 && (rule.minimum === null || value >= rule.minimum) && (rule.maximum === null || value <= rule.maximum);
         } else if (rule.kind === "array") {
             ok = Array.isArray(value) && (rule.minItems === null || value.length >= rule.minItems);
-            // Entries must be strings, unique, and already clean: the type's validate returns each unchanged.
+            // Entries must be strings, unique, already clean (the type's validate returns each unchanged), and
+            // within maxItemBytes as UTF-8.
             if (ok) {
                 const seen = new Set<string>();
+                const most = rule.maxItemBytes;
                 (value as unknown[]).forEach((entry, i) => {
-                    if (typeof entry === "string" && (type as Scalar<unknown>)["run"](entry) === entry && !seen.has(entry)) seen.add(entry);
+                    if (typeof entry === "string" && (type as Scalar<unknown>)["run"](entry) === entry && (most === null || utf8Length(entry) <= most)
+                        && !seen.has(entry)) seen.add(entry);
                     else {
                         this.report(v.path(key, i), "bad_setting");
                         ok = false;
@@ -1068,7 +1082,7 @@ function loadModels(data: unknown): Models {
 }
 
 /** The limits of each setting in $meta.params. */
-const PARAM_RULES: Readonly<Record<string, ParamRule>> = {"length":{"kind":"integer","minimum":1,"maximum":10485760,"minItems":null},"precision":{"kind":"integer","minimum":1,"maximum":1000,"minItems":null},"scale":{"kind":"integer","minimum":-1000,"maximum":1000,"minItems":null},"fractional_seconds":{"kind":"integer","minimum":0,"maximum":6,"minItems":null},"values":{"kind":"array","minimum":null,"maximum":null,"minItems":1},"nullable":{"kind":"boolean","minimum":null,"maximum":null,"minItems":null}};
+const PARAM_RULES: Readonly<Record<string, ParamRule>> = {"length":{"kind":"integer","minimum":1,"maximum":10485760,"minItems":null,"maxItemBytes":null},"precision":{"kind":"integer","minimum":1,"maximum":1000,"minItems":null,"maxItemBytes":null},"scale":{"kind":"integer","minimum":-1000,"maximum":1000,"minItems":null,"maxItemBytes":null},"fractional_seconds":{"kind":"integer","minimum":0,"maximum":6,"minItems":null,"maxItemBytes":null},"values":{"kind":"array","minimum":null,"maximum":null,"minItems":1,"maxItemBytes":63},"nullable":{"kind":"boolean","minimum":null,"maximum":null,"minItems":null,"maxItemBytes":null}};
 
 /** The message template of each error code in $meta.errors. */
 const ERRORS: Readonly<Record<string, string>> = {"required":"Required.","unknown_field":"Not a field of this model.","not_object":"Must be an object.","not_list":"Must be a list.","too_long":"At most {max} characters.","not_allowed":"Must be one of: {values}.","too_many_digits":"Too many digits for precision {precision}, scale {scale}.","bad_name":"Names are lowercase letters, digits and underscores, starting with a letter.","type_name":"A model can't take a type's name.","unresolved":"No type or model by this name.","alias":"This is an alias; write \"{canonical}\".","unknown_setting":"This type takes no such setting.","bad_setting":"Out of range or the wrong kind of value.","missing_setting":"Needs \"{setting}\".","cycle":"This reference leads back to itself.","too_deep":"Models nest more than {max} levels deep."};

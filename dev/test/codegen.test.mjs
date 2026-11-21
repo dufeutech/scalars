@@ -142,9 +142,10 @@ test("model: types carry their params", () => {
 test("paramRules: one rule per $meta.params key", () => {
     const rules = paramRules(scalars.$meta);
     assert.deepEqual(Object.keys(rules), Object.keys(scalars.$meta.params));
-    assert.deepEqual(rules.scale, { kind: "integer", minimum: -1000, maximum: 1000, minItems: null });
+    assert.deepEqual(rules.scale, { kind: "integer", minimum: -1000, maximum: 1000, minItems: null, maxItemBytes: null });
     assert.equal(rules.values.minItems, 1);
-    assert.deepEqual(rules.nullable, { kind: "boolean", minimum: null, maximum: null, minItems: null });
+    assert.equal(rules.values.maxItemBytes, 63);
+    assert.deepEqual(rules.nullable, { kind: "boolean", minimum: null, maximum: null, minItems: null, maxItemBytes: null });
 });
 
 test("python: params and the two tables are emitted", () => {

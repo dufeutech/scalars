@@ -51,6 +51,7 @@
                             "minimum": { "type": "integer" },
                             "maximum": { "type": "integer" },
                             "minItems": { "type": "integer" },
+                            "maxItemBytes": { "type": "integer", "minimum": 1, "description": "Most bytes, as UTF-8, each entry of a list setting may have." },
                             "default": {},
                             "level": { "enum": ["core", "advanced"] },
                             "description": { "type": "string" }

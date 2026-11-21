@@ -164,6 +164,7 @@ interface ParamRule {
     readonly minimum: number | null;
     readonly maximum: number | null;
     readonly minItems: number | null;
+    readonly maxItemBytes: number | null;
 }
 
 /** The fields a type is built from. */

@@ -113,7 +113,7 @@ function record(m, id, ids) {
 function tables(meta) {
     const opt = (n) => (n === null ? "None" : `Some(${n})`);
     const rules = Object.entries(paramRules(meta)).map(([name, r]) =>
-        `    ParamRule {\n        name: ${str(name)},\n        kind: ${str(r.kind)},\n        minimum: ${opt(r.minimum)},\n        maximum: ${opt(r.maximum)},\n        min_items: ${opt(r.minItems)},\n    },\n`);
+        `    ParamRule {\n        name: ${str(name)},\n        kind: ${str(r.kind)},\n        minimum: ${opt(r.minimum)},\n        maximum: ${opt(r.maximum)},\n        min_items: ${opt(r.minItems)},\n        max_item_bytes: ${opt(r.maxItemBytes)},\n    },\n`);
     const errors = Object.entries(meta.errors).map(([code, text]) => {
         const one = `    (${str(code)}, ${str(text)})`; // rustfmt breaks a tuple wider than 60
         return one.length - 4 <= 60 ? `${one},\n` : `    (\n        ${str(code)},\n        ${str(text)},\n    ),\n`;

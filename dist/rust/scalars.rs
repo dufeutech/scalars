@@ -38,6 +38,7 @@ struct ParamRule {
     minimum: Option<i64>,
     maximum: Option<i64>,
     min_items: Option<usize>,
+    max_item_bytes: Option<usize>,
 }
 
 /// A value that failed a type's rule. It displays as the type's error text.
@@ -1423,13 +1424,16 @@ impl<'a> Loader<'a> {
             "array" => {
                 let min = rule.min_items.unwrap_or(0);
                 if let Some(list) = value.as_array().filter(|l| l.len() >= min) {
-                    // Entries must be strings, unique, and already clean: the type's check returns each unchanged.
+                    // Entries must be strings, unique, already clean (the type's check returns each unchanged), and
+                    // within max_item_bytes as UTF-8.
                     let kind = kind.expect("a list setting belongs to a type");
                     let mut seen: HashSet<&str> = HashSet::with_capacity(list.len());
                     let mut ok = true;
                     for (i, entry) in list.iter().enumerate() {
                         let clean = entry.as_str().filter(|s| {
-                            check(kind, entry).as_ref() == Some(entry) && !seen.contains(s)
+                            check(kind, entry).as_ref() == Some(entry)
+                                && rule.max_item_bytes.map_or(true, |most| s.len() <= most)
+                                && !seen.contains(s)
                         });
                         match clean {
                             Some(s) => {
@@ -1770,6 +1774,7 @@ static PARAM_RULES: &[ParamRule] = &[
         minimum: Some(1),
         maximum: Some(10485760),
         min_items: None,
+        max_item_bytes: None,
     },
     ParamRule {
         name: "precision",
@@ -1777,6 +1782,7 @@ static PARAM_RULES: &[ParamRule] = &[
         minimum: Some(1),
         maximum: Some(1000),
         min_items: None,
+        max_item_bytes: None,
     },
     ParamRule {
         name: "scale",
@@ -1784,6 +1790,7 @@ static PARAM_RULES: &[ParamRule] = &[
         minimum: Some(-1000),
         maximum: Some(1000),
         min_items: None,
+        max_item_bytes: None,
     },
     ParamRule {
         name: "fractional_seconds",
@@ -1791,6 +1798,7 @@ static PARAM_RULES: &[ParamRule] = &[
         minimum: Some(0),
         maximum: Some(6),
         min_items: None,
+        max_item_bytes: None,
     },
     ParamRule {
         name: "values",
@@ -1798,6 +1806,7 @@ static PARAM_RULES: &[ParamRule] = &[
         minimum: None,
         maximum: None,
         min_items: Some(1),
+        max_item_bytes: Some(63),
     },
     ParamRule {
         name: "nullable",
@@ -1805,6 +1814,7 @@ static PARAM_RULES: &[ParamRule] = &[
         minimum: None,
         maximum: None,
         min_items: None,
+        max_item_bytes: None,
     },
 ];
 

@@ -1,14 +1,28 @@
 // scalars.ts, catalogue version 0.5.0.
 // Generated from dist/scalars.json by dev/codegen/ts.mjs. Do not edit: run `npm run build` in dev/.
 // Requires TypeScript >= 5.6 or Node >= 22.18 (tested on Node 24). Erasable syntax only. No dependencies.
-/** A value failed a type's rule. `message` is the type's `error` text; `scalar` is the type. */
+/**
+ * A value failed a type's rule. `message` is the type's `error` text; `scalar` is the type; `reason` is the first
+ * rule the value broke ($meta.reasons).
+ */
 export class ScalarError extends Error {
     readonly scalar: Scalar<unknown>;
+    readonly reason: Reason;
 
-    constructor(scalar: Scalar<unknown>) {
+    constructor(scalar: Scalar<unknown>, reason: Reason) {
         super(scalar.error);
         this.name = "ScalarError";
         this.scalar = scalar;
+        this.reason = reason;
+    }
+}
+
+/** What `run` returns for "not valid": one module constant per reason (FAIL), so it allocates nothing. */
+class Failure {
+    readonly reason: Reason;
+
+    constructor(reason: Reason) {
+        this.reason = reason;
     }
 }
 
@@ -157,8 +171,6 @@ function isPlainObject(v: unknown): boolean {
     return proto === Object.prototype || proto === null;
 }
 
-const NO = Symbol("not valid"); // what `run` returns for "not valid"; a value can never be this symbol
-
 type Kind = "text" | "integer" | "number" | "boolean" | "object" | "array" | "any";
 
 /** The limits of one setting in $meta.params; a limit it does not have is null. */
@@ -270,54 +282,63 @@ export class Scalar<T> {
     /** Normalize (text), then check kind, length, pattern and bounds. Returns the clean value or throws ScalarError. */
     validate(v: unknown): T {
         const r = this.run(v);
-        if (r === NO) throw new ScalarError(this);
+        if (r instanceof Failure) throw new ScalarError(this, r.reason);
         return r as T;
     }
 
     /** True exactly when `validate(v)` would succeed. Never builds an error. */
     isValid(v: unknown): boolean {
-        return this.run(v) !== NO;
+        return !(this.run(v) instanceof Failure);
     }
 
-    /** Once trimmed: not already too long (O(1): a code point is at most two units), then well-formed. */
-    private formed(s: string): boolean {
-        if (this.early && Math.ceil(s.length / 2) > this.maxLen) return false;
-        return isWellFormed(s);
+    /** Once trimmed: not already too long (counting stops at maxLen + 1), then well-formed. The failure, or undefined. */
+    private formed(s: string): Failure | undefined {
+        if (this.early && longerThan(s, this.maxLen)) return FAIL.TooLong;
+        return isWellFormed(s) ? undefined : FAIL.Malformed;
     }
 
     private run(v: unknown): unknown {
         switch (this.kind) {
             case "text": {
-                if (typeof v !== "string") return NO;
+                if (typeof v !== "string") return FAIL.WrongKind;
                 let s = v;
                 const steps = this.steps;
                 const gate = this.caseAt;
                 const form = this.formAt;
                 for (let i = 0; i < steps.length; i++) {
-                    if (i === form && !this.formed(s)) return NO;
+                    if (i === form) {
+                        const f = this.formed(s);
+                        if (f !== undefined) return f;
+                    }
                     // Text already too long is refused before case mapping copies it.
-                    if (i === gate && longerThan(s, this.maxLen)) return NO;
+                    if (i === gate && longerThan(s, this.maxLen)) return FAIL.TooLong;
                     s = steps[i](s);
                 }
-                if (form === steps.length && !this.formed(s)) return NO;
-                if (longerThan(s, this.maxLen) || shorterThan(s, this.minLen)) return NO;
+                if (form === steps.length) {
+                    const f = this.formed(s);
+                    if (f !== undefined) return f;
+                }
+                if (longerThan(s, this.maxLen)) return FAIL.TooLong;
+                if (shorterThan(s, this.minLen)) return FAIL.TooShort;
                 if (this.pattern !== undefined) {
                     const rx = (this.rx ??= new RegExp(this.pattern, "u"));
-                    if (!rx.test(s)) return NO;
+                    if (!rx.test(s)) return FAIL.Pattern;
                 }
-                if (this.test !== undefined && !this.test(s)) return NO;
+                if (this.test !== undefined && !this.test(s)) return FAIL.Check;
                 return s;
             }
             case "integer":
-                return typeof v === "number" && Number.isInteger(v) && v >= this.minimum && v <= this.maximum ? v : NO;
+                if (typeof v !== "number" || !Number.isInteger(v)) return FAIL.WrongKind;
+                return v >= this.minimum && v <= this.maximum ? v : FAIL.OutOfRange;
             case "number":
-                return typeof v === "number" && Number.isFinite(v) && v >= this.minimum && v <= this.maximum ? v : NO;
+                if (typeof v !== "number") return FAIL.WrongKind;
+                return Number.isFinite(v) && v >= this.minimum && v <= this.maximum ? v : FAIL.OutOfRange;
             case "boolean":
-                return typeof v === "boolean" ? v : NO;
+                return typeof v === "boolean" ? v : FAIL.WrongKind;
             case "object":
-                return isPlainObject(v) ? v : NO;
+                return isPlainObject(v) ? v : FAIL.WrongKind;
             case "array":
-                return Array.isArray(v) ? v : NO;
+                return Array.isArray(v) ? v : FAIL.WrongKind;
             default:
                 return v;
         }
@@ -961,7 +982,7 @@ function walk(f: ModelField, v: unknown, up: Loc | null, seg: Segment | undefine
     if (f.kind === "type") {
         const t = f.type as Scalar<unknown>;
         const r = t["run"](v);
-        if (r === NO) {
+        if (r instanceof Failure) {
             report(problems, seg === undefined ? up : { up, seg }, "invalid", { type: t.name }, t.error);
             return null;
         }
@@ -1076,6 +1097,39 @@ function loadModels(data: unknown): Models {
     for (const field of loaded.fields) if (field.kind === "model") field.target = byName.get(field.model) as Model;
     return new Models(INTERNAL, byName);
 }
+
+/** Why a value failed ($meta.reasons): the first rule the single pass trips, in this order. */
+export const Reason = {
+    /** Not the type's primitive kind (TS, Python and models only; Go and Rust are typed by their signatures). */
+    WrongKind: "wrong_kind",
+    /** Text that isn't well-formed Unicode (a lone surrogate). */
+    Malformed: "malformed",
+    /** More code points than the type's maxLength (or a field's length). */
+    TooLong: "too_long",
+    /** Fewer code points than the type's minLength. */
+    TooShort: "too_short",
+    /** Doesn't match the type's pattern. */
+    Pattern: "pattern",
+    /** Below minimum, above maximum, or a non-finite number. */
+    OutOfRange: "out_of_range",
+    /** Failed the type's check (a check digit, a 64-bit range). */
+    Check: "check",
+    /** Not on the type's enum. */
+    NotInList: "not_in_list",
+} as const;
+export type Reason = (typeof Reason)[keyof typeof Reason];
+
+/** One failure per reason, so `run` allocates nothing to say "not valid". */
+const FAIL = {
+    WrongKind: new Failure(Reason.WrongKind),
+    Malformed: new Failure(Reason.Malformed),
+    TooLong: new Failure(Reason.TooLong),
+    TooShort: new Failure(Reason.TooShort),
+    Pattern: new Failure(Reason.Pattern),
+    OutOfRange: new Failure(Reason.OutOfRange),
+    Check: new Failure(Reason.Check),
+    NotInList: new Failure(Reason.NotInList),
+} as const;
 
 /** The limits of each setting in $meta.params. */
 const PARAM_RULES: Readonly<Record<string, ParamRule>> = {"length":{"kind":"integer","minimum":1,"maximum":10485760,"minItems":null,"maxItemBytes":null},"precision":{"kind":"integer","minimum":1,"maximum":1000,"minItems":null,"maxItemBytes":null},"scale":{"kind":"integer","minimum":-1000,"maximum":1000,"minItems":null,"maxItemBytes":null},"fractional_seconds":{"kind":"integer","minimum":0,"maximum":6,"minItems":null,"maxItemBytes":null},"values":{"kind":"array","minimum":null,"maximum":null,"minItems":1,"maxItemBytes":63},"nullable":{"kind":"boolean","minimum":null,"maximum":null,"minItems":null,"maxItemBytes":null}};

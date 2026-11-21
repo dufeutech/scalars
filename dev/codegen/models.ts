@@ -600,7 +600,7 @@ function walk(f: ModelField, v: unknown, up: Loc | null, seg: Segment | undefine
     if (f.kind === "type") {
         const t = f.type as Scalar<unknown>;
         const r = t["run"](v);
-        if (r === NO) {
+        if (r instanceof Failure) {
             report(problems, seg === undefined ? up : { up, seg }, "invalid", { type: t.name }, t.error);
             return null;
         }

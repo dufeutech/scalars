@@ -77,6 +77,7 @@
         { "type": "char", "in": "ab", "ok": false, "reason": "too_long" },
         { "type": "date", "in": "2026", "ok": false, "reason": "too_short" },
         { "type": "char", "in": "a\ud800", "ok": false, "reason": "too_long", "malformed": "surrogate" },
+        { "type": "char", "in": "\ud800a", "ok": false, "reason": "too_long", "malformed": "surrogate" },
         { "type": "country", "in": " u\ud800 ", "ok": false, "reason": "malformed", "malformed": "surrogate" },
         { "type": "iban", "in": "GB82 WEST 1234 5698 7654 3212 3456 7890 1234 5", "ok": false, "reason": "too_long" },
         { "type": "iban", "in": "GB82 WEST 1234 5698 7654 3212 3456 7890 1\ud800", "ok": false, "reason": "malformed", "malformed": "surrogate" },

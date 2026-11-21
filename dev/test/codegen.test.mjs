@@ -230,3 +230,20 @@ test("models constants are emitted once, from the reference", async () => {
         for (const re of defs) assert.doesNotMatch(common.readEngine(file), re, `${file} defines ${re}`);
     }
 });
+
+test("reasons are emitted from $meta.reasons, never spelled by an engine", () => {
+    const names = Object.keys(scalars.$meta.reasons);
+    const spelled = new RegExp(`["'](${names.join("|")})["']`);
+    // engine.py's __slots__ name the public attribute `check`, which is not the reason: drop those tuples first.
+    const source = (file) => common.readEngine(file).replace(/__slots__ = \([^)]*\)/g, "");
+    for (const file of ["engine.ts", "engine.py", "engine.go", "engine.rs"]) {
+        assert.doesNotMatch(source(file), spelled, `${file} spells a reason`);
+    }
+    const { code } = build(root);
+    const ts = code["ts/scalars.ts"];
+    assert.match(ts, /^export const Reason = \{/m);
+    for (const r of names) assert.ok(ts.includes(`    ${pascal(r)}: ${JSON.stringify(r)},\n`), `ts lacks Reason.${pascal(r)}`);
+    const py = code["python/scalars.py"];
+    assert.match(py, /^class Reason:/m);
+    for (const r of names) assert.ok(py.includes(`    ${r.toUpperCase()}: Final = ${JSON.stringify(r)}\n`), `python lacks Reason.${r.toUpperCase()}`);
+});

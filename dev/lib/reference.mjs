@@ -64,8 +64,17 @@ export const CHECKS = {
 };
 
 const models = new WeakMap();
-/** Length in code points (the library's length unit): a surrogate pair counts once. */
-export const codePoints = (s) => { let n = 0; for (let i = 0; i < s.length; i++) { n++; if (s.charCodeAt(i) >= 0xd800 && s.charCodeAt(i) < 0xdc00) i++; } return n; };
+/** Length in code points (the library's length unit): a surrogate pair counts once, a lone surrogate once. */
+export const codePoints = (s) => {
+    let n = 0;
+    for (let i = 0; i < s.length; i++) {
+        n++;
+        const c = s.charCodeAt(i);
+        const next = s.charCodeAt(i + 1);
+        if (c >= 0xd800 && c < 0xdc00 && next >= 0xdc00 && next < 0xe000) i++;
+    }
+    return n;
+};
 
 /** One frozen failure per reason of $meta.reasons (src/scalar.json $defs.reasons), so a failure allocates nothing. */
 const FAIL = Object.fromEntries(Object.keys(JSON.parse(fs.readFileSync(new URL("../../src/scalar.json", import.meta.url), "utf8")).$defs.reasons).map((r) => [r, Object.freeze({ ok: false, reason: r })]));

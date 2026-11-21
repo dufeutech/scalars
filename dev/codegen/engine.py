@@ -20,15 +20,26 @@ _WS: Final = (
 )
 
 _Obj = _b.object  # annotations say `object`, which the table below shadows
-_NO: Final = _Obj()  # what _check returns for "not valid"; a value can never be this object
+# Reason and _FAIL are emitted after this file, from $meta.reasons.
+
+
+class _Failure:
+    """What _check returns for "not valid": one module constant per reason (_FAIL), so it allocates nothing."""
+
+    __slots__ = ("reason",)
+
+    def __init__(self, reason: str) -> None:
+        self.reason = reason
 
 
 class ScalarError(_b.ValueError):
-    """A value failed a type's rule. `str(error)` is the type's `error` text; `scalar` is the type."""
+    """A value failed a type's rule. `str(error)` is the type's `error` text; `scalar` is the type; `reason` is the
+    first rule the value broke (a `Reason`)."""
 
-    def __init__(self, scalar: Scalar[_Any]) -> None:
+    def __init__(self, scalar: Scalar[_Any], reason: str) -> None:
         _b.super(ScalarError, self).__init__(scalar.error)
         self.scalar = scalar
+        self.reason = reason
 
 
 def _trim(s: str) -> str:
@@ -206,86 +217,92 @@ class Scalar(Generic[T]):
     def validate(self, v: _Obj) -> T:
         """Normalize (text), then check kind, length, pattern and bounds. Returns the clean value or raises ScalarError."""
         r = self._check(v)
-        if r is _NO:
-            raise ScalarError(self)
+        if _b.isinstance(r, _Failure):
+            raise ScalarError(self, r.reason)
         return r  # type: ignore[no-any-return]
 
     def is_valid(self, v: _Obj) -> bool:
         """True exactly when `validate(v)` would succeed. Never builds an error."""
-        return self._check(v) is not _NO
+        return not _b.isinstance(self._check(v), _Failure)
 
     def _in_range(self, n: float) -> bool:
         lo = self._minimum
         hi = self._maximum
         return (lo is None or n >= lo) and (hi is None or n <= hi)
 
-    def _formed(self, s: str) -> bool:
-        """Once trimmed: not already too long (O(1)), then well-formed Unicode."""
+    def _formed(self, s: str) -> _Failure | None:
+        """Once trimmed: not already too long (O(1)), then well-formed Unicode. The failure, or None."""
         top = self._max_len
         if self._early and top is not None and _b.len(s) > top:
-            return False
-        return _well_formed(s)
+            return _FAIL.TOO_LONG
+        return None if _well_formed(s) else _FAIL.MALFORMED
 
     def _check(self, v: _Any) -> _Any:
         kind = self._kind
         if kind == "text":
             if not _b.isinstance(v, _b.str):
-                return _NO
+                return _FAIL.WRONG_KIND
             top = self._max_len
             gate = self._case_at if top is not None else -1
             form = self._form_at
             i = 0
             for step in self._steps:
-                if i == form and not self._formed(v):
-                    return _NO
+                if i == form:
+                    f = self._formed(v)
+                    if f is not None:
+                        return f
                 # Text already too long is refused before case mapping copies it.
                 if i == gate and _b.len(v) > top:
-                    return _NO
+                    return _FAIL.TOO_LONG
                 v = step(v)
                 i += 1
-            if i == form and not self._formed(v):
-                return _NO
+            if i == form:
+                f = self._formed(v)
+                if f is not None:
+                    return f
             n = _b.len(v)
-            if n < self._min_len or (top is not None and n > top):
-                return _NO
+            if top is not None and n > top:
+                return _FAIL.TOO_LONG
+            if n < self._min_len:
+                return _FAIL.TOO_SHORT
             pattern = self._pattern
             if pattern is not None:
                 rx = self._re
                 if rx is None:
                     rx = self._re = _re.compile(pattern)
                 if rx.fullmatch(v) is None:  # not match/search: "$" would also accept a final "\n"
-                    return _NO
+                    return _FAIL.PATTERN
             test = self._test
             if test is not None and not test(v):
-                return _NO
+                return _FAIL.CHECK
             return v
         if kind == "integer":
             if _b.isinstance(v, _b.bool):
-                return _NO
+                return _FAIL.WRONG_KIND
             if _b.isinstance(v, _b.float):
                 if not _math.isfinite(v) or not v.is_integer():
-                    return _NO
+                    return _FAIL.WRONG_KIND
                 v = _b.int(v)
             elif not _b.isinstance(v, _b.int):
-                return _NO
-            return v if self._in_range(v) else _NO
+                return _FAIL.WRONG_KIND
+            return v if self._in_range(v) else _FAIL.OUT_OF_RANGE
         if kind == "number":
             if _b.isinstance(v, _b.bool) or not _b.isinstance(v, (_b.int, _b.float)):
-                return _NO
+                return _FAIL.WRONG_KIND
             if _b.isinstance(v, _b.float) and not _math.isfinite(v):
-                return _NO
+                return _FAIL.OUT_OF_RANGE
             if not self._in_range(v):
-                return _NO
+                return _FAIL.OUT_OF_RANGE
             try:
                 return _b.float(v)  # the native value of a number type is a float
             except _b.OverflowError:  # an int too large for a float
-                return _NO
+                return _FAIL.OUT_OF_RANGE
         if kind == "boolean":
-            return v if _b.isinstance(v, _b.bool) else _NO
+            return v if _b.isinstance(v, _b.bool) else _FAIL.WRONG_KIND
         if kind == "object":
-            return v if _b.isinstance(v, _b.dict) else _NO
+            return v if _b.isinstance(v, _b.dict) else _FAIL.WRONG_KIND
         if kind == "array":
-            return v if _b.isinstance(v, _b.list) else _NO
+            return v if _b.isinstance(v, _b.list) else _FAIL.WRONG_KIND
         return v
 
 

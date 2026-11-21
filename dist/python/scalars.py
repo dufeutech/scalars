@@ -23,15 +23,24 @@ _WS: Final = (
 )
 
 _Obj = _b.object  # annotations say `object`, which the table below shadows
-_NO: Final = _Obj()  # what _check returns for "not valid"; a value can never be this object
+
+class _Failure:
+    """What _check returns for "not valid": one module constant per reason (_FAIL), so it allocates nothing."""
+
+    __slots__ = ("reason",)
+
+    def __init__(self, reason: str) -> None:
+        self.reason = reason
 
 
 class ScalarError(_b.ValueError):
-    """A value failed a type's rule. `str(error)` is the type's `error` text; `scalar` is the type."""
+    """A value failed a type's rule. `str(error)` is the type's `error` text; `scalar` is the type; `reason` is the
+    first rule the value broke (a `Reason`)."""
 
-    def __init__(self, scalar: Scalar[_Any]) -> None:
+    def __init__(self, scalar: Scalar[_Any], reason: str) -> None:
         _b.super(ScalarError, self).__init__(scalar.error)
         self.scalar = scalar
+        self.reason = reason
 
 
 def _trim(s: str) -> str:
@@ -209,86 +218,92 @@ class Scalar(Generic[T]):
     def validate(self, v: _Obj) -> T:
         """Normalize (text), then check kind, length, pattern and bounds. Returns the clean value or raises ScalarError."""
         r = self._check(v)
-        if r is _NO:
-            raise ScalarError(self)
+        if _b.isinstance(r, _Failure):
+            raise ScalarError(self, r.reason)
         return r  # type: ignore[no-any-return]
 
     def is_valid(self, v: _Obj) -> bool:
         """True exactly when `validate(v)` would succeed. Never builds an error."""
-        return self._check(v) is not _NO
+        return not _b.isinstance(self._check(v), _Failure)
 
     def _in_range(self, n: float) -> bool:
         lo = self._minimum
         hi = self._maximum
         return (lo is None or n >= lo) and (hi is None or n <= hi)
 
-    def _formed(self, s: str) -> bool:
-        """Once trimmed: not already too long (O(1)), then well-formed Unicode."""
+    def _formed(self, s: str) -> _Failure | None:
+        """Once trimmed: not already too long (O(1)), then well-formed Unicode. The failure, or None."""
         top = self._max_len
         if self._early and top is not None and _b.len(s) > top:
-            return False
-        return _well_formed(s)
+            return _FAIL.TOO_LONG
+        return None if _well_formed(s) else _FAIL.MALFORMED
 
     def _check(self, v: _Any) -> _Any:
         kind = self._kind
         if kind == "text":
             if not _b.isinstance(v, _b.str):
-                return _NO
+                return _FAIL.WRONG_KIND
             top = self._max_len
             gate = self._case_at if top is not None else -1
             form = self._form_at
             i = 0
             for step in self._steps:
-                if i == form and not self._formed(v):
-                    return _NO
+                if i == form:
+                    f = self._formed(v)
+                    if f is not None:
+                        return f
                 # Text already too long is refused before case mapping copies it.
                 if i == gate and _b.len(v) > top:
-                    return _NO
+                    return _FAIL.TOO_LONG
                 v = step(v)
                 i += 1
-            if i == form and not self._formed(v):
-                return _NO
+            if i == form:
+                f = self._formed(v)
+                if f is not None:
+                    return f
             n = _b.len(v)
-            if n < self._min_len or (top is not None and n > top):
-                return _NO
+            if top is not None and n > top:
+                return _FAIL.TOO_LONG
+            if n < self._min_len:
+                return _FAIL.TOO_SHORT
             pattern = self._pattern
             if pattern is not None:
                 rx = self._re
                 if rx is None:
                     rx = self._re = _re.compile(pattern)
                 if rx.fullmatch(v) is None:  # not match/search: "$" would also accept a final "\n"
-                    return _NO
+                    return _FAIL.PATTERN
             test = self._test
             if test is not None and not test(v):
-                return _NO
+                return _FAIL.CHECK
             return v
         if kind == "integer":
             if _b.isinstance(v, _b.bool):
-                return _NO
+                return _FAIL.WRONG_KIND
             if _b.isinstance(v, _b.float):
                 if not _math.isfinite(v) or not v.is_integer():
-                    return _NO
+                    return _FAIL.WRONG_KIND
                 v = _b.int(v)
             elif not _b.isinstance(v, _b.int):
-                return _NO
-            return v if self._in_range(v) else _NO
+                return _FAIL.WRONG_KIND
+            return v if self._in_range(v) else _FAIL.OUT_OF_RANGE
         if kind == "number":
             if _b.isinstance(v, _b.bool) or not _b.isinstance(v, (_b.int, _b.float)):
-                return _NO
+                return _FAIL.WRONG_KIND
             if _b.isinstance(v, _b.float) and not _math.isfinite(v):
-                return _NO
+                return _FAIL.OUT_OF_RANGE
             if not self._in_range(v):
-                return _NO
+                return _FAIL.OUT_OF_RANGE
             try:
                 return _b.float(v)  # the native value of a number type is a float
             except _b.OverflowError:  # an int too large for a float
-                return _NO
+                return _FAIL.OUT_OF_RANGE
         if kind == "boolean":
-            return v if _b.isinstance(v, _b.bool) else _NO
+            return v if _b.isinstance(v, _b.bool) else _FAIL.WRONG_KIND
         if kind == "object":
-            return v if _b.isinstance(v, _b.dict) else _NO
+            return v if _b.isinstance(v, _b.dict) else _FAIL.WRONG_KIND
         if kind == "array":
-            return v if _b.isinstance(v, _b.list) else _NO
+            return v if _b.isinstance(v, _b.list) else _FAIL.WRONG_KIND
         return v
 
 
@@ -811,8 +826,8 @@ class _Loader:
                 seen: set[str] = _b.set()
                 most = rule["maxItemBytes"]
                 for i, entry in _b.enumerate(value):
-                    r = typ._check(entry) if _b.isinstance(entry, _b.str) else _NO  # type: ignore[union-attr]
-                    fits = r is not _NO and (most is None or _b.len(entry.encode("utf-8")) <= most)
+                    r = typ._check(entry) if _b.isinstance(entry, _b.str) else _FAIL.WRONG_KIND  # type: ignore[union-attr]
+                    fits = not _b.isinstance(r, _Failure) and (most is None or _b.len(entry.encode("utf-8")) <= most)
                     if fits and r == entry and entry not in seen:
                         seen.add(entry)
                     else:
@@ -946,7 +961,7 @@ class _Run:
         if kind == "type":
             t: Scalar[_Any] = f.type  # type: ignore[assignment]
             r = t._check(v)
-            if r is _NO:
+            if _b.isinstance(r, _Failure):
                 self.report(_at(up, seg), "invalid", {"type": t.name}, t.error)
                 return None
             if f.limited:
@@ -1053,6 +1068,40 @@ def models(data: _Obj) -> Models:
         if field.kind == "model":
             field.target = by_name[field.model]
     return Models(_INTERNAL, by_name)
+
+
+class Reason:
+    """Why a value failed ($meta.reasons): the first rule the single pass trips, in this order."""
+
+    WRONG_KIND: Final = "wrong_kind"
+    """Not the type's primitive kind (TS, Python and models only; Go and Rust are typed by their signatures)."""
+    MALFORMED: Final = "malformed"
+    """Text that isn't well-formed Unicode (a lone surrogate)."""
+    TOO_LONG: Final = "too_long"
+    """More code points than the type's maxLength (or a field's length)."""
+    TOO_SHORT: Final = "too_short"
+    """Fewer code points than the type's minLength."""
+    PATTERN: Final = "pattern"
+    """Doesn't match the type's pattern."""
+    OUT_OF_RANGE: Final = "out_of_range"
+    """Below minimum, above maximum, or a non-finite number."""
+    CHECK: Final = "check"
+    """Failed the type's check (a check digit, a 64-bit range)."""
+    NOT_IN_LIST: Final = "not_in_list"
+    """Not on the type's enum."""
+
+
+class _FAIL:
+    """One failure per reason, so _check allocates nothing to say "not valid"."""
+
+    WRONG_KIND: Final = _Failure(Reason.WRONG_KIND)
+    MALFORMED: Final = _Failure(Reason.MALFORMED)
+    TOO_LONG: Final = _Failure(Reason.TOO_LONG)
+    TOO_SHORT: Final = _Failure(Reason.TOO_SHORT)
+    PATTERN: Final = _Failure(Reason.PATTERN)
+    OUT_OF_RANGE: Final = _Failure(Reason.OUT_OF_RANGE)
+    CHECK: Final = _Failure(Reason.CHECK)
+    NOT_IN_LIST: Final = _Failure(Reason.NOT_IN_LIST)
 
 
 _PARAM_RULES: Final = {"length": {"kind": "integer", "minimum": 1, "maximum": 10485760, "minItems": None, "maxItemBytes": None}, "precision": {"kind": "integer", "minimum": 1, "maximum": 1000, "minItems": None, "maxItemBytes": None}, "scale": {"kind": "integer", "minimum": -1000, "maximum": 1000, "minItems": None, "maxItemBytes": None}, "fractional_seconds": {"kind": "integer", "minimum": 0, "maximum": 6, "minItems": None, "maxItemBytes": None}, "values": {"kind": "array", "minimum": None, "maximum": None, "minItems": 1, "maxItemBytes": 63}, "nullable": {"kind": "boolean", "minimum": None, "maximum": None, "minItems": None, "maxItemBytes": None}}

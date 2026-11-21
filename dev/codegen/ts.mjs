@@ -1,6 +1,6 @@
 // Emits dist/ts/scalars.ts: the hand-written engine (engine.ts, then models.ts) followed by one generated record per type.
 import { header, readEngine } from "./common.mjs";
-import { identifiers, metaFields, paramRules } from "./model.mjs";
+import { identifiers, metaFields, paramRules, pascal } from "./model.mjs";
 import { DIGIT_SETTINGS, MAX_DEPTH, NAME, REF } from "../lib/models.mjs";
 
 /** Names the engine defines on the `scalars` object, so no type may take them. */
@@ -33,7 +33,19 @@ export function emitTypeScript(models, version, meta) {
     const names = `export type Name = ${models.map((m) => lit(m.name)).join(" | ")};`;
     const table = models.map((m) => record(m, ids.get(m.name))).join("\n");
     const every = models.map((m) => `scalars[${lit(ids.get(m.name))}]`).join(", ");
-    const tables = `/** The limits of each setting in $meta.params. */
+    const reasons = Object.entries(meta.reasons);
+    const tables = `/** Why a value failed ($meta.reasons): the first rule the single pass trips, in this order. */
+export const Reason = {
+${reasons.map(([r, about]) => `    /** ${about} */\n    ${pascal(r)}: ${lit(r)},`).join("\n")}
+} as const;
+export type Reason = (typeof Reason)[keyof typeof Reason];
+
+/** One failure per reason, so \`run\` allocates nothing to say "not valid". */
+const FAIL = {
+${reasons.map(([r]) => `    ${pascal(r)}: new Failure(Reason.${pascal(r)}),`).join("\n")}
+} as const;
+
+/** The limits of each setting in $meta.params. */
 const PARAM_RULES: Readonly<Record<string, ParamRule>> = ${lit(paramRules(meta))};
 
 /** The message template of each error code in $meta.errors. */

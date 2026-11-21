@@ -1,11 +1,27 @@
-/** A value failed a type's rule. `message` is the type's `error` text; `scalar` is the type. */
+// Reason and FAIL are emitted after this file, from $meta.reasons.
+
+/**
+ * A value failed a type's rule. `message` is the type's `error` text; `scalar` is the type; `reason` is the first
+ * rule the value broke ($meta.reasons).
+ */
 export class ScalarError extends Error {
     readonly scalar: Scalar<unknown>;
+    readonly reason: Reason;
 
-    constructor(scalar: Scalar<unknown>) {
+    constructor(scalar: Scalar<unknown>, reason: Reason) {
         super(scalar.error);
         this.name = "ScalarError";
         this.scalar = scalar;
+        this.reason = reason;
+    }
+}
+
+/** What `run` returns for "not valid": one module constant per reason (FAIL), so it allocates nothing. */
+class Failure {
+    readonly reason: Reason;
+
+    constructor(reason: Reason) {
+        this.reason = reason;
     }
 }
 
@@ -154,8 +170,6 @@ function isPlainObject(v: unknown): boolean {
     return proto === Object.prototype || proto === null;
 }
 
-const NO = Symbol("not valid"); // what `run` returns for "not valid"; a value can never be this symbol
-
 type Kind = "text" | "integer" | "number" | "boolean" | "object" | "array" | "any";
 
 /** The limits of one setting in $meta.params; a limit it does not have is null. */
@@ -267,54 +281,63 @@ export class Scalar<T> {
     /** Normalize (text), then check kind, length, pattern and bounds. Returns the clean value or throws ScalarError. */
     validate(v: unknown): T {
         const r = this.run(v);
-        if (r === NO) throw new ScalarError(this);
+        if (r instanceof Failure) throw new ScalarError(this, r.reason);
         return r as T;
     }
 
     /** True exactly when `validate(v)` would succeed. Never builds an error. */
     isValid(v: unknown): boolean {
-        return this.run(v) !== NO;
+        return !(this.run(v) instanceof Failure);
     }
 
-    /** Once trimmed: not already too long (O(1): a code point is at most two units), then well-formed. */
-    private formed(s: string): boolean {
-        if (this.early && Math.ceil(s.length / 2) > this.maxLen) return false;
-        return isWellFormed(s);
+    /** Once trimmed: not already too long (counting stops at maxLen + 1), then well-formed. The failure, or undefined. */
+    private formed(s: string): Failure | undefined {
+        if (this.early && longerThan(s, this.maxLen)) return FAIL.TooLong;
+        return isWellFormed(s) ? undefined : FAIL.Malformed;
     }
 
     private run(v: unknown): unknown {
         switch (this.kind) {
             case "text": {
-                if (typeof v !== "string") return NO;
+                if (typeof v !== "string") return FAIL.WrongKind;
                 let s = v;
                 const steps = this.steps;
                 const gate = this.caseAt;
                 const form = this.formAt;
                 for (let i = 0; i < steps.length; i++) {
-                    if (i === form && !this.formed(s)) return NO;
+                    if (i === form) {
+                        const f = this.formed(s);
+                        if (f !== undefined) return f;
+                    }
                     // Text already too long is refused before case mapping copies it.
-                    if (i === gate && longerThan(s, this.maxLen)) return NO;
+                    if (i === gate && longerThan(s, this.maxLen)) return FAIL.TooLong;
                     s = steps[i](s);
                 }
-                if (form === steps.length && !this.formed(s)) return NO;
-                if (longerThan(s, this.maxLen) || shorterThan(s, this.minLen)) return NO;
+                if (form === steps.length) {
+                    const f = this.formed(s);
+                    if (f !== undefined) return f;
+                }
+                if (longerThan(s, this.maxLen)) return FAIL.TooLong;
+                if (shorterThan(s, this.minLen)) return FAIL.TooShort;
                 if (this.pattern !== undefined) {
                     const rx = (this.rx ??= new RegExp(this.pattern, "u"));
-                    if (!rx.test(s)) return NO;
+                    if (!rx.test(s)) return FAIL.Pattern;
                 }
-                if (this.test !== undefined && !this.test(s)) return NO;
+                if (this.test !== undefined && !this.test(s)) return FAIL.Check;
                 return s;
             }
             case "integer":
-                return typeof v === "number" && Number.isInteger(v) && v >= this.minimum && v <= this.maximum ? v : NO;
+                if (typeof v !== "number" || !Number.isInteger(v)) return FAIL.WrongKind;
+                return v >= this.minimum && v <= this.maximum ? v : FAIL.OutOfRange;
             case "number":
-                return typeof v === "number" && Number.isFinite(v) && v >= this.minimum && v <= this.maximum ? v : NO;
+                if (typeof v !== "number") return FAIL.WrongKind;
+                return Number.isFinite(v) && v >= this.minimum && v <= this.maximum ? v : FAIL.OutOfRange;
             case "boolean":
-                return typeof v === "boolean" ? v : NO;
+                return typeof v === "boolean" ? v : FAIL.WrongKind;
             case "object":
-                return isPlainObject(v) ? v : NO;
+                return isPlainObject(v) ? v : FAIL.WrongKind;
             case "array":
-                return Array.isArray(v) ? v : NO;
+                return Array.isArray(v) ? v : FAIL.WrongKind;
             default:
                 return v;
         }

@@ -473,8 +473,8 @@ class _Loader:
                 seen: set[str] = _b.set()
                 most = rule["maxItemBytes"]
                 for i, entry in _b.enumerate(value):
-                    r = typ._check(entry) if _b.isinstance(entry, _b.str) else _NO  # type: ignore[union-attr]
-                    fits = r is not _NO and (most is None or _b.len(entry.encode("utf-8")) <= most)
+                    r = typ._check(entry) if _b.isinstance(entry, _b.str) else _FAIL.WRONG_KIND  # type: ignore[union-attr]
+                    fits = not _b.isinstance(r, _Failure) and (most is None or _b.len(entry.encode("utf-8")) <= most)
                     if fits and r == entry and entry not in seen:
                         seen.add(entry)
                     else:
@@ -608,7 +608,7 @@ class _Run:
         if kind == "type":
             t: Scalar[_Any] = f.type  # type: ignore[assignment]
             r = t._check(v)
-            if r is _NO:
+            if _b.isinstance(r, _Failure):
                 self.report(_at(up, seg), "invalid", {"type": t.name}, t.error)
                 return None
             if f.limited:

@@ -75,6 +75,7 @@ for (const c of cases.validate) {
         if (!(e instanceof ScalarError)) throw e;
         if (c.ok) fails.push(`${c.type} rejects ${show(v)}`);
         else if (e.message !== types[c.type].error || e.scalar !== t) fails.push(`${c.type} error ${show(e.message)} is not the type's error`);
+        else if (e.reason !== c.reason) fails.push(`${c.type} on ${show(v)}: reason ${e.reason}, want ${c.reason}`);
         if (t.isValid(v)) fails.push(`${c.type}: validate raised but isValid said yes for ${show(v)}`);
         continue;
     }
@@ -109,6 +110,13 @@ for (const c of cases.hostile) {
     const ms = performance.now() - start;
     if (ms > slowest.ms) slowest = { ms, type: c.type };
     if (ok !== c.ok) fails.push(`hostile ${c.type}: want ${c.ok}`);
+    if (!c.ok) {
+        try {
+            t.validate(text);
+        } catch (e) {
+            if (e instanceof ScalarError && e.reason !== c.reason) fails.push(`hostile ${c.type}: reason ${e.reason}, want ${c.reason}`);
+        }
+    }
     if (ms >= 2000) fails.push(`hostile ${c.type} took ${ms.toFixed(0)} ms`);
 }
 

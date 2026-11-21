@@ -103,6 +103,8 @@ for c in cases["validate"]:
             fails.append(f"{c['type']} rejects {v!r}")
         elif str(e) != types[c["type"]]["error"] or e.scalar is not t:
             fails.append(f"{c['type']} error {str(e)!r} is not the type's error")
+        elif e.reason != c["reason"]:
+            fails.append(f"{c['type']} on {v!r}: reason {e.reason}, want {c['reason']}")
         if t.is_valid(v):
             fails.append(f"{c['type']}: validate raised but is_valid said yes for {v!r}")
         continue
@@ -137,6 +139,12 @@ for c in cases["hostile"]:
     slowest = max(slowest, (ms, c["type"]))
     if ok != c["ok"]:
         fails.append(f"hostile {c['type']}: want {c['ok']}")
+    if not c["ok"]:
+        try:
+            t.validate(text)
+        except scalars.ScalarError as e:
+            if e.reason != c["reason"]:
+                fails.append(f"hostile {c['type']}: reason {e.reason}, want {c['reason']}")
     if ms >= 2000:
         fails.append(f"hostile {c['type']} took {ms:.0f} ms")
 

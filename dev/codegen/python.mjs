@@ -63,7 +63,12 @@ export function emitPython(models, version, meta) {
     const names = `Name = Literal[${models.map((m) => lit(m.name)).join(", ")}]`;
     const every = `all: Final[tuple[Scalar[_Any], ...]] = (${models.map((m) => ids.get(m.name)).join(", ")},)`;
     // The limits of each setting in $meta.params, and the message template of each error code in $meta.errors.
-    const tables = `_PARAM_RULES: Final = ${lit(paramRules(meta))}\n_ERRORS: Final = ${lit(meta.errors)}\n` +
+    const reasons = Object.entries(meta.reasons);
+    const reasonClass = `class Reason:\n    """Why a value failed ($meta.reasons): the first rule the single pass trips, in this order."""\n\n` +
+        reasons.map(([r, about]) => `    ${r.toUpperCase()}: Final = ${lit(r)}\n    """${about}"""\n`).join("") +
+        `\n\nclass _FAIL:\n    """One failure per reason, so _check allocates nothing to say "not valid"."""\n\n` +
+        reasons.map(([r]) => `    ${r.toUpperCase()}: Final = _Failure(Reason.${r.toUpperCase()})\n`).join("") + "\n\n";
+    const tables = `${reasonClass}_PARAM_RULES: Final = ${lit(paramRules(meta))}\n_ERRORS: Final = ${lit(meta.errors)}\n` +
         `_MAX_DEPTH: Final = ${MAX_DEPTH}  # nesting deeper than this, each model and each \`items\` one level, is refused at load\n` +
         `_DIGIT_SETTINGS: Final = ${tuple(DIGIT_SETTINGS)}  # refused on number-kind types: float text differs by language\n` +
         `# A name, and a reference ([domain:]name[.field]); unanchored, for fullmatch (with match, "$" would accept a final "\\n").\n` +

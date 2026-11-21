@@ -117,8 +117,9 @@ One per type, `CREATE DOMAIN scalars.<type> AS <postgres.type> CHECK (...)`:
     jsonb, `decimal`): no CHECK. `uuid_v7` could check the version nibble with `uuid_extract_version` (Postgres 17);
     leave it out to keep 16 support. The rules that can't be derived from dist (inet family, NaN, sha256 length) live
     in `src/targets/postgres.yaml` as a per-type `domain_check` in SQL with `VALUE`, replacing today's hand-written
-    `check` (on `uint64` and `sha256`); `pgCheck` in `dev/lib/derive.mjs` becomes the domain-check builder. The
-    domain checks appear only in the SQL file, not in `dist/scalars.json`.
+    `check` (on `uint64` and `sha256`); `pgCheck` in `dev/lib/derive.mjs` becomes the domain-check builder. Each
+    type's full domain CHECK is carried in dist as `postgres.domain_check` (amended while planning: the emitters read
+    dist only).
 - **Idempotent:** Postgres has no `CREATE OR REPLACE DOMAIN`, so each domain is created inside a `DO` block that skips
   it when `scalars.<type>` already exists. Re-running the file updates every function (so lists and checks update)
   and leaves domains alone. Postgres doesn't recheck existing rows when a function changes; fine while lists only grow,

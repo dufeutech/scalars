@@ -425,7 +425,7 @@ def _fill(code: str, params: dict[str, _Any]) -> str:
 
 def _problem(segments: list[_Any], code: str, params: dict[str, _Any], message: str | None = None) -> tuple[_Any, Problem]:
     """A problem at `segments` (keys and list indices), paired with the key its order needs: a key "10" and an index
-    10 differ, which the pointer text can't tell. A code without a template (`invalid`) needs `message`."""
+    10 differ, which the pointer text can't tell. A code without a template (a reason like `pattern`) needs `message`."""
     if code in _ERRORS:
         message = _fill(code, params)
     elif not _b.isinstance(message, _b.str):
@@ -961,17 +961,21 @@ class _Run:
         if kind == "type":
             t: Scalar[_Any] = f.type  # type: ignore[assignment]
             r = t._check(v)
+            # The reason is the code; a type-level too_long reads like the field's, with the type's limit as max.
             if _b.isinstance(r, _Failure):
-                self.report(_at(up, seg), "invalid", {"type": t.name}, t.error)
+                params: dict[str, _Any] = {"type": t.name}
+                if r.reason == Reason.TOO_LONG:
+                    params["max"] = t._max_len
+                self.report(_at(up, seg), r.reason, params, t.error)
                 return None
             if f.limited:
                 length = f.length
                 if length is not None and _b.len(r) > length:  # a str's len counts code points
-                    self.report(_at(up, seg), "too_long", {"max": length})
+                    self.report(_at(up, seg), Reason.TOO_LONG, {"type": t.name, "max": length})
                 if f.allowed is not None and r not in f.allowed:
-                    self.report(_at(up, seg), "not_allowed", {"values": _b.list(f.values)})  # type: ignore[arg-type]
+                    self.report(_at(up, seg), "not_allowed", {"type": t.name, "values": _b.list(f.values)})  # type: ignore[arg-type]
                 if f.precision is not None and not _fits_numeric(r, f.precision, f.scale):
-                    self.report(_at(up, seg), "too_many_digits", {"precision": f.precision, "scale": f.scale})
+                    self.report(_at(up, seg), "too_many_digits", {"type": t.name, "precision": f.precision, "scale": f.scale})
             return r
         # A container's own link is the parent of its entries' links (inline: no call per container).
         at = up if seg is None else (up, seg)

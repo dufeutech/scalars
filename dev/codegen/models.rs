@@ -124,7 +124,7 @@ fn fill(text: &str, code: &str, params: &Map<String, Value>) -> String {
 }
 
 /// A problem at `segments`. The message is the code's ERRORS template, filled in; a code without a template
-/// (`invalid`, whose text is the type's error) takes `message`.
+/// (a reason like `pattern`, whose text is the type's error) takes `message`.
 fn locate(
     segments: Vec<Seg>,
     code: &'static str,
@@ -1206,13 +1206,20 @@ impl<'m> Walker<'m> {
         };
         match field.kind {
             FieldKind::Type { kind, meta, .. } => {
-                let Ok(out) = check(kind, v) else {
-                    let name = params([("type", meta.name.into())]);
-                    self.report(at, "invalid", name, Some(meta.error));
-                    return Value::Null;
+                // The reason is the code; a type-level too_long reads like the field's, with the type's limit as max.
+                let out = match check(kind, v) {
+                    Ok(out) => out,
+                    Err(reason) => {
+                        let mut p = params([("type", meta.name.into())]);
+                        if let (Reason::TooLong, Kind::Text(t)) = (reason, kind) {
+                            p.insert("max".to_owned(), t.max_len.into());
+                        }
+                        self.report(at, reason.as_str(), p, Some(meta.error));
+                        return Value::Null;
+                    }
                 };
                 if let Some(s) = out.as_str() {
-                    self.limits(field, s, at);
+                    self.limits(field, meta.name, s, at);
                 }
                 out
             }
@@ -1247,12 +1254,13 @@ impl<'m> Walker<'m> {
     }
 
     /// The settings checked on cleaned text, all of them, in order: length, values, precision.
-    fn limits(&mut self, field: &Field, s: &str, at: Option<&Loc<'_>>) {
+    fn limits(&mut self, field: &Field, name: &str, s: &str, at: Option<&Loc<'_>>) {
         if let Some(max) = field.length.filter(|&max| longer_than(s, max)) {
-            self.report(at, "too_long", params([("max", max.into())]), None);
+            let p = params([("type", name.into()), ("max", max.into())]);
+            self.report(at, Reason::TooLong.as_str(), p, None);
         }
         if let Some(values) = field.values.as_ref().filter(|v| !v.set.contains(s)) {
-            let list = params([("values", values.list.clone().into())]);
+            let list = params([("type", name.into()), ("values", values.list.clone().into())]);
             self.report(at, "not_allowed", list, None);
         }
         if let Some(precision) = field
@@ -1260,6 +1268,7 @@ impl<'m> Walker<'m> {
             .filter(|&p| !fits_numeric(s, p, field.scale))
         {
             let digits = params([
+                ("type", name.into()),
                 ("precision", precision.into()),
                 ("scale", field.scale.into()),
             ]);

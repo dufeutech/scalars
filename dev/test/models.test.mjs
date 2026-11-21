@@ -84,9 +84,9 @@ test("problem renders the pointer and the message", () => {
 });
 
 test("problem takes the message for a code without a template, and only then", () => {
-    const p = problem(["n"], "invalid", { type: "int32" }, scalars.$meta, "Use a whole number.");
-    assert.deepEqual(p, { pointer: "/n", code: "invalid", params: { type: "int32" }, message: "Use a whole number." });
-    assert.throws(() => problem(["n"], "invalid", { type: "int32" }, scalars.$meta), /needs a message/);
+    const p = problem(["n"], "pattern", { type: "int32" }, scalars.$meta, "Use a whole number.");
+    assert.deepEqual(p, { pointer: "/n", code: "pattern", params: { type: "int32" }, message: "Use a whole number." });
+    assert.throws(() => problem(["n"], "pattern", { type: "int32" }, scalars.$meta), /needs a message/);
     assert.equal(problem(["n"], "required", {}, scalars.$meta, "ignored").message, "Required.");
     assert.throws(() => problem(["n"], "too_long", {}, scalars.$meta), /needs param "max"/);
 });
@@ -122,6 +122,13 @@ test("validate cases", async (t) => {
             else assert.deepEqual(r.problems, c.problems);
             assert.equal(isValidModel(m, c.in), c.ok, "is_valid agrees with ok");
         });
+    }
+});
+
+test("no problem has code invalid: a field failing its type reports the reason", () => {
+    for (const c of cases.models.validate) {
+        const r = validateModel(modelOfCase(c), c.in);
+        for (const p of r.problems ?? []) assert.notEqual(p.code, "invalid", `${c.name} ${p.pointer}`);
     }
 });
 

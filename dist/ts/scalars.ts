@@ -455,7 +455,7 @@ function fill(code: string, params: Readonly<Record<string, unknown>>): string {
     });
 }
 
-/** A problem at `segments`. A code without a template (`invalid`, whose text is the type's `error`) needs `message`. */
+/** A problem at `segments`. A code without a template (a reason like `pattern`, whose text is the type's `error`) needs `message`. */
 function locate(segments: readonly Segment[], code: string, params: Readonly<Record<string, unknown>>, message?: string): Located {
     let text: string;
     if (Object.hasOwn(ERRORS, code)) text = fill(code, params);
@@ -982,16 +982,18 @@ function walk(f: ModelField, v: unknown, up: Loc | null, seg: Segment | undefine
     if (f.kind === "type") {
         const t = f.type as Scalar<unknown>;
         const r = t["run"](v);
+        // The reason is the code; a type-level too_long reads like the field's, with the type's limit as max.
         if (r instanceof Failure) {
-            report(problems, seg === undefined ? up : { up, seg }, "invalid", { type: t.name }, t.error);
+            const params = r.reason === Reason.TooLong ? { type: t.name, max: t["maxLen"] } : { type: t.name };
+            report(problems, seg === undefined ? up : { up, seg }, r.reason, params, t.error);
             return null;
         }
         if (f.limited) {
             const length = f.length;
-            if (length !== null && longerThan(r as string, length)) report(problems, seg === undefined ? up : { up, seg }, "too_long", { max: length });
-            if (f.allowed !== null && !f.allowed.has(r)) report(problems, seg === undefined ? up : { up, seg }, "not_allowed", { values: [...(f.values as readonly string[])] });
+            if (length !== null && longerThan(r as string, length)) report(problems, seg === undefined ? up : { up, seg }, Reason.TooLong, { type: t.name, max: length });
+            if (f.allowed !== null && !f.allowed.has(r)) report(problems, seg === undefined ? up : { up, seg }, "not_allowed", { type: t.name, values: [...(f.values as readonly string[])] });
             if (f.precision !== null && !fitsNumeric(r as string, f.precision, f.scale)) {
-                report(problems, seg === undefined ? up : { up, seg }, "too_many_digits", { precision: f.precision, scale: f.scale });
+                report(problems, seg === undefined ? up : { up, seg }, "too_many_digits", { type: t.name, precision: f.precision, scale: f.scale });
             }
         }
         return r;

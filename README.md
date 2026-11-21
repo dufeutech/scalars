@@ -195,20 +195,22 @@ Loading the file refuses:
 
 Each problem is `{ pointer, code, params, message }`: an RFC 6901 JSON Pointer into the payload (`""` is the root), a fixed code, the facts the message needs, and the English text.
 
-| Code              | Params               | English message                                          |
-| ----------------- | -------------------- | -------------------------------------------------------- |
-| `required`        |                      | `Required.`                                              |
-| `unknown_field`   |                      | `Not a field of this model.`                             |
-| `not_object`      |                      | `Must be an object.`                                     |
-| `not_list`        |                      | `Must be a list.`                                        |
-| `invalid`         | `type`               | the type's own `error` text                              |
-| `too_long`        | `max`                | `At most {max} characters.`                              |
-| `not_allowed`     | `values`             | `Must be one of: {values}.`                              |
-| `too_many_digits` | `precision`, `scale` | `Too many digits for precision {precision}, scale {scale}.` |
+| Code              | Params                       | English message                                             |
+| ----------------- | ---------------------------- | ----------------------------------------------------------- |
+| `required`        |                              | `Required.`                                                 |
+| `unknown_field`   |                              | `Not a field of this model.`                                |
+| `not_object`      |                              | `Must be an object.`                                        |
+| `not_list`        |                              | `Must be a list.`                                           |
+| a reason          | `type`                       | the type's own `error` text                                 |
+| `too_long`        | `type`, `max`                | `At most {max} characters.`                                 |
+| `not_allowed`     | `type`, `values`             | `Must be one of: {values}.`                                 |
+| `too_many_digits` | `type`, `precision`, `scale` | `Too many digits for precision {precision}, scale {scale}.` |
+
+A field whose value fails its type reports the reason `validate` gives as its code: `wrong_kind`, `malformed`, `too_short`, `pattern`, `out_of_range`, `check` or `not_in_list` (the list and its order are `$meta.reasons`). The message rule is one: a code with a template in `$meta.errors` uses it, any other uses the type's `error`. So `too_long` reads `At most {max} characters.` whether the limit is the type's own (`char` given `"ab"`: `max` 1) or the field's `length`. Every problem on a type field carries `params.type`.
 
 A bad models file raises `ModelsError` with the same shape, pointing into the file (`/billing/invoice/total/precision`). Its codes are `not_object`, `bad_name`, `type_name` (a model named like a type), `unresolved`, `alias`, `unknown_setting`, `bad_setting`, `missing_setting` and `cycle`, plus `too_deep` for nesting past 64 levels. All the templates are in `$meta.errors` in `dist/scalars.json`.
 
-**Translating:** key a catalogue by `code` and fill in the `{params}`; for `invalid`, key by `params.type`. Problems drop into an [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) response unchanged:
+**Translating:** key a catalogue by `code` and fill in the `{params}`; for a code with no template, key by `params.type` (and the code, if you want a message per reason). Problems drop into an [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) response unchanged:
 
 ```json
 {
@@ -216,8 +218,8 @@ A bad models file raises `ModelsError` with the same shape, pointing into the fi
   "title": "Your order has errors",
   "status": 422,
   "errors": [
-    { "pointer": "/items/0/qty", "code": "invalid", "params": { "type": "int32" }, "message": "Please use a whole number, like 42." },
-    { "pointer": "/status", "code": "not_allowed", "params": { "values": ["draft", "sent", "paid"] }, "message": "Must be one of: draft, sent, paid." }
+    { "pointer": "/items/0/qty", "code": "wrong_kind", "params": { "type": "int32" }, "message": "Please use a whole number, like 42." },
+    { "pointer": "/status", "code": "not_allowed", "params": { "type": "enum", "values": ["draft", "sent", "paid"] }, "message": "Must be one of: draft, sent, paid." }
   ]
 }
 ```

@@ -19,7 +19,7 @@
                 },
                 "errors": {
                     "type": "object",
-                    "description": "The message template of each error code a models engine reports. {name} is replaced by the problem's param of that name.",
+                    "description": "The message template of each error code a models engine reports. {name} is replaced by the problem's param of that name. A code with no template (a reason from $meta.reasons, other than too_long) takes the type's error as its message.",
                     "propertyNames": { "pattern": "^[a-z][a-z0-9_]*$" },
                     "additionalProperties": { "type": "string" }
                 },

@@ -18,7 +18,7 @@ const escape = (s) => String(s).replaceAll("~", "~0").replaceAll("/", "~1");
 
 /**
  * A problem at `segments` (keys and list indices). The message is the code's `$meta.errors` template, filled in;
- * a code without a template (`invalid`, whose text is the type's `error`) needs `message`, used only then.
+ * a code without a template (a reason like `pattern`, whose text is the type's `error`) needs `message`, used only then.
  */
 export function problem(segments, code, params, $meta, message) {
     if (!Object.hasOwn($meta.errors, code)) {
@@ -451,11 +451,16 @@ function run(model, payload, first) {
         } else {
             const type = types[field.type];
             const r = validate(type, value);
-            if (!r.ok) { report(at, "invalid", { type: type.name }, type.error); continue; }
+            // The reason is the code; a type-level too_long reads like the field's, with the type's limit as max.
+            if (!r.ok) {
+                const params = r.reason === "too_long" ? { type: type.name, max: modelOf(type).maxLen } : { type: type.name };
+                report(at, r.reason, params, type.error);
+                continue;
+            }
             const { length, values, precision, scale = 0 } = field.settings;
-            if (length !== undefined && codePoints(r.value) > length) report(at, "too_long", { max: length });
-            if (values !== undefined && !valueSets.get(values).has(r.value)) report(at, "not_allowed", { values: [...values] });
-            if (precision !== undefined && !fitsNumeric(r.value, precision, scale)) report(at, "too_many_digits", { precision, scale });
+            if (length !== undefined && codePoints(r.value) > length) report(at, "too_long", { type: type.name, max: length });
+            if (values !== undefined && !valueSets.get(values).has(r.value)) report(at, "not_allowed", { type: type.name, values: [...values] });
+            if (precision !== undefined && !fitsNumeric(r.value, precision, scale)) report(at, "too_many_digits", { type: type.name, precision, scale });
             put(out, key, r.value);
         }
     }

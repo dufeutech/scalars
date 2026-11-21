@@ -109,7 +109,7 @@ func fill(text, code string, params map[string]any) string {
 	}
 }
 
-// locate builds a problem at segments. A code without a template (invalid, whose text is the type's Error)
+// locate builds a problem at segments. A code without a template (a reason like pattern, whose text is the type's Error)
 // takes message.
 func locate(segments []segment, code string, params map[string]any, message string) located {
 	text, ok := catalogue.errors[code]
@@ -1007,20 +1007,25 @@ func (w *walker) walk(f *field, v any, at *loc) any {
 	case kindType:
 		t := f.typ
 		r, reason := check(t.scalar, v)
+		// The reason is the code; a type-level too_long reads like the field's, with the type's limit as max.
 		if reason != "" {
-			w.report(at, "invalid", map[string]any{"type": t.meta.Name}, t.meta.Error)
+			params := map[string]any{"type": t.meta.Name}
+			if reason == ReasonTooLong {
+				params["max"] = int64(t.scalar.(*TextScalar).maxLen)
+			}
+			w.report(at, string(reason), params, t.meta.Error)
 			return nil
 		}
 		if f.limited {
 			s, _ := r.(string)
 			if f.length > 0 && longerThan(s, int(f.length)) {
-				w.report(at, "too_long", map[string]any{"max": f.length}, "")
+				w.report(at, string(ReasonTooLong), map[string]any{"type": t.meta.Name, "max": f.length}, "")
 			}
 			if _, in := f.allowed[s]; f.values != nil && !in {
-				w.report(at, "not_allowed", map[string]any{"values": slices.Clone(f.values)}, "")
+				w.report(at, "not_allowed", map[string]any{"type": t.meta.Name, "values": slices.Clone(f.values)}, "")
 			}
 			if f.precision > 0 && !fitsNumeric(s, f.precision, f.scale) {
-				w.report(at, "too_many_digits", map[string]any{"precision": f.precision, "scale": f.scale}, "")
+				w.report(at, "too_many_digits", map[string]any{"type": t.meta.Name, "precision": f.precision, "scale": f.scale}, "")
 			}
 		}
 		return r

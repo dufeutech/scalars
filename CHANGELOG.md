@@ -9,6 +9,7 @@
 - **Niche:** `relative_json_pointer` (use `json_pointer`), `double_int` (use `int64`).
 
 ### Changed
+- **`email` is marked international everywhere:** its JSON Schema `format` is `idn-email` (a superset of `email`), and its HTML input drops `type="email"`, which browsers refuse for non-ASCII local parts. `validate` is unchanged: its pattern already accepted these addresses.
 - **The build refuses `precision` or `scale` on a number type.** It used to accept them and the models engines dropped them, which is why `precision` on `sf_decimal` was an unknown setting. No remaining number type lists them, so models behave the same.
 - **Source files are YAML** (`src/scalar.yaml`, `src/targets/*.yaml`). The dist files are unchanged by it.
 

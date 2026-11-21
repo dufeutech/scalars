@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.1 — 2026-11-21
+
+### Fixed
+- **Go:** a lone surrogate encoded in a string (the 3 bytes `ED A0..BF 80..BF`) counts as one code point, as in the other languages, so on a short type such as `char` it fails as `malformed`, not `too_long`. Valid text is unchanged.
+- **README:** no longer says models are unreleased (they shipped in 0.5.0).
+
 ## 0.6.0 — 2026-11-21
 
 ### Added

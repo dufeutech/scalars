@@ -127,12 +127,33 @@ test("a domain per type except enum, kept by a second load, NULL allowed", async
     assert.ok(await refused("INSERT INTO pay VALUES ('DE89370400440532013001')"), "check digit");
     for (const q of ["'1.2.3.4/24'::scalars.ipv4", "'::1'::scalars.ipv4", "'::1/32'::scalars.ipv4", "'1.2.3.4'::scalars.ipv6", "'NaN'::scalars.float64",
         "'Infinity'::scalars.float32", "'::/0'::scalars.ipv4_cidr", "decode(repeat('ab', 31), 'hex')::scalars.sha256",
-        "70000::scalars.port", "'-1'::scalars.uint64", "'1.5'::scalars.uint64", "'XX'::scalars.country"]) {
+        "70000::scalars.port", "'-1'::scalars.uint64", "'1.5'::scalars.uint64", "'XX'::scalars.country",
+        "'NaN'::scalars.decimal", "'Infinity'::scalars.decimal", "'-Infinity'::scalars.decimal128", "'infinity'::scalars.date",
+        "'-infinity'::scalars.date_time", "'infinity'::scalars.date_time_local", "'550e8400-e29b-41d4-a716-446655440000'::scalars.uuid_v7",
+        "'018f3e1c-7b2a-7c3d-0e4f-5a6b7c8d9e0f'::scalars.uuid_v7", "''::scalars.char", "'a   '::scalars.char", "'ab'::scalars.char"]) {
         assert.ok(await refused(`SELECT ${q}`), `accepted ${q}`);
     }
-    for (const q of ["'1.2.3.4'::scalars.ipv4", "'::1'::scalars.ipv6", "'10.0.0.0/8'::scalars.ipv4_cidr", "'18446744073709551615'::scalars.uint64", "'US'::scalars.country"]) {
+    for (const q of ["'1.2.3.4'::scalars.ipv4", "'::1'::scalars.ipv6", "'10.0.0.0/8'::scalars.ipv4_cidr", "'18446744073709551615'::scalars.uint64", "'US'::scalars.country",
+        "'12.50'::scalars.decimal", "'2026-11-21'::scalars.date", "'2026-11-21T10:00:00Z'::scalars.date_time",
+        "'018F3E1C-7B2A-7C3D-8E4F-5A6B7C8D9E0F'::scalars.uuid_v7", "'a'::scalars.char", "' '::scalars.char"]) {
         assert.equal(await refused(`SELECT ${q}`), false, `refused ${q}`);
     }
+    await pg.close();
+});
+
+test("a re-run replaces a domain's CHECK on an existing install, without rechecking stored rows", async () => {
+    const pg = new PGlite();
+    // An older release whose ipv4 rule was weaker, with a row the new rule refuses.
+    const older = sql.replace("CHECK (family(VALUE) = 4 AND masklen(VALUE) = 32)", "CHECK (masklen(VALUE) = 32)");
+    assert.notEqual(older, sql);
+    await pg.exec(older);
+    await pg.exec("CREATE TABLE hosts (ip scalars.ipv4); INSERT INTO hosts VALUES ('::1/32')");
+    await pg.exec(sql);
+    await assert.rejects(pg.exec("SELECT '::1/32'::scalars.ipv4"), /violates check constraint/);
+    assert.equal((await pg.query("SELECT count(*)::int AS n FROM hosts")).rows[0].n, 1, "the old row stays");
+    // A domain whose release dropped its CHECK loses it too.
+    await pg.exec(sql.replace(/\n.*ADD CONSTRAINT ipv4_check .*\n/, "\n"));
+    assert.equal((await pg.query("SELECT count(*)::int AS n FROM pg_constraint WHERE contypid = 'scalars.ipv4'::regtype")).rows[0].n, 0);
     await pg.close();
 });
 

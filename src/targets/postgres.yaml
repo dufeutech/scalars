@@ -78,6 +78,7 @@ float64:
   note: float(p) with p in 25-53 is a spelling of double precision.
 decimal:
   type: numeric
+  domain_check: VALUE NOT IN ('NaN', 'Infinity', '-Infinity')
   note: Exact arithmetic. Without precision and scale it stores any value as given.
 object:
   note: json keeps the input text and key order verbatim; jsonb normalizes it and is the indexable one.
@@ -90,14 +91,17 @@ enum:
     - name
 date:
   type: date
+  domain_check: isfinite(VALUE)
 time_local:
   type: time
   note: Plain time drops the offset, which is exactly what makes it the local variant.
 date_time:
   type: timestamptz
+  domain_check: isfinite(VALUE)
   note: Stored as UTC and rendered in the session TimeZone; timestamp keeps no offset at all.
 date_time_local:
   type: timestamp
+  domain_check: isfinite(VALUE)
   note: timestamp keeps no offset at all; it names a wall clock, not an instant.
 duration:
   type: interval
@@ -129,8 +133,7 @@ secret:
 country:
   note: char(2) fits but blank-pads and compares by the padded value; text avoids that.
 char:
-  type: char
-  note: Bare char is char(1); the blank-padding that makes char awkward needs a length above 1.
+  note: varchar, not char(1), which stores '' as a space and drops trailing spaces without an error.
 int8:
   type: smallint
   note: Postgres has no 1-byte integer; smallint is the narrowest signed type.
@@ -167,6 +170,7 @@ mac_address:
   type: macaddr
   note: macaddr is EUI-48; macaddr8 is the EUI-64 variant.
 uuid_v7:
+  domain_check: substr(VALUE::text, 15, 1) = '7' AND substr(VALUE::text, 20, 1) IN ('8', '9', 'a', 'b')
   note: Same storage as any UUID; the time ordering is a property of the value, not the type.
 ulid:
   note: 128-bit like a UUID; storable as uuid if the Crockford base32 form is converted on the way in.

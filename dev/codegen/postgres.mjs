@@ -24,24 +24,24 @@ export function emitPostgres(models, version, meta) {
         version,
         requires: "Postgres 16+, plain SQL and PL/pgSQL, no extensions. Install or upgrade: psql -f scalars.sql",
     }) + "\n" + engine + "\n" + used.map((m) => typeFunctions(m, reason)).join("\n")
-        + "\n-- The column types. Postgres has no CREATE OR REPLACE DOMAIN, so a re-run keeps each one: its rule lives in\n"
-        + "-- the functions above, which a re-run replaces. Existing rows are not rechecked.\n"
+        + "\n-- The column types. Postgres has no CREATE OR REPLACE DOMAIN: a re-run keeps each domain and replaces its\n"
+        + "-- CHECK, NOT VALID, so new values meet the new rule and rows already stored are not rechecked.\n"
         + used.map(domain).join("");
     return { [FILE]: text };
 }
 
-/** `scalars.<name>` over the native column type, created unless it exists. */
+/** `scalars.<name>` over the native column type, created unless it exists, its CHECK (`<name>_check`) replaced. */
 function domain(m) {
     if (m.pgType === null) fail(`postgres: type ${m.name} has no column type`);
-    const check = m.pgDomainCheck === null ? "" : ` CHECK (${m.pgDomainCheck})`;
-    return [
+    const lines = [
         "DO $$ BEGIN",
         `    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = ${sqlString(m.name)} AND typnamespace = 'scalars'::regnamespace) THEN`,
-        `        CREATE DOMAIN scalars.${m.name} AS ${m.pgType}${check};`,
+        `        CREATE DOMAIN scalars.${m.name} AS ${m.pgType};`,
         "    END IF;",
-        "END $$;",
-        "",
-    ].join("\n");
+        `    ALTER DOMAIN scalars.${m.name} DROP CONSTRAINT IF EXISTS ${m.name}_check;`,
+    ];
+    if (m.pgDomainCheck !== null) lines.push(`    ALTER DOMAIN scalars.${m.name} ADD CONSTRAINT ${m.name}_check CHECK (${m.pgDomainCheck}) NOT VALID;`);
+    return [...lines, "END $$;", ""].join("\n");
 }
 
 /** The gates of one type, as [condition, reason] pairs in the reference's order. */

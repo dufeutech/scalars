@@ -355,9 +355,9 @@ One type in `dist/scalars.json` (shortened):
   ```
 
 - **Postgres takes clean values.** Run `normalize` (or `validate`) in the app first: `scalars.iban_reason(' de89 3704 0044 0532 0130 00')` is `pattern`. The cleanup steps stay out of the database because Postgres's `lower()` and `upper()` depend on how the server was set up.
-- **Postgres's native types use its own parser.** `scalars.uuid`, `scalars.date`, `scalars.ipv4`, the integers and the other non-text column types are the native type plus only what it misses (a narrower range, the IP family, no `NaN`). So a `scalars.uuid` column accepts `{a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11}` and stores it in Postgres's form; `scalars.is_uuid(text)` checks the exact text when you need it. Number functions take JSON number text; text a double can't hold, like `1e400`, is `out_of_range`.
+- **Postgres's native types use its own parser.** `scalars.uuid`, `scalars.date`, `scalars.ipv4`, the integers and the other non-text column types are the native type plus only what it misses (a narrower range, the IP family, no `NaN` or `infinity`, the UUID version for `uuid_v7`). So a `scalars.uuid` column accepts `{a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11}` and stores it in Postgres's form; `scalars.is_uuid(text)` checks the exact text when you need it. Number functions take JSON number text; text a double can't hold, like `1e400`, is `out_of_range`.
 - **Postgres domains take no settings.** For a `string` with a length or a `decimal` with a precision, write `varchar(200)` or `numeric(12, 2)`. `enum` has no domain: create a Postgres enum with your values.
-- **Upgrade Postgres by running `scalars.sql` again.** It replaces every function and keeps the domains (their rules live in the functions). Postgres doesn't recheck rows already stored.
+- **Upgrade Postgres by running `scalars.sql` again.** It replaces every function and each domain's CHECK, and keeps the domains themselves. New values meet the new rules; rows already stored are not rechecked.
 - **Go and Rust only `normalize` text types**, and in Rust `object`, `array` and `any` are metadata only. Rust's `Meta` has no examples, and Go's leaves out the four that are or hold a JSON object, so nothing runs at start-up. Every example is in `dist/scalars.json`.
 
 ## Changing or adding a type

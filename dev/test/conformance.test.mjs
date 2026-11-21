@@ -8,6 +8,7 @@ import { PGlite } from "@electric-sql/pglite";
 import { loadSources, resolve } from "../lib/resolve.mjs";
 import { groupSchema, sqlString, toJsonSchema } from "../lib/derive.mjs";
 import { pgLiteral } from "./helpers/pg.mjs";
+import { build } from "../build.mjs";
 import { CHECKS, validate as refValidate } from "../lib/reference.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
@@ -15,7 +16,10 @@ const types = resolve(loadSources(path.join(root, "src")));
 const ajv = new Ajv2020({ strict: false, validateFormats: false });
 let db;
 
-before(async () => { db = new PGlite(); });
+before(async () => {
+    db = new PGlite();
+    await db.exec(build(root).code["postgres/scalars.sql"]);
+});
 after(async () => { await db.close(); });
 
 const rejects = async (sql) => { try { await db.exec(sql); return false; } catch { return true; } };
@@ -77,20 +81,27 @@ for (const t of Object.values(types)) {
             ? { test: (s) => (!htmlRe || htmlRe.test(s)) && s.length >= minlength && s.length <= maxlength }
             : null;
 
-        // Postgres table for this type, with the generated CHECK.
+        // Postgres table for this type, its column the type's domain (enum: a named enum type).
         const table = `t_${t.name}`;
-        let column = t.postgres.type;
-        if (column === "enum") {
+        let column = t.postgres.domain;
+        if (t.postgres.type === "enum") {
             await db.exec(`CREATE TYPE ${table}_enum AS ENUM (${ex.valid.map(sqlString).join(", ")})`);
             column = `${table}_enum`;
         }
-        const check = t.postgres.check ? t.postgres.check.replaceAll("{column}", '"v"') : "";
-        await db.exec(`CREATE TABLE ${table} ("v" ${column} ${check})`);
+        await db.exec(`CREATE TABLE ${table} ("v" ${column})`);
+        // A text column takes canonical text: the app normalizes first.
+        const textColumn = ["text", "varchar"].includes(t.postgres.type);
+        const stored = (v) => pgLiteral(t, textColumn ? refValidate(distT, v).value ?? v : v);
 
         for (const v of ex.valid) {
             assert.ok(validate(v), `JSON rejects valid ${JSON.stringify(v)}: ${ajv.errorsText(validate.errors)}`);
             if (html) assert.ok(html.test(String(v)), `HTML pattern rejects valid ${JSON.stringify(v)}`);
-            assert.equal(await rejects(`INSERT INTO ${table} VALUES (${pgLiteral(t, v)})`), false, `Postgres rejects valid ${JSON.stringify(v)}`);
+            assert.equal(await rejects(`INSERT INTO ${table} VALUES (${stored(v)})`), false, `Postgres rejects valid ${JSON.stringify(v)}`);
+        }
+        if (textColumn) {
+            for (const v of [...(ex.check_invalid ?? []), ...(ex.list_invalid ?? [])]) {
+                assert.ok(await rejects(`INSERT INTO ${table} VALUES (${pgLiteral(t, v)})`), `the domain accepts ${JSON.stringify(v)}`);
+            }
         }
         for (const v of ex.invalid ?? []) {
             assert.equal(validate(v), false, `JSON accepts invalid ${JSON.stringify(v)}`);
@@ -107,7 +118,7 @@ for (const t of Object.values(types)) {
         }
         for (const v of ex.db_invalid ?? []) {
             assert.ok(validate(v), `db_invalid ${JSON.stringify(v)} should pass JSON (only the database rejects it)`);
-            assert.ok(await rejects(`INSERT INTO ${table} VALUES (${pgLiteral(t, v)})`), `Postgres accepts db_invalid ${JSON.stringify(v)}`);
+            assert.ok(await rejects(`INSERT INTO ${table} VALUES (${stored(v)})`), `Postgres accepts db_invalid ${JSON.stringify(v)}`);
         }
     });
 }

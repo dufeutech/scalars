@@ -1101,3 +1101,376 @@ CREATE OR REPLACE FUNCTION scalars.is_wikidata_qid(v text) RETURNS boolean
 LANGUAGE sql IMMUTABLE STRICT PARALLEL SAFE AS $$
     SELECT scalars.wikidata_qid_reason(v) IS NULL
 $$;
+
+-- The column types. Postgres has no CREATE OR REPLACE DOMAIN, so a re-run keeps each one: its rule lives in
+-- the functions above, which a re-run replaces. Existing rows are not rechecked.
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'any' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.any AS jsonb;
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'array' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.array AS jsonb;
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'base64' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.base64 AS bytea;
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'base64url' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.base64url AS bytea;
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'bic' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.bic AS text CHECK (scalars.is_bic(VALUE));
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'binary' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.binary AS bytea;
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'boolean' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.boolean AS boolean;
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'char' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.char AS char;
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'cidr' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.cidr AS cidr;
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'color' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.color AS text CHECK (scalars.is_color(VALUE));
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'commonmark' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.commonmark AS text;
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'country' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.country AS text CHECK (scalars.is_country(VALUE));
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'country_alpha3' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.country_alpha3 AS text CHECK (scalars.is_country_alpha3(VALUE));
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'cron' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.cron AS text;
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'css_color' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.css_color AS text CHECK (scalars.is_css_color(VALUE));
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'currency' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.currency AS text CHECK (scalars.is_currency(VALUE));
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'date' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.date AS date;
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'date_time' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.date_time AS timestamptz;
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'date_time_local' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.date_time_local AS timestamp;
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'decimal' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.decimal AS numeric;
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'decimal128' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.decimal128 AS numeric;
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'doi' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.doi AS text CHECK (scalars.is_doi(VALUE));
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'duration' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.duration AS interval;
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'email' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.email AS text CHECK (scalars.is_email(VALUE));
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'float32' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.float32 AS real CHECK (VALUE NOT IN ('NaN', 'Infinity', '-Infinity'));
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'float64' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.float64 AS double precision CHECK (VALUE NOT IN ('NaN', 'Infinity', '-Infinity'));
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'gln' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.gln AS text CHECK (scalars.is_gln(VALUE));
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'gtin' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.gtin AS text CHECK (scalars.is_gtin(VALUE));
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'hostname' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.hostname AS text CHECK (scalars.is_hostname(VALUE));
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'html' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.html AS text;
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'iban' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.iban AS text CHECK (scalars.is_iban(VALUE));
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'int16' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.int16 AS smallint;
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'int32' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.int32 AS integer;
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'int64' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.int64 AS bigint;
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'int8' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.int8 AS smallint CHECK (VALUE BETWEEN -128 AND 127);
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'ipv4' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.ipv4 AS inet CHECK (family(VALUE) = 4 AND masklen(VALUE) = 32);
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'ipv4_cidr' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.ipv4_cidr AS cidr CHECK (family(VALUE) = 4);
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'ipv6' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.ipv6 AS inet CHECK (family(VALUE) = 6 AND masklen(VALUE) = 128);
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'ipv6_cidr' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.ipv6_cidr AS cidr CHECK (family(VALUE) = 6);
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'isbn' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.isbn AS text CHECK (scalars.is_isbn(VALUE));
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'json_pointer' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.json_pointer AS text CHECK (scalars.is_json_pointer(VALUE));
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'jwt' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.jwt AS text CHECK (scalars.is_jwt(VALUE));
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'language' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.language AS text CHECK (scalars.is_language(VALUE));
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'lei' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.lei AS text CHECK (scalars.is_lei(VALUE));
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'locale' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.locale AS text CHECK (scalars.is_locale(VALUE));
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'mac_address' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.mac_address AS macaddr;
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'media_type' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.media_type AS text CHECK (scalars.is_media_type(VALUE));
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'object' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.object AS jsonb;
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'orcid' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.orcid AS text CHECK (scalars.is_orcid(VALUE));
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'phone' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.phone AS text CHECK (scalars.is_phone(VALUE));
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'port' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.port AS integer CHECK (VALUE BETWEEN 0 AND 65535);
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'regex' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.regex AS text;
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'secret' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.secret AS text;
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'semver' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.semver AS text CHECK (scalars.is_semver(VALUE));
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'sha256' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.sha256 AS bytea CHECK (octet_length(VALUE) = 32);
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'slug' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.slug AS text CHECK (scalars.is_slug(VALUE));
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'string' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.string AS varchar;
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'subdivision' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.subdivision AS text CHECK (scalars.is_subdivision(VALUE));
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'text' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.text AS text;
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'time' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.time AS timetz;
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'time_local' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.time_local AS time;
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'timezone' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.timezone AS text CHECK (scalars.is_timezone(VALUE));
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'uint16' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.uint16 AS integer CHECK (VALUE BETWEEN 0 AND 65535);
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'uint32' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.uint32 AS bigint CHECK (VALUE BETWEEN 0 AND 4294967295);
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'uint64' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.uint64 AS numeric CHECK (VALUE >= 0 AND VALUE <= 18446744073709551615 AND VALUE = trunc(VALUE));
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'uint8' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.uint8 AS smallint CHECK (VALUE BETWEEN 0 AND 255);
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'ulid' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.ulid AS text CHECK (scalars.is_ulid(VALUE));
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'unix_time' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.unix_time AS bigint CHECK (VALUE BETWEEN -9007199254740991 AND 9007199254740991);
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'uri' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.uri AS text;
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'uri_reference' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.uri_reference AS text;
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'uri_template' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.uri_template AS text;
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'uuid' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.uuid AS uuid;
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'uuid_v7' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.uuid_v7 AS uuid;
+    END IF;
+END $$;
+DO $$ BEGIN
+    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'wikidata_qid' AND typnamespace = 'scalars'::regnamespace) THEN
+        CREATE DOMAIN scalars.wikidata_qid AS text CHECK (scalars.is_wikidata_qid(VALUE));
+    END IF;
+END $$;

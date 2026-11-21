@@ -44,12 +44,12 @@ test("primitive is a closed set of 16", () => {
     for (const t of Object.values(scalars.types)) assert.ok(names.includes(t.primitive), `${t.name}: ${t.primitive}`);
 });
 
-test("postgres CHECK for listed types is the pattern only", () => {
-    assert.equal(scalars.types.country.postgres.check, "CHECK ({column} ~ '^[A-Z]{2}$')");
+test("a listed type's domain calls its is_ function, which checks the list", () => {
+    assert.equal(scalars.types.country.postgres.domain_check, "scalars.is_country(VALUE)");
     assert.ok(scalars.types.country.schema.enum.includes("US"));
 });
 
-test("a hand-written postgres check wins", () => {
-    assert.match(scalars.types.uint64.postgres.check, /18446744073709551615/);
-    assert.match(distSchema.$defs.type.properties.postgres.properties.check.description, /\{column\}/);
+test("a hand-written postgres domain_check wins", () => {
+    assert.match(scalars.types.uint64.postgres.domain_check, /18446744073709551615/);
+    assert.match(distSchema.$defs.type.properties.postgres.properties.domain_check.description, /VALUE/);
 });

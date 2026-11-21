@@ -2,7 +2,7 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "https://scalars.dev/schema/postgres.schema.json",
     "title": "Postgres target (source)",
-    "description": "How each type is stored as a Postgres column. Blocks inherit from the type's base; null deletes. Length, regex and range CHECKs are generated, never written here; check holds the few that cannot be, and replaces the generated one.",
+    "description": "How each type is stored as a Postgres column. Blocks inherit from the type's base; null deletes. Each type's domain CHECK is generated (a text column calls scalars.is_<type>, a native column gets its range when narrower than the native type); domain_check holds the few that cannot be, and replaces the generated one.",
     "type": "object",
     "properties": {
         "$schema": {
@@ -35,12 +35,13 @@
                     "null"
                 ]
             },
-            "check": {
+            "domain_check": {
+                "description": "The CHECK expression of the type's scalars.<type> domain, over VALUE, for a rule the generator can't derive; it replaces the generated one.",
                 "type": [
                     "string",
                     "null"
                 ],
-                "pattern": "^CHECK \\(.*\\{column\\}.*\\)$"
+                "pattern": "VALUE"
             }
         },
         "additionalProperties": false

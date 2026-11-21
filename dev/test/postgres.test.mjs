@@ -114,3 +114,31 @@ test("every example gets the reference's reason from scalars.<type>_reason", asy
     assert.deepEqual(bad, []);
     await pg.close();
 });
+
+test("a domain per type except enum, kept by a second load, NULL allowed", async () => {
+    const pg = new PGlite();
+    await pg.exec(sql);
+    await pg.exec(sql);
+    const domains = (await pg.query("SELECT typname FROM pg_type WHERE typtype = 'd' AND typnamespace = 'scalars'::regnamespace ORDER BY 1")).rows.map((r) => r.typname);
+    assert.deepEqual(domains, types.filter((t) => t.name !== "enum").map((t) => t.name).sort());
+    await pg.exec("CREATE TABLE pay (account scalars.iban)");
+    await pg.exec("INSERT INTO pay VALUES (NULL), ('DE89370400440532013000')");
+    const refused = async (q) => pg.exec(q).then(() => false, () => true);
+    assert.ok(await refused("INSERT INTO pay VALUES ('DE89370400440532013001')"), "check digit");
+    for (const q of ["'1.2.3.4/24'::scalars.ipv4", "'::1'::scalars.ipv4", "'::1/32'::scalars.ipv4", "'1.2.3.4'::scalars.ipv6", "'NaN'::scalars.float64",
+        "'Infinity'::scalars.float32", "'::/0'::scalars.ipv4_cidr", "decode(repeat('ab', 31), 'hex')::scalars.sha256",
+        "70000::scalars.port", "'-1'::scalars.uint64", "'1.5'::scalars.uint64", "'XX'::scalars.country"]) {
+        assert.ok(await refused(`SELECT ${q}`), `accepted ${q}`);
+    }
+    for (const q of ["'1.2.3.4'::scalars.ipv4", "'::1'::scalars.ipv6", "'10.0.0.0/8'::scalars.ipv4_cidr", "'18446744073709551615'::scalars.uint64", "'US'::scalars.country"]) {
+        assert.equal(await refused(`SELECT ${q}`), false, `refused ${q}`);
+    }
+    await pg.close();
+});
+
+test("dist: postgres.domain on every type but enum, no postgres.check", () => {
+    for (const t of types) {
+        assert.equal(t.postgres.check, undefined, `${t.name} still has postgres.check`);
+        assert.equal(t.postgres.domain, t.name === "enum" ? undefined : `scalars.${t.name}`, t.name);
+    }
+});

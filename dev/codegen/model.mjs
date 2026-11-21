@@ -41,6 +41,9 @@ export function modelOf(t) {
         maxLen,
         minimum: s.minimum ?? null,
         maximum: s.maximum ?? null,
+        // Postgres's column: the native type and the domain's CHECK (only the Postgres emitter reads these).
+        pgType: t.postgres?.type ?? null,
+        pgDomainCheck: t.postgres?.domain_check ?? null,
     };
 }
 

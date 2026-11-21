@@ -74,6 +74,7 @@ int64:
   type: bigint
 float64:
   type: double precision
+  domain_check: VALUE NOT IN ('NaN', 'Infinity', '-Infinity')
   note: float(p) with p in 25-53 is a spelling of double precision.
 decimal:
   type: numeric
@@ -109,9 +110,11 @@ email:
   note: The citext extension gives case-insensitive comparison without a lower() index.
 ipv4:
   type: inet
+  domain_check: family(VALUE) = 4 AND masklen(VALUE) = 32
   note: inet holds a host with an optional netmask; use cidr when the value is a network.
 ipv6:
   type: inet
+  domain_check: family(VALUE) = 6 AND masklen(VALUE) = 128
   note: One inet column stores both families; the address itself carries the version.
 cidr:
   type: cidr
@@ -144,7 +147,7 @@ uint32:
 uint64:
   type: numeric
   note: No unsigned 64-bit type; numeric(20, 0) covers the whole uint64 range.
-  check: CHECK ({column} >= 0 AND {column} <= 18446744073709551615 AND {column} = trunc({column}))
+  domain_check: VALUE >= 0 AND VALUE <= 18446744073709551615 AND VALUE = trunc(VALUE)
 float32:
   type: real
   note: float(p) with p in 1-24 is a spelling of real; it is not a stored precision.
@@ -156,7 +159,10 @@ time:
 unix_time:
   type: bigint
 ipv6_cidr:
+  domain_check: family(VALUE) = 6
   note: One cidr column stores both families; the prefix itself carries the version.
+ipv4_cidr:
+  domain_check: family(VALUE) = 4
 mac_address:
   type: macaddr
   note: macaddr is EUI-48; macaddr8 is the EUI-64 variant.
@@ -179,7 +185,7 @@ jwt:
 sha256:
   type: bytea
   note: 32 decoded bytes; bytea has no fixed-length form, so length is enforced by a check.
-  check: CHECK (octet_length({column}) = 32)
+  domain_check: octet_length(VALUE) = 32
 port:
   note: No unsigned 16-bit type; integer plus a range check covers 0-65535.
 country_alpha3:

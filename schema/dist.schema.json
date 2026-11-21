@@ -83,12 +83,12 @@
                         "minimum": { "type": "number" },
                         "maximum": { "type": "number" },
                         "contentEncoding": { "type": "string" },
-                        "enum": { "type": "array", "items": { "type": "string" }, "uniqueItems": true, "description": "The closed list of values, sorted. Checked after normalize, pattern and check; Postgres keeps the pattern only, so a list update is never a migration." }
+                        "enum": { "type": "array", "items": { "type": "string" }, "uniqueItems": true, "description": "The closed list of values, sorted. Checked after normalize, pattern and check, in Postgres too, where a list update is a re-run of scalars.sql, never a migration." }
                     },
                     "additionalProperties": false
                 },
                 "normalize": { "type": "array", "items": { "type": "string" } },
-                "check": { "type": "string", "description": "A name from $meta.checks: a rule beyond the pattern, like a check digit or a 64-bit range. JSON Schema, HTML and Postgres do not run it." },
+                "check": { "type": "string", "description": "A name from $meta.checks: a rule beyond the pattern, like a check digit or a 64-bit range. JSON Schema and HTML do not run it; the languages and Postgres do." },
                 "params": { "type": "array", "items": { "type": "string" }, "description": "Names from $meta.params that a field of this type can set." },
                 "examples": {
                     "type": "object",
@@ -122,7 +122,8 @@
                         "type": { "type": "string" },
                         "attr": { "type": "array", "items": { "type": "string" }, "description": "Names from $meta.postgres_attrs." },
                         "note": { "type": "string" },
-                        "check": { "type": "string", "description": "A CHECK constraint enforcing the same rule as schema. Replace {column} with the quoted column name, like CHECK (\"slug\" ~ '^[a-z0-9]+(-[a-z0-9]+)*$')." },
+                        "domain": { "type": "string", "description": "The column type dist/postgres/scalars.sql creates for this type, scalars.<type>: the native type plus domain_check. Absent for enum, which needs a named Postgres enum." },
+                        "domain_check": { "type": "string", "description": "The domain's CHECK expression, over VALUE. A text column calls scalars.is_<type>; a native column checks only what the native type misses." },
                         "docs_link": { "type": "string" }
                     },
                     "required": ["type"],

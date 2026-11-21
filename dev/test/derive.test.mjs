@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { applyGenerated, htmlPattern, pgCheck, sqlString, toJsonSchema } from "../lib/derive.mjs";
+import { applyGenerated, htmlPattern, pgDomainCheck, sqlString, toJsonSchema } from "../lib/derive.mjs";
 import { loadSources, resolve } from "../lib/resolve.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -40,32 +40,35 @@ test("quote escaped", () => {
     assert.equal(sqlString("a'b"), "'a''b'");
 });
 
-test("regex check for text columns", () => {
-    const t = { pattern: "^[a-z]+$", postgres: { type: "text" } };
-    assert.equal(pgCheck(t), "CHECK ({column} ~ '^[a-z]+$')");
-    assert.equal(pgCheck({ pattern: "^x$", postgres: { type: "uuid" } }), null, "native types validate themselves");
+test("a text column's domain calls the type's is_ function", () => {
+    assert.equal(pgDomainCheck({ name: "slug", pattern: "^[a-z]+$", postgres: { type: "text" } }), "scalars.is_slug(VALUE)");
+    assert.equal(pgDomainCheck({ name: "short", maxLength: 9, postgres: { type: "varchar" } }), "scalars.is_short(VALUE)");
+    assert.equal(pgDomainCheck({ name: "text", postgres: { type: "text" } }), null, "no rule, no check");
+    assert.equal(pgDomainCheck({ name: "uuid", pattern: "^x$", postgres: { type: "uuid" } }), null, "native types validate themselves");
 });
 
 test("range check only when narrower", () => {
-    const int8 = { type: "integer", minimum: -128, maximum: 127, postgres: { type: "smallint" } };
-    const int32 = { type: "integer", minimum: -2147483648, maximum: 2147483647, postgres: { type: "integer" } };
-    assert.equal(pgCheck(int8), "CHECK ({column} BETWEEN -128 AND 127)");
-    assert.equal(pgCheck(int32), null);
+    const int8 = { name: "int8", type: "integer", minimum: -128, maximum: 127, postgres: { type: "smallint" } };
+    const int32 = { name: "int32", type: "integer", minimum: -2147483648, maximum: 2147483647, postgres: { type: "integer" } };
+    assert.equal(pgDomainCheck(int8), "VALUE BETWEEN -128 AND 127");
+    assert.equal(pgDomainCheck(int32), null);
 });
 
-test("a hand-written check replaces the generated one", () => {
+test("a hand-written domain_check replaces the generated one", () => {
     const r = resolve((() => {
         const s = loadSources(path.join(here, "fixtures/mini"));
-        s.targets.postgres.slug = { check: "CHECK (length({column}) < 9)" };
+        s.targets.postgres.slug = { domain_check: "length(VALUE) < 9" };
         return s;
     })());
-    assert.equal(r.slug.postgres.check, "CHECK (length({column}) < 9)");
+    assert.equal(r.slug.postgres.domain_check, "length(VALUE) < 9");
 });
 
-test("override drives check and html pattern", () => {
+test("override drives the domain and html pattern", () => {
     const r = mini();
-    assert.ok(r.slug.postgres.check.includes(r.slug.pattern.replaceAll("'", "''")));
-    assert.equal(r.uuid.postgres.check, undefined, "uuid column validates itself");
+    assert.equal(r.slug.postgres.domain, "scalars.slug");
+    assert.equal(r.slug.postgres.domain_check, "scalars.is_slug(VALUE)");
+    assert.equal(r.uuid.postgres.domain_check, undefined, "uuid column validates itself");
+    assert.equal(r.uuid.postgres.check, undefined, "no {column} snippets any more");
     assert.equal(r.uuid_v7.html.attrs.pattern, htmlPattern(r.uuid_v7.pattern));
     assert.notEqual(r.uuid_v7.html.attrs.pattern, r.uuid.html.attrs.pattern);
 });

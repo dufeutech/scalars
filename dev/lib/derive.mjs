@@ -57,22 +57,21 @@ const INT_RANGES = {
     bigint: [-9223372036854775808n, 9223372036854775807n],
 };
 
-/** The CHECK constraint for a resolved type, with a {column} placeholder, or null. */
-export function pgCheck(t) {
+/**
+ * The CHECK expression (over VALUE) of a resolved type's `scalars.<name>` domain, or null when it needs none. A text
+ * column calls the type's is_ function; a native column checks only what the native type misses.
+ */
+export function pgDomainCheck(t) {
     const pg = t.postgres ?? {};
-    if (pg.check) return pg.check; // hand-written: the rule can't be generated
+    if (pg.domain_check) return pg.domain_check; // hand-written: the rule can't be generated
     if (TEXT_COLUMNS.has(pg.type)) {
-        // char_length counts code points, as JSON Schema's maxLength does.
-        const rules = [];
-        if (t.minLength !== undefined) rules.push(`char_length({column}) >= ${t.minLength}`);
-        if (t.maxLength !== undefined) rules.push(`char_length({column}) <= ${t.maxLength}`);
-        if (t.pattern) rules.push(`{column} ~ ${sqlString(t.pattern)}`);
-        if (rules.length) return `CHECK (${rules.join(" AND ")})`;
+        const rule = t.pattern || t.minLength !== undefined || t.maxLength !== undefined || t.check || t.enum;
+        return rule ? `scalars.is_${t.name}(VALUE)` : null;
     }
     const native = INT_RANGES[pg.type];
     if (native && t.minimum !== undefined && t.maximum !== undefined) {
         const [lo, hi] = [BigInt(t.minimum), BigInt(t.maximum)];
-        if (lo !== native[0] || hi !== native[1]) return `CHECK ({column} BETWEEN ${lo} AND ${hi})`;
+        if (lo !== native[0] || hi !== native[1]) return `VALUE BETWEEN ${lo} AND ${hi}`;
     }
     return null;
 }
@@ -119,7 +118,8 @@ export function applyGenerated(t) {
         if (t.error) h.attrs.title = t.error;
         if (t.examples?.valid?.length) h.attrs.placeholder = String(t.examples.valid[0]);
     }
-    const check = pgCheck(t);
-    if (check) t.postgres.check = check;
+    if (t.postgres.type !== "enum") t.postgres.domain = `scalars.${t.name}`;
+    const check = pgDomainCheck(t);
+    if (check) t.postgres.domain_check = check;
     return t;
 }

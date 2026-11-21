@@ -17,14 +17,31 @@ export function emitPostgres(models, version, meta) {
         if (!engine.includes(`FUNCTION scalars.check_${name}(`)) fail(`Unknown check "${name}": engine.sql has no scalars.check_${name}`);
     }
     const reason = (r) => (Object.hasOwn(meta.reasons, r) ? sqlString(r) : fail(`No reason "${r}" in $meta.reasons`));
-    const fns = models.filter((m) => !SKIP.has(m.name)).map((m) => typeFunctions(m, reason));
+    const used = models.filter((m) => !SKIP.has(m.name));
     const text = header({
         file: "scalars.sql",
         source: "postgres.mjs",
         version,
         requires: "Postgres 16+, plain SQL and PL/pgSQL, no extensions. Install or upgrade: psql -f scalars.sql",
-    }) + "\n" + engine + "\n" + fns.join("\n");
+    }) + "\n" + engine + "\n" + used.map((m) => typeFunctions(m, reason)).join("\n")
+        + "\n-- The column types. Postgres has no CREATE OR REPLACE DOMAIN, so a re-run keeps each one: its rule lives in\n"
+        + "-- the functions above, which a re-run replaces. Existing rows are not rechecked.\n"
+        + used.map(domain).join("");
     return { [FILE]: text };
+}
+
+/** `scalars.<name>` over the native column type, created unless it exists. */
+function domain(m) {
+    if (m.pgType === null) fail(`postgres: type ${m.name} has no column type`);
+    const check = m.pgDomainCheck === null ? "" : ` CHECK (${m.pgDomainCheck})`;
+    return [
+        "DO $$ BEGIN",
+        `    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = ${sqlString(m.name)} AND typnamespace = 'scalars'::regnamespace) THEN`,
+        `        CREATE DOMAIN scalars.${m.name} AS ${m.pgType}${check};`,
+        "    END IF;",
+        "END $$;",
+        "",
+    ].join("\n");
 }
 
 /** The gates of one type, as [condition, reason] pairs in the reference's order. */

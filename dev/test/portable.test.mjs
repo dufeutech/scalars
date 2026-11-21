@@ -48,5 +48,5 @@ test("hostname length is a maxLength, not a lookahead", () => {
     assert.equal(validate(long), false);
     assert.ok(h.examples.invalid.includes(long), "the long name is an invalid example");
     assert.equal(h.html.attrs.maxlength, "253");
-    assert.match(h.postgres.check, /char_length\(\{column\}\) <= 253/);
+    assert.equal(h.postgres.domain_check, "scalars.is_hostname(VALUE)", "the length lives in the function");
 });

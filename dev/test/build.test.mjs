@@ -67,6 +67,14 @@ test("committed dist matches a fresh build", () => {
     }
 });
 
+test("README download links use the current version tag", () => {
+    const readme = fs.readFileSync(path.join(root, "README.md"), "utf8");
+    const version = JSON.parse(fs.readFileSync(path.join(root, "src/scalar.json"), "utf8")).version;
+    const refs = [...readme.matchAll(/raw\.githubusercontent\.com\/dufeutech\/scalars\/([^/\s]+)\//g)].map((m) => m[1]);
+    assert.ok(refs.length > 0, "README has no download links");
+    for (const ref of refs) assert.equal(ref, `v${version}`, "README link points at the wrong tag: move it with the release");
+});
+
 test("dist holds only built files", () => {
     const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true })
         .flatMap((e) => e.isDirectory() ? walk(path.join(dir, e.name)).map((f) => `${e.name}/${f}`) : [e.name]);

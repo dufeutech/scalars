@@ -73,6 +73,15 @@ All the findings from the models branch's reviews were worked through on 2026-11
 - **Go payloads** must be what `encoding/json` produces (no `int`, `[]string`, `json.Number`). That's the spec, and the README says so; revisit if Go users ask.
 - **Shared shape values:** `object` and `any` values come back as the input's own object in Python, TS and Go, a copy in Rust. Documented in the README.
 
+## Next: Postgres as a fifth language (decided 2026-11-21, not designed yet)
+
+The owner decided Postgres should be treated as a **language**, like Go, Python, Rust and TypeScript, not as a target that only spells a column. Start the next session here, with a spec first (brainstorm, then a plan). The direction agreed:
+
+- **Reusable helper functions:** one generated `dist/postgres/scalars.sql`, a `scalars` schema of `IMMUTABLE` functions (`scalars.is_<type>(text) → boolean`, and the checks and closed-list lookups as shared helpers they call). Any table, domain or model can use them, so a rule is written once. Ports follow the engine rules: single pass, reduce mod as you go, no `numeric` big integers, linear worst case; closed lists as a sorted array literal and binary search (as in Go and Rust), not a long `= ANY(...)`.
+- **Runs anywhere Postgres runs:** plain SQL / PL/pgSQL only. No C or pgrx extension, since managed hosts (RDS, Cloud SQL, Supabase) allow only approved extensions; PGlite must run it too.
+- **Held to the same answers:** a fifth runner in `dev/langs/` runs `cases.json` through PGlite, failure reasons included, so Postgres agrees with the reference like the other four.
+- **Proposed, to settle in the spec:** a `DOMAIN` per type calling its function (`account scalars.iban`), replacing the `{column}` CHECK snippets (no backward compat needed); rules live in functions so a list update is `CREATE OR REPLACE FUNCTION` with no `ALTER DOMAIN` (Postgres doesn't recheck old rows; fine while lists only grow); normalize stays in the app, the database accepts only canonical values; later, models could emit `CREATE TABLE`.
+
 ## Possible next steps (none promised)
 
 - Add or fix types without changing the shape. Each new type needs `valid` examples, at least 2 `invalid` ones if it has a rule, and a `level`.
@@ -80,7 +89,6 @@ All the findings from the models branch's reviews were worked through on 2026-11
 - Follow-ups from the `docs/info.md` review (approved in principle, not designed):
   - **A `language` list:** done in 0.6.2 (BCP 47, IANA registry). Skip `timezone` and `subdivision`, whose lists change too often or are too big.
   - **New identifier types** (`sscc`, `un_locode`, `gpc_brick`, `spdx_license`): dropped on 2026-11-21. The owner wants the data kept free of types that won't be used; add a type only when it checks something real and appears as field data.
-  - **Postgres functions for check digits,** so the database enforces them too.
 - Deferred on purpose: units and quantities (UCUM, which needs two fields, so a schema), translated labels, hints and errors, and JSON-LD mappings.
 
 ## History

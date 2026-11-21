@@ -2,6 +2,7 @@
 // Everything is written rustfmt-clean, and every static is a plain constant expression, so nothing runs at load.
 import { header, int64, lockedVersion, noLoneSurrogate, readEngine } from "./common.mjs";
 import { engineNames, identifiers, metaFields, paramRules } from "./model.mjs";
+import { MAX_DEPTH } from "../lib/models.mjs";
 
 /** Names the engine defines and the statics it uses, so no type may take them (only upper-case ones can meet a type). */
 export const RESERVED_RUST = [
@@ -118,7 +119,10 @@ function tables(meta) {
         const one = `    (${str(code)}, ${str(text)})`; // rustfmt breaks a tuple wider than 60
         return one.length - 4 <= 60 ? `${one},\n` : `    (\n        ${str(code)},\n        ${str(text)},\n    ),\n`;
     });
-    return `/// The limits of each setting in $meta.params.
+    return `/// How deep models may nest, each model and each \`items\` one level; deeper is refused at load.
+const MAX_DEPTH: usize = ${MAX_DEPTH};
+
+/// The limits of each setting in $meta.params.
 static PARAM_RULES: &[ParamRule] = &[
 ${rules.join("")}];
 

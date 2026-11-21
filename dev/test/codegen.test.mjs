@@ -192,3 +192,27 @@ test("common: lockedVersion reads what the runners pin, header knows each commen
     assert.throws(() => common.header({ file: "x.c", source: "s", version: "1", requires: "r" }), /no comment syntax for x\.c/);
     for (const file of ["a.py", "a.ts", "a.go", "a.rs"]) assert.ok(common.header({ file, source: "s", version: "1", requires: "r" }).includes("r\n"), file);
 });
+
+test("models constants are emitted once, from the reference", async () => {
+    const { MAX_DEPTH, DIGIT_SETTINGS, NAME, REF } = await import("../lib/models.mjs");
+    const { code } = build(root);
+    const has = (file, text) => assert.ok(code[file].includes(text), `${file} lacks ${text}`);
+    has("ts/scalars.ts", `const MAX_DEPTH = ${MAX_DEPTH};`);
+    has("ts/scalars.ts", `const NAME_PATTERN = ${JSON.stringify(NAME.source)};`);
+    has("ts/scalars.ts", `const REF_PATTERN = ${JSON.stringify(REF.source)};`);
+    has("ts/scalars.ts", `const DIGIT_SETTINGS: readonly string[] = [${DIGIT_SETTINGS.map((s) => JSON.stringify(s)).join(", ")}];`);
+    has("python/scalars.py", `_MAX_DEPTH: Final = ${MAX_DEPTH} `);
+    has("python/scalars.py", `_NAME_PATTERN: Final = ${JSON.stringify(NAME.source.slice(1, -1))}`);
+    has("python/scalars.py", `_REF_PATTERN: Final = ${JSON.stringify(REF.source.slice(1, -1))}`);
+    has("go/scalars.go", `const maxDepth = ${MAX_DEPTH}\n`);
+    has("rust/scalars.rs", `const MAX_DEPTH: usize = ${MAX_DEPTH};`);
+    // The hand-written engines define none of them, so they can't drift from the reference.
+    for (const [file, defs] of [
+        ["models.ts", [/const MAX_DEPTH\b/, /const DIGIT_SETTINGS\b/, /\[a-z\]\[a-z0-9_\]/]],
+        ["models.py", [/^_MAX_DEPTH\b/m, /^_DIGIT_SETTINGS\b/m, /\[a-z\]\[a-z0-9_\]/]],
+        ["models.go", [/const maxDepth\b/]],
+        ["models.rs", [/const MAX_DEPTH\b/]],
+    ]) {
+        for (const re of defs) assert.doesNotMatch(common.readEngine(file), re, `${file} defines ${re}`);
+    }
+});

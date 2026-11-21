@@ -14,8 +14,7 @@ import (
 	"sync"
 )
 
-// maxDepth is how deep models may nest, each model and each `items` one level; deeper is refused at load.
-const maxDepth = 64
+// maxDepth (how deep models may nest) is emitted after this file, from dev/lib/models.mjs.
 
 // Problem is one problem: an RFC 6901 Pointer, a fixed Code, the Params its message needs (never nil; each value
 // a string, an int64 or a []string), and the English Message.

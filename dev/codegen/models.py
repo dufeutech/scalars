@@ -4,8 +4,7 @@
 
 from typing import NamedTuple as _NamedTuple
 
-_MAX_DEPTH: Final = 64  # nesting deeper than this, each model and each `items` one level, is refused at load
-_DIGIT_SETTINGS: Final = ("precision", "scale")  # refused on number-kind types: float text differs by language
+# _MAX_DEPTH, _DIGIT_SETTINGS, _NAME_PATTERN and _REF_PATTERN are emitted after this file, from dev/lib/models.mjs.
 _INTERNAL: Final = _Obj()  # the key only models() holds: a Model or Models built by hand would skip load's checks
 
 
@@ -97,8 +96,8 @@ class _Catalogue:
 
     def __init__(self) -> None:
         # Used with fullmatch, not match: "$" would also accept a final "\n".
-        self.name = _re.compile(r"[a-z][a-z0-9_]*")
-        self.ref = _re.compile(r"(?:([a-z][a-z0-9_]*):)?([a-z][a-z0-9_]*)(?:\.([a-z][a-z0-9_]*))?")
+        self.name = _re.compile(_NAME_PATTERN)
+        self.ref = _re.compile(_REF_PATTERN)
         self.settings: dict[str, tuple[str, ...]] = {}
         for t in all:  # the tuple of types, not the builtin
             p = t.params

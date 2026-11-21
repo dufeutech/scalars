@@ -9,8 +9,7 @@ use std::cmp::Ordering;
 use std::collections::HashSet;
 use std::sync::Arc;
 
-/// How deep models may nest, each model and each `items` one level; deeper is refused at load.
-const MAX_DEPTH: usize = 64;
+// MAX_DEPTH (how deep models may nest) is emitted after this file, from dev/lib/models.mjs.
 
 /// One problem: an RFC 6901 `pointer`, a fixed `code`, the `params` its message needs (empty when there are none),
 /// and the English `message`.

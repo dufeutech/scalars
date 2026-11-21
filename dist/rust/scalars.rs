@@ -492,8 +492,7 @@ use std::cmp::Ordering;
 use std::collections::HashSet;
 use std::sync::Arc;
 
-/// How deep models may nest, each model and each `items` one level; deeper is refused at load.
-const MAX_DEPTH: usize = 64;
+// MAX_DEPTH (how deep models may nest) is emitted after this file, from dev/lib/models.mjs.
 
 /// One problem: an RFC 6901 `pointer`, a fixed `code`, the `params` its message needs (empty when there are none),
 /// and the English `message`.
@@ -1765,6 +1764,9 @@ fn fits_numeric(t: &str, p: i64, s: i64) -> bool {
     let width = width + usize::from(carry && nines);
     i64::try_from(width).is_ok_and(|w| w <= p)
 }
+
+/// How deep models may nest, each model and each `items` one level; deeper is refused at load.
+const MAX_DEPTH: usize = 64;
 
 /// The limits of each setting in $meta.params.
 static PARAM_RULES: &[ParamRule] = &[

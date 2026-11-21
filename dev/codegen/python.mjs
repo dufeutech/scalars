@@ -1,6 +1,10 @@
 // Emits dist/python/scalars.py: the hand-written engine (engine.py, then models.py) followed by one generated record per type.
 import { header, readEngine } from "./common.mjs";
 import { identifiers, metaFields, paramRules } from "./model.mjs";
+import { DIGIT_SETTINGS, MAX_DEPTH, NAME, REF } from "../lib/models.mjs";
+
+/** A ^...$ pattern's source without its anchors. */
+const unanchored = (re) => re.source.replace(/^\^/, "").replace(/\$$/, "");
 
 /** Python's keywords (keyword.kwlist), which can never name a module attribute. */
 const KEYWORDS_PY = [
@@ -59,6 +63,10 @@ export function emitPython(models, version, meta) {
     const names = `Name = Literal[${models.map((m) => lit(m.name)).join(", ")}]`;
     const every = `all: Final[tuple[Scalar[_Any], ...]] = (${models.map((m) => ids.get(m.name)).join(", ")},)`;
     // The limits of each setting in $meta.params, and the message template of each error code in $meta.errors.
-    const tables = `_PARAM_RULES: Final = ${lit(paramRules(meta))}\n_ERRORS: Final = ${lit(meta.errors)}\n`;
+    const tables = `_PARAM_RULES: Final = ${lit(paramRules(meta))}\n_ERRORS: Final = ${lit(meta.errors)}\n` +
+        `_MAX_DEPTH: Final = ${MAX_DEPTH}  # nesting deeper than this, each model and each \`items\` one level, is refused at load\n` +
+        `_DIGIT_SETTINGS: Final = ${tuple(DIGIT_SETTINGS)}  # refused on number-kind types: float text differs by language\n` +
+        `# A name, and a reference ([domain:]name[.field]); unanchored, for fullmatch (with match, "$" would accept a final "\\n").\n` +
+        `_NAME_PATTERN: Final = ${lit(unanchored(NAME))}\n_REF_PATTERN: Final = ${lit(unanchored(REF))}\n`;
     return { "python/scalars.py": `${top}${ENGINE}\n\n${tables}\n${table}\n${names}\n\n${every}\n` };
 }

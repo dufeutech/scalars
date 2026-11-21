@@ -2,6 +2,7 @@
 // Everything is written already gofmt-clean, and the table is plain composite literals, so Go builds it statically.
 import { fail, header, int64, lockedVersion, noLoneSurrogate, readEngine } from "./common.mjs";
 import { engineNames, identifiers, metaFields, paramRules } from "./model.mjs";
+import { MAX_DEPTH } from "../lib/models.mjs";
 
 /** Names the engine exports, so no type may take them. */
 export const RESERVED_GO = [
@@ -141,7 +142,10 @@ function tables(meta) {
     const rules = Object.entries(paramRules(meta)).map(([name, r]) =>
         `\t{${str(name)}, ${str(r.kind)}, ${int64(r.minimum, name, "math.MinInt64")}, ${int64(r.maximum, name, "math.MaxInt64")}, ${r.minItems ?? 0}, ${r.maxItemBytes ?? 0}},\n`);
     const errors = Object.entries(meta.errors).map(([code, text]) => `\t{${str(code)}, ${str(text)}},\n`);
-    return `// paramRules holds the limits of each setting in $meta.params.
+    return `// maxDepth is how deep models may nest, each model and each \`items\` one level; deeper is refused at load.
+const maxDepth = ${MAX_DEPTH}
+
+// paramRules holds the limits of each setting in $meta.params.
 var paramRules = [...]paramRule{
 ${rules.join("")}}
 

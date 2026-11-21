@@ -2,10 +2,7 @@
 // A port of dev/lib/models.mjs, the reference every engine copies. Load is O(file) and iterative: no recursion is
 // driven by the input. Validate recurses, but load bounds a payload's depth at MAX_DEPTH levels.
 
-/** Nesting deeper than this, each model and each `items` one level, is refused at load. */
-const MAX_DEPTH = 64;
-/** Settings refused on number-kind types: float text differs by language, so digit counts can't agree. */
-const DIGIT_SETTINGS: readonly string[] = ["precision", "scale"];
+// MAX_DEPTH, DIGIT_SETTINGS, NAME_PATTERN and REF_PATTERN are emitted after this file, from dev/lib/models.mjs.
 /** The key only models() holds: a Model or Models built by hand would skip load's checks. */
 const INTERNAL: unique symbol = Symbol("models()");
 
@@ -694,8 +691,8 @@ function catalogue(): Catalogue {
         const settings = new Map<string, readonly string[]>();
         for (const t of scalars.all) settings.set(t.name, t["kind"] === "number" ? t.params.filter((p) => !DIGIT_SETTINGS.includes(p)) : t.params);
         cat = {
-            name: /^[a-z][a-z0-9_]*$/,
-            ref: /^(?:([a-z][a-z0-9_]*):)?([a-z][a-z0-9_]*)(?:\.([a-z][a-z0-9_]*))?$/,
+            name: new RegExp(NAME_PATTERN),
+            ref: new RegExp(REF_PATTERN),
             settings,
         };
         Models["catalogue"] = cat;

@@ -364,10 +364,7 @@ function find(word: unknown, all: readonly Scalar<unknown>[]): Scalar<unknown> |
 // A port of dev/lib/models.mjs, the reference every engine copies. Load is O(file) and iterative: no recursion is
 // driven by the input. Validate recurses, but load bounds a payload's depth at MAX_DEPTH levels.
 
-/** Nesting deeper than this, each model and each `items` one level, is refused at load. */
-const MAX_DEPTH = 64;
-/** Settings refused on number-kind types: float text differs by language, so digit counts can't agree. */
-const DIGIT_SETTINGS: readonly string[] = ["precision", "scale"];
+// MAX_DEPTH, DIGIT_SETTINGS, NAME_PATTERN and REF_PATTERN are emitted after this file, from dev/lib/models.mjs.
 /** The key only models() holds: a Model or Models built by hand would skip load's checks. */
 const INTERNAL: unique symbol = Symbol("models()");
 
@@ -1056,8 +1053,8 @@ function catalogue(): Catalogue {
         const settings = new Map<string, readonly string[]>();
         for (const t of scalars.all) settings.set(t.name, t["kind"] === "number" ? t.params.filter((p) => !DIGIT_SETTINGS.includes(p)) : t.params);
         cat = {
-            name: /^[a-z][a-z0-9_]*$/,
-            ref: /^(?:([a-z][a-z0-9_]*):)?([a-z][a-z0-9_]*)(?:\.([a-z][a-z0-9_]*))?$/,
+            name: new RegExp(NAME_PATTERN),
+            ref: new RegExp(REF_PATTERN),
             settings,
         };
         Models["catalogue"] = cat;
@@ -1086,6 +1083,14 @@ const PARAM_RULES: Readonly<Record<string, ParamRule>> = {"length":{"kind":"inte
 
 /** The message template of each error code in $meta.errors. */
 const ERRORS: Readonly<Record<string, string>> = {"required":"Required.","unknown_field":"Not a field of this model.","not_object":"Must be an object.","not_list":"Must be a list.","too_long":"At most {max} characters.","not_allowed":"Must be one of: {values}.","too_many_digits":"Too many digits for precision {precision}, scale {scale}.","bad_name":"Names are lowercase letters, digits and underscores, starting with a letter.","type_name":"A model can't take a type's name.","unresolved":"No type or model by this name.","alias":"This is an alias; write \"{canonical}\".","unknown_setting":"This type takes no such setting.","bad_setting":"Out of range or the wrong kind of value.","missing_setting":"Needs \"{setting}\".","cycle":"This reference leads back to itself.","too_deep":"Models nest more than {max} levels deep."};
+
+/** Nesting deeper than this, each model and each `items` one level, is refused at load. */
+const MAX_DEPTH = 64;
+/** Settings refused on number-kind types: float text differs by language, so digit counts can't agree. */
+const DIGIT_SETTINGS: readonly string[] = ["precision", "scale"];
+/** A domain, model or field name, and a reference: [domain:]name[.field]. */
+const NAME_PATTERN = "^[a-z][a-z0-9_]*$";
+const REF_PATTERN = "^(?:([a-z][a-z0-9_]*):)?([a-z][a-z0-9_]*)(?:\\.([a-z][a-z0-9_]*))?$";
 
 export type Name = "any" | "array" | "base64" | "base64url" | "bic" | "binary" | "boolean" | "char" | "cidr" | "color" | "commonmark" | "country" | "country_alpha3" | "cron" | "css_color" | "currency" | "date" | "date_time" | "date_time_local" | "decimal" | "decimal128" | "doi" | "double_int" | "duration" | "email" | "enum" | "float32" | "float64" | "gln" | "gtin" | "hostname" | "html" | "http_date" | "iban" | "idn_email" | "idn_hostname" | "int16" | "int32" | "int64" | "int8" | "ipv4" | "ipv4_cidr" | "ipv6" | "ipv6_cidr" | "iri" | "iri_reference" | "isbn" | "json_pointer" | "jwt" | "language" | "lei" | "locale" | "mac_address" | "media_range" | "media_type" | "object" | "orcid" | "phone" | "port" | "regex" | "relative_json_pointer" | "secret" | "semver" | "sf_binary" | "sf_boolean" | "sf_decimal" | "sf_integer" | "sf_string" | "sf_token" | "sha256" | "slug" | "string" | "subdivision" | "text" | "time" | "time_local" | "timezone" | "uint16" | "uint32" | "uint64" | "uint8" | "ulid" | "unix_time" | "uri" | "uri_reference" | "uri_template" | "uuid" | "uuid_v7" | "wikidata_qid";
 

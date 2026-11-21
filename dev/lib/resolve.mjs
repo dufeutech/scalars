@@ -17,6 +17,11 @@ const INHERITED = ["type", "format", "pattern", "minLength", "maxLength", "minim
 /** Source-only keys that never appear in resolved output. */
 const SOURCE_ONLY = new Set(["base", "abstract", "anchor", "docs"]);
 const RESERVED = new Set(["$schema", "version", "$defs"]);
+/**
+ * Patterns a text type taking `precision` may have. The models engines count digits assuming the value is
+ * `-?[0-9]+(\.[0-9]+)?`, so the pattern must accept nothing else: that one, or a narrower form of it.
+ */
+const DIGIT_PATTERNS = new Set(["^-?[0-9]+(\\.[0-9]+)?$", "^-?[0-9]+$", "^[0-9]+(\\.[0-9]+)?$", "^[0-9]+$"]);
 
 const readJson = (p) => JSON.parse(fs.readFileSync(p, "utf8"));
 
@@ -108,6 +113,9 @@ export function resolve({ core, targets }) {
         if (t.check !== undefined && !CHECK_NAMES.has(t.check)) throw new Error(`Type "${name}" names unknown check "${t.check}"`);
         for (const p of t.params ?? []) {
             if (!params[p]) throw new Error(`Type "${name}" names unknown param "${p}"`);
+        }
+        if (t.type === "string" && t.params?.includes("precision") && !DIGIT_PATTERNS.has(t.pattern)) {
+            throw new Error(`Type "${name}" takes precision, so its pattern must be digits (-?[0-9]+(\\.[0-9]+)? or narrower), not ${t.pattern}`);
         }
         for (const a of r.targets.postgres?.attr ?? []) {
             if (!pgAttrs[a]) throw new Error(`Type "${name}" postgres attr names unknown attr "${a}"`);

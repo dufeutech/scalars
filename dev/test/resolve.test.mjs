@@ -171,6 +171,18 @@ test("check is inherited, and null deletes it", () => {
     assert.equal(r.loose.check, undefined);
 });
 
+test("a text type taking precision needs a digits pattern", () => {
+    const withAmount = (amount) => {
+        const s = patched({ amount: { base: "string", level: "core", ...amount } });
+        s.core.$defs = { ...s.core.$defs, params: { precision: { type: "integer" }, scale: { type: "integer" } } };
+        return s;
+    };
+    assert.throws(() => resolve(withAmount({ pattern: "^[0-9a-f]+$", params: ["precision"] })), /takes precision, so its pattern must be digits/);
+    assert.throws(() => resolve(withAmount({ params: ["precision"] })), /takes precision/);
+    const r = resolve(withAmount({ pattern: "^-?[0-9]+(\\.[0-9]+)?$", params: ["precision", "scale"] }));
+    assert.deepEqual(r.amount.params, ["precision", "scale"]);
+});
+
 test("unknown check fails the build", () => {
     assert.throws(
         () => resolve(patched({ slug: { base: "string", level: "core", check: "nope" } })),

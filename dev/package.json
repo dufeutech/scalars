@@ -9,6 +9,7 @@
         "test": "node --test",
         "build": "node build.mjs",
         "check:langs": "node langs/run.mjs",
+        "fuzz:models": "node langs/fuzz.mjs",
         "check:ts": "tsc --strict --noEmit --target es2022 --module nodenext --moduleResolution nodenext ../dist/ts/scalars.ts"
     },
     "devDependencies": {

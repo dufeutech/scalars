@@ -34,6 +34,8 @@ jobs:
       - run: npm test
       - run: npm run check:ts
       - run: npm run check:langs
+      # A quick fixed-seed run of the random models test; run more seeds by hand.
+      - run: npm run fuzz:models -- 1 200
       # cgo works here, unlike on the Windows dev machine.
       - run: go test -race ./...
         working-directory: dev/langs/go

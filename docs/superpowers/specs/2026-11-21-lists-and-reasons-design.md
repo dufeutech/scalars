@@ -11,7 +11,7 @@ Both ship together as 0.6.0.
 
 ## Goals
 
-- `country` (ISO 3166-1 alpha-2), `country_alpha3` (alpha-3) and `currency` (ISO 4217 alpha-3) check membership in a closed list. The check is O(1) and works the same in the four languages, the reference, JSON Schema and Postgres. HTML forms get the list as their `select` options.
+- `country` (ISO 3166-1 alpha-2), `country_alpha3` (alpha-3) and `currency` (ISO 4217 alpha-3) check membership in a closed list. The check is O(1) and works the same in the four languages, the reference and JSON Schema. Postgres keeps the pattern only (see Design). HTML forms get the list as their `select` options.
 - Every `validate` failure carries a reason drawn from one fixed set, the same in all four languages. Models put it in `params.reason`.
 
 ## Non-goals
@@ -53,9 +53,9 @@ Both ship together as 0.6.0.
 - **Build checks.** Every `enum` value must match the type's pattern and be unchanged by its `normalize`. The array must be sorted and free of duplicates. Only text types may have an `enum`.
 - **Where the codes come from.** ISO 3166-1 (249 codes, alpha-2 and alpha-3) and ISO 4217 List One (active codes, including the `X` codes such as `XAU`, `XDR`, `XTS` and `XXX`, since List One assigns them). Each list records its source and the date it was copied, in a `$comment` or the type's `details`. The builder chooses an established machine-readable copy (Debian `iso-codes` for 3166-1, SIX's `list-one.xml` for 4217) and records which one.
 - **dist.** The type gets `schema.enum`. JSON Schema and OpenAPI enforce it as they are. `schema/` is updated so `enum` is allowed in a type's `schema` block. `examples.invalid` are still raw-pattern rejects.
-- **Examples.** A new `examples.list_invalid`, at least 2 values, on every type with an `enum` and no other type: values that pass the pattern and normalize but are not on the list (`XX`, `QQQ`). They work like `check_invalid`: they pass the HTML pattern and fail JSON Schema, the four languages and Postgres. `list_invalid` values *are* inserted into Postgres in the tests, and must be refused there.
+- **Examples.** A new `examples.list_invalid`, at least 2 values, on every type with an `enum` and no other type: values that pass the pattern and normalize but are not on the list (`XX`, `QQQ`). They work like `check_invalid`: they pass the HTML pattern and fail JSON Schema and the four languages. Postgres is not tested with them (see below).
 - **Engines.** Each generated file emits the list once per type as a set: a `frozenset` in Python, a `Set` in TS, a `map[string]struct{}` in Go, and in Rust a sorted `&'static [&str]` searched with `binary_search` (O(log 249), constant in practice; avoids init code). Membership is tested last, after pattern, bounds and `check`.
-- **Postgres.** A type with an `enum` gets `CHECK ({column} IN ('AD', 'AE', ...))` in place of its pattern CHECK, since the list implies the pattern. The existing PGlite tests insert `valid` (accepted) and `list_invalid` (refused).
+- **Postgres: no list.** A type with an `enum` keeps its pattern CHECK only, as with check digits. A database constraint outlives the app version that wrote it: putting the list in a CHECK would make every ISO change a migration on every user's table (drop and re-add a 249-value CHECK, which fails if any stored row holds a withdrawn code), and would refuse new codes until then. The PGlite tests do not insert `list_invalid` values, as with `check_invalid`.
 - **HTML.** `country` and `currency` already say `element: select`. Their `options` stop pointing at `Intl` for the *values*. `options.source` stays, and a note says the options are `schema.enum`. `options.js` names only how to get labels: `new Intl.DisplayNames([locale], { type: 'region' })` for country, `{ type: 'currency' }` for currency. `country_alpha3` gets the same treatment. No list is copied into the `html` block.
 - **Reference.** `dev/lib/reference.mjs` checks membership in the same order as the engines.
 
@@ -79,7 +79,8 @@ Both ship together as 0.6.0.
   - TS: `ScalarError.reason: Reason`, a string-literal union type.
   - Python: `ScalarError.reason: str`, plus the set emitted as constants.
   - Go: `ScalarError.Reason Reason` (`type Reason string`, one exported constant per reason, e.g. `ReasonNotInList`).
-  - Rust: `ScalarError.reason: Reason`, an enum with `as_str()`, and `Display` unchanged.
+  - Rust: `ScalarError.reason: Reason`, a `#[non_exhaustive]` enum with `as_str()`, and `Display` unchanged.
+  - **The set may grow; the order may not change.** Adding a reason is a minor release, documented as such in the README so TS and Rust users don't match exhaustively. Renaming or removing one, or reordering the rules, waits for 1.0, like the dist shape.
   - The reason names are emitted from `$meta.reasons`; a codegen test fails if an engine spells them by hand, as with the models constants.
 - **Inside the engines.** The internal "not valid" marker becomes the reason. Concretely: in TS and Python `run` returns a reason sentinel (a module-level constant per reason), in Go the check returns `(value, Reason)` with `""` meaning ok, in Rust `Result<_, Reason>`. `is_valid` keeps building no error.
 - **Models.** An `invalid` problem gains `params.reason`. The code stays `invalid` and the message stays the type's `error`, so the error shape doesn't change. `wrong_kind` covers models' existing wrong-type cases for scalar fields. The models schema and `$meta.errors` docs mention the new param.
@@ -88,6 +89,8 @@ Both ship together as 0.6.0.
 ### Release
 
 0.6.0: bump the version and its asserts, date the changelog, move the README links, and add a README line on `.reason` to the method table. The changelog says the lists narrow what `validate` accepts.
+
+**Keeping the lists current** (goes into `docs/HANDOFF.md` as a rule): an older release rejects a code ISO added after it. A list update is a patch release (0.6.x), shipped soon after ISO announces the change; ISO 4217 changes about once a year, ISO 3166-1 rarely.
 
 ## Left to the builder
 

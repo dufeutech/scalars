@@ -10,7 +10,7 @@
         "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
         "$meta": {
             "type": "object",
-            "required": ["checks", "errors", "lookup", "normalize_steps", "params", "postgres_attrs"],
+            "required": ["checks", "errors", "lookup", "normalize_steps", "params", "postgres_attrs", "reasons"],
             "properties": {
                 "checks": {
                     "type": "object",
@@ -24,6 +24,12 @@
                     "additionalProperties": { "type": "string" }
                 },
                 "lookup": { "type": "string", "description": "How to find a type from a word a person typed." },
+                "reasons": {
+                    "type": "object",
+                    "description": "Why a validate failed, in the order the single pass checks: a value that breaks several rules gets the first. Every language's ScalarError carries one, and models report it as the problem's code.",
+                    "propertyNames": { "pattern": "^[a-z][a-z0-9_]*$" },
+                    "additionalProperties": { "type": "string" }
+                },
                 "normalize_steps": {
                     "type": "object",
                     "description": "Every cleanup step a type's normalize list may name, with its exact meaning.",

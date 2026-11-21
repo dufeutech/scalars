@@ -36,6 +36,7 @@ export function build(root) {
             normalize_steps: Object.fromEntries(schema.$defs.normalize_step.oneOf.map((s) => [s.const, s.description])),
             params: sources.core.$defs.params,
             postgres_attrs: pgDefs.attr,
+            reasons: sources.core.$defs.reasons,
         },
         types,
     };

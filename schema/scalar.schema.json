@@ -37,6 +37,16 @@
                         "type": "string"
                     }
                 },
+                "reasons": {
+                    "type": "object",
+                    "description": "Why a validate failed, in the order the single pass checks. Emitted as $meta.reasons.",
+                    "propertyNames": {
+                        "pattern": "^[a-z][a-z0-9_]*$"
+                    },
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
                 "params": {
                     "type": "object",
                     "description": "Settings a field of a type can take (like a length), defined once. A type lists the ones it accepts in params.",

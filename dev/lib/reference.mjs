@@ -1,5 +1,6 @@
 // Dev-only reference implementations of the rules dist/ describes as data.
 // They exist to prove the written rules mean what they say; tools implement them in their own language.
+import fs from "node:fs";
 import { modelOf } from "../codegen/model.mjs";
 
 /** Lookup rule: the trim step, lowercase, each run of spaces and "-" becomes one "_"; exact name first, then alias. */
@@ -66,59 +67,70 @@ const models = new WeakMap();
 /** Length in code points (the library's length unit): a surrogate pair counts once. */
 export const codePoints = (s) => { let n = 0; for (let i = 0; i < s.length; i++) { n++; if (s.charCodeAt(i) >= 0xd800 && s.charCodeAt(i) < 0xdc00) i++; } return n; };
 
+/** One frozen failure per reason of $meta.reasons (src/scalar.json $defs.reasons), so a failure allocates nothing. */
+const FAIL = Object.fromEntries(Object.keys(JSON.parse(fs.readFileSync(new URL("../../src/scalar.json", import.meta.url), "utf8")).$defs.reasons).map((r) => [r, Object.freeze({ ok: false, reason: r })]));
+
 /**
  * Validates a value against a type, following the spec: text is trimmed, length-gated at maxLen
  * before case mapping, normalized, length-checked and pattern-matched; numbers are checked against bounds.
- * Returns { ok, value } where value is the normalized text or the integer.
+ * Returns { ok: true, value } where value is the normalized text or the integer, or { ok: false, reason }
+ * where reason is the first rule the pass trips (REASON).
  */
 export function validate(t, v) {
     if (!models.has(t)) models.set(t, { m: modelOf(t), re: t.schema?.pattern ? new RegExp(t.schema.pattern, "u") : null });
     const { m, re } = models.get(t);
-    const fail = { ok: false };
     const inRange = (n) => (m.minimum === null || n >= m.minimum) && (m.maximum === null || n <= m.maximum);
     switch (m.kind) {
         case "text": {
-            if (typeof v !== "string") return fail;
+            if (typeof v !== "string") return FAIL.wrong_kind;
             let s = v;
             // Once trimmed, before any other step (remove_* could join the halves of a pair): text already too long
             // fails, unless a remove_* step can shorten it, then text that is not Unicode scalar values
             // (WHATWG USVString, RFC 7493).
             const shortens = m.steps.some((step) => step === "remove_spaces" || step === "remove_hyphens");
-            const formed = (s) => !(m.maxLen !== null && !shortens && codePoints(s) > m.maxLen) && s.isWellFormed();
+            const formed = (s) => (m.maxLen !== null && !shortens && codePoints(s) > m.maxLen ? FAIL.too_long
+                : s.isWellFormed() ? null : FAIL.malformed);
             let checked = false;
             // The length gate runs just before the first case step: remove_* steps shorten text, case steps never do.
             let gated = false;
             for (const step of m.steps) {
                 if (!checked && step !== "trim") {
                     checked = true;
-                    if (!formed(s)) return fail;
+                    const f = formed(s);
+                    if (f) return f;
                 }
                 if (!gated && (step === "lowercase" || step === "uppercase")) {
                     gated = true;
-                    if (m.maxLen !== null && codePoints(s) > m.maxLen) return fail;
+                    if (m.maxLen !== null && codePoints(s) > m.maxLen) return FAIL.too_long;
                 }
                 s = STEPS[step](s);
             }
-            if (!checked && !formed(s)) return fail;
+            if (!checked) {
+                const f = formed(s);
+                if (f) return f;
+            }
             const n = codePoints(s);
-            if (n < m.minLen || (m.maxLen !== null && n > m.maxLen)) return fail;
-            if (re && !re.test(s)) return fail;
-            if (t.check && !CHECKS[t.check](s)) return fail;
+            if (m.maxLen !== null && n > m.maxLen) return FAIL.too_long;
+            if (n < m.minLen) return FAIL.too_short;
+            if (re && !re.test(s)) return FAIL.pattern;
+            if (t.check && !CHECKS[t.check](s)) return FAIL.check;
             return { ok: true, value: s };
         }
         case "integer":
-            return typeof v === "number" && Number.isInteger(v) && inRange(v) ? { ok: true, value: v } : fail;
+            if (typeof v !== "number" || !Number.isInteger(v)) return FAIL.wrong_kind;
+            return inRange(v) ? { ok: true, value: v } : FAIL.out_of_range;
         case "number":
-            return typeof v === "number" && Number.isFinite(v) && inRange(v) ? { ok: true, value: v } : fail;
+            if (typeof v !== "number") return FAIL.wrong_kind;
+            return Number.isFinite(v) && inRange(v) ? { ok: true, value: v } : FAIL.out_of_range;
         case "boolean":
-            return typeof v === "boolean" ? { ok: true, value: v } : fail;
+            return typeof v === "boolean" ? { ok: true, value: v } : FAIL.wrong_kind;
         case "object": {
             // Plain objects only (prototype Object.prototype or null), as every engine: not dates, maps or arrays.
             const proto = v !== null && typeof v === "object" ? Object.getPrototypeOf(v) : undefined;
-            return proto === Object.prototype || proto === null ? { ok: true, value: v } : fail;
+            return proto === Object.prototype || proto === null ? { ok: true, value: v } : FAIL.wrong_kind;
         }
         case "array":
-            return Array.isArray(v) ? { ok: true, value: v } : fail;
+            return Array.isArray(v) ? { ok: true, value: v } : FAIL.wrong_kind;
         default:
             return { ok: true, value: v };
     }

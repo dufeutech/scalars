@@ -117,6 +117,16 @@
             "missing_setting": "Needs \"{setting}\".",
             "cycle": "This reference leads back to itself.",
             "too_deep": "Models nest more than {max} levels deep."
+        },
+        "reasons": {
+            "wrong_kind": "Not the type's primitive kind (TS, Python and models only; Go and Rust are typed by their signatures).",
+            "malformed": "Text that isn't well-formed Unicode (a lone surrogate).",
+            "too_long": "More code points than the type's maxLength (or a field's length).",
+            "too_short": "Fewer code points than the type's minLength.",
+            "pattern": "Doesn't match the type's pattern.",
+            "out_of_range": "Below minimum, above maximum, or a non-finite number.",
+            "check": "Failed the type's check (a check digit, a 64-bit range).",
+            "not_in_list": "Not on the type's enum."
         }
     },
     "_token": {

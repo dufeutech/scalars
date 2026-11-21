@@ -1,4 +1,4 @@
-# scalars.py, catalogue version 0.7.0.
+# scalars.py, catalogue version 0.8.0.
 # Generated from dist/scalars.json by dev/codegen/python.mjs. Do not edit: run `npm run build` in dev/.
 # Requires Python >= 3.10 (tested on 3.14). No dependencies.
 """Scalar types: one `Scalar` per type, each with `normalize`, `validate` and `is_valid`."""

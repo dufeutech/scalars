@@ -2,7 +2,7 @@
 
 **One definition per data type that works the same in HTML forms, JSON / OpenAPI and Postgres.**
 
-Pick `phone` once and you get the form input (`<input type="tel">`), the JSON rule (`^\+[1-9]\d{1,14}$`), the database column with a matching `CHECK`, a friendly label, a hint, an error message, and examples, all agreeing with each other.
+Pick `phone` once and you get the form input (`<input type="tel">`), the JSON rule (`^\+[1-9]\d{1,14}$`), the database column type (`scalars.phone`, enforcing the same rule), a friendly label, a hint, an error message, and examples, all agreeing with each other.
 
 ## Quick start
 
@@ -11,7 +11,7 @@ Download one file into your project and use it. There's no package to install.
 **Python** (3.10 or newer, no dependencies)
 
 ```sh
-curl -O https://raw.githubusercontent.com/dufeutech/scalars/v0.7.0/dist/python/scalars.py
+curl -O https://raw.githubusercontent.com/dufeutech/scalars/v0.8.0/dist/python/scalars.py
 ```
 
 ```python
@@ -28,7 +28,7 @@ except scalars.ScalarError as e:
 **TypeScript** (5.6 or newer, or Node 22.18 or newer; no dependencies)
 
 ```sh
-curl -O https://raw.githubusercontent.com/dufeutech/scalars/v0.7.0/dist/ts/scalars.ts
+curl -O https://raw.githubusercontent.com/dufeutech/scalars/v0.8.0/dist/ts/scalars.ts
 ```
 
 ```ts
@@ -46,8 +46,8 @@ try {
 **Go** (1.21 or newer, needs `golang.org/x/text`)
 
 ```sh
-curl --create-dirs -o scalars/go.mod     https://raw.githubusercontent.com/dufeutech/scalars/v0.7.0/dist/go/go.mod
-curl --create-dirs -o scalars/scalars.go https://raw.githubusercontent.com/dufeutech/scalars/v0.7.0/dist/go/scalars.go
+curl --create-dirs -o scalars/go.mod     https://raw.githubusercontent.com/dufeutech/scalars/v0.8.0/dist/go/go.mod
+curl --create-dirs -o scalars/scalars.go https://raw.githubusercontent.com/dufeutech/scalars/v0.8.0/dist/go/scalars.go
 go mod edit -require=scalars@v0.0.0 -replace=scalars=./scalars
 go mod tidy
 ```
@@ -63,7 +63,7 @@ _, err := scalars.Phone.Validate("4155552671")  // err.Error() is the type's err
 **Rust** (1.80 or newer, needs the `regex` and `serde_json` crates)
 
 ```sh
-curl -o src/scalars.rs https://raw.githubusercontent.com/dufeutech/scalars/v0.7.0/dist/rust/scalars.rs
+curl -o src/scalars.rs https://raw.githubusercontent.com/dufeutech/scalars/v0.8.0/dist/rust/scalars.rs
 cargo add regex serde_json
 ```
 
@@ -75,22 +75,36 @@ let ok = scalars::EMAIL.is_valid("user@example.com"); // true
 let err = scalars::PHONE.validate("4155552671"); // Err(ScalarError): displays the type's error text
 ```
 
+**Postgres** (16 or newer, plain SQL, no extensions, so it runs on managed hosts too)
+
+```sh
+curl -O https://raw.githubusercontent.com/dufeutech/scalars/v0.8.0/dist/postgres/scalars.sql
+psql -f scalars.sql  # creates the scalars schema; run it again to upgrade
+```
+
+```sql
+CREATE TABLE payment (account scalars.iban NOT NULL, country scalars.country);
+INSERT INTO payment VALUES ('DE89370400440532013001', 'DE');  -- refused: wrong check digit
+SELECT scalars.iban_reason('DE89370400440532013001');           -- 'check'
+SELECT scalars.is_email('user@example.com');                    -- true
+```
+
 That's it. Every type in the table below is there the same way: `scalars.uuid`, `scalars.date`, `scalars.decimal`, and so on.
 
 ## What each type gives you
 
-|                         | Python                     | TypeScript                 | Go                          | Rust                       |
-| ----------------------- | -------------------------- | -------------------------- | --------------------------- | -------------------------- |
-| Clean up, then check    | `validate(v)` (raises)     | `validate(v)` (throws)     | `Validate(v)` → `(v, err)`  | `validate(v)` → `Result`   |
-| Just check              | `is_valid(v)`              | `isValid(v)`               | `IsValid(v)`                | `is_valid(v)`              |
-| Why it failed           | `e.reason` (`Reason.*`)    | `e.reason` (`Reason`)      | `e.Reason` (`Reason*`)      | `e.reason` (`Reason`, `.as_str()`) |
-| Only clean up           | `normalize(s)`             | `normalize(s)`             | `Normalize(s)` (text types) | `normalize(s)` (text types) |
-| Find a type by any name | `scalars.get("money")`     | `scalars.get("money")`     | `scalars.Get("money")`      | `scalars::get("money")`    |
-| Every type              | `scalars.all`              | `scalars.all`              | `scalars.All`               | `scalars::ALL`             |
+|                         | Python                     | TypeScript                 | Go                          | Rust                       | Postgres                       |
+| ----------------------- | -------------------------- | -------------------------- | --------------------------- | -------------------------- | ------------------------------ |
+| Clean up, then check    | `validate(v)` (raises)     | `validate(v)` (throws)     | `Validate(v)` → `(v, err)`  | `validate(v)` → `Result`   | column type `scalars.<type>` (no clean-up) |
+| Just check              | `is_valid(v)`              | `isValid(v)`               | `IsValid(v)`                | `is_valid(v)`              | `scalars.is_<type>(v)`         |
+| Why it failed           | `e.reason` (`Reason.*`)    | `e.reason` (`Reason`)      | `e.Reason` (`Reason*`)      | `e.reason` (`Reason`, `.as_str()`) | `scalars.<type>_reason(v)` (NULL when valid) |
+| Only clean up           | `normalize(s)`             | `normalize(s)`             | `Normalize(s)` (text types) | `normalize(s)` (text types) | in the app                    |
+| Find a type by any name | `scalars.get("money")`     | `scalars.get("money")`     | `scalars.Get("money")`      | `scalars::get("money")`    | —                              |
+| Every type              | `scalars.all`              | `scalars.all`              | `scalars.All`               | `scalars::ALL`             | —                              |
 
 Each type also carries its `label`, `hint` and `error` text, ready to show in a form.
 
-A failed `validate` says why with one reason from a fixed set: `wrong_kind`, `malformed`, `too_long`, `too_short`, `pattern`, `out_of_range`, `check`, `not_in_list`. When a value breaks several rules you get the first one checked, in that order, the same in all four languages. The set, its order and each meaning are `$meta.reasons` in `dist/scalars.json`. The error's message stays the type's `error` text.
+A failed `validate` says why with one reason from a fixed set: `wrong_kind`, `malformed`, `too_long`, `too_short`, `pattern`, `out_of_range`, `check`, `not_in_list`. When a value breaks several rules you get the first one checked, in that order, the same in all five languages. The set, its order and each meaning are `$meta.reasons` in `dist/scalars.json`. The error's message stays the type's `error` text.
 
 ## Models: check a whole payload
 
@@ -276,7 +290,7 @@ Start with the **core** types below; they cover almost everything. Each one also
 | List                                  | `array`           | `list`                   | `[1, 2, 3]`                              |
 | Anything at all                       | `any`             | `json`                   | `{"anything": [1, "two", true]}`         |
 
-`country`, `country_alpha3` and `currency` accept only the codes ISO currently assigns (ISO 3166-1, and ISO 4217 List One): `XX`, `QQQ` and withdrawn codes like `HRK` fail with `not_in_list`. `language` accepts only current BCP 47 language codes (the IANA Language Subtag Registry): the 2-letter code where one exists, so `fra` fails (use `fr`), as do deprecated codes like `iw` (now `he`). The list is `schema.enum`, so JSON Schema and HTML `select` options use the same one. Postgres checks the pattern only, so a list update never needs a migration.
+`country`, `country_alpha3` and `currency` accept only the codes ISO currently assigns (ISO 3166-1, and ISO 4217 List One): `XX`, `QQQ` and withdrawn codes like `HRK` fail with `not_in_list`. `language` accepts only current BCP 47 language codes (the IANA Language Subtag Registry): the 2-letter code where one exists, so `fra` fails (use `fr`), as do deprecated codes like `iw` (now `he`). The list is `schema.enum`, so JSON Schema and HTML `select` options use the same one. Postgres checks it too, and a list update there is a re-run of `scalars.sql`, never a migration.
 
 Need something more specific? There are 42 more **advanced** and **domain** types (like `uuid_v7`, `semver`, `iban`, `isbn`, `gln`). Every one of them names the core type to fall back to in its `alternative` field.
 
@@ -303,12 +317,12 @@ One type in `dist/scalars.json` (shortened):
     "normalize": ["trim", "remove_spaces", "remove_hyphens"],
     "examples": { "valid": ["+14155552671", "+442071838750"], "invalid": ["4155552671", "+1 415 555 2671"] },
     "html": { "element": "input", "attrs": { "type": "tel", "autocomplete": "tel", "pattern": "\\+[1-9][0-9]{1,14}", "title": "…", "placeholder": "+14155552671" } },
-    "postgres": { "type": "text", "check": "CHECK ({column} ~ '^\\+[1-9][0-9]{1,14}$')" }
+    "postgres": { "type": "text", "domain": "scalars.phone", "domain_check": "scalars.is_phone(VALUE)" }
 }
 ```
 
 - `html` is the form field: put `attrs` on an `<input>` (or the named `element`).
-- `postgres` is the column: use `type`, and replace `{column}` in `check` with your column name.
+- `postgres` is the column: declare it as `domain`, which [`dist/postgres/scalars.sql`](dist/postgres/scalars.sql) creates as the native `type` plus `domain_check`.
 - `schema` is the rule as plain JSON Schema. Its `pattern` reads the same in Go, Python, Rust, JS and Postgres (in Python, use `re.fullmatch`).
 - `normalize` lists cleanup steps to run on what a person typed _before_ checking it. Each step is defined in `$meta.normalize_steps`.
 - `primitive` is one of 16 basic types. It's all a language needs to choose a native type (`int64` → `int64` / `i64` / `int` / `bigint`).
@@ -319,12 +333,12 @@ One type in `dist/scalars.json` (shortened):
 - `schema.enum` (on `country`, `country_alpha3`, `currency`) is a closed list, checked after everything else. `examples.list_invalid` holds values that match the pattern but aren't on it.
 - The rule for matching a word to a type (as `get` does) is in `$meta.lookup`.
 
-**The shape is stable from 0.3.0:** new releases add or fix types, but never rename or move a field.
+**No compatibility promise before 1.0:** a release may rename, move or remove a field when that gives a cleaner design, and the changelog says so (0.8.0 replaced `postgres.check` with `postgres.domain`).
 
 ## Good to know
 
-- **Fast on any input.** `validate` takes time proportional to the input length, in all four languages. The build rejects any pattern that isn't provably linear, so no input can make a regex run for seconds.
-- **Check digits and 64-bit ranges are checked.** `validate` rejects a `gtin`, `gln`, `iban`, `lei`, `isbn` or `orcid` with a wrong check digit, and an `int64` or `uint64` too big for 64 bits, in all four languages. JSON Schema and HTML only check the pattern; Postgres catches the 64-bit range but not check digits.
+- **Fast on any input.** `validate` takes time proportional to the input length, in all four languages. The build rejects any pattern that isn't provably linear, so no input can make a regex run for seconds. Postgres runs the same patterns in its own regex engine; the longest shared test inputs (200,000 characters) take under 15 ms there.
+- **Check digits and 64-bit ranges are checked.** `validate` rejects a `gtin`, `gln`, `iban`, `lei`, `isbn` or `orcid` with a wrong check digit, and an `int64` or `uint64` too big for 64 bits, in all four languages and in Postgres. JSON Schema and HTML only check the pattern.
 - **Text must be well-formed Unicode** (no lone surrogates, no invalid UTF-8), as the web's `USVString` and RFC 7493 require. Anything else fails `validate` like any other bad value.
 - **Go and Rust: `get` returns metadata only.** To validate a type you found by alias, pass its name to `scalars.Lookup` (Go, returns `*TextScalar`, `*IntScalar`, ... as `any`) or `scalars::lookup` (Rust, returns a `Kind`):
 
@@ -340,22 +354,26 @@ One type in `dist/scalars.json` (shortened):
   }
   ```
 
+- **Postgres takes clean values.** Run `normalize` (or `validate`) in the app first: `scalars.iban_reason(' de89 3704 0044 0532 0130 00')` is `pattern`. The cleanup steps stay out of the database because Postgres's `lower()` and `upper()` depend on how the server was set up.
+- **Postgres's native types use its own parser.** `scalars.uuid`, `scalars.date`, `scalars.ipv4`, the integers and the other non-text column types are the native type plus only what it misses (a narrower range, the IP family, no `NaN`). So a `scalars.uuid` column accepts `{a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11}` and stores it in Postgres's form; `scalars.is_uuid(text)` checks the exact text when you need it. Number functions take JSON number text; text a double can't hold, like `1e400`, is `out_of_range`.
+- **Postgres domains take no settings.** For a `string` with a length or a `decimal` with a precision, write `varchar(200)` or `numeric(12, 2)`. `enum` has no domain: create a Postgres enum with your values.
+- **Upgrade Postgres by running `scalars.sql` again.** It replaces every function and keeps the domains (their rules live in the functions). Postgres doesn't recheck rows already stored.
 - **Go and Rust only `normalize` text types**, and in Rust `object`, `array` and `any` are metadata only. Rust's `Meta` has no examples, and Go's leaves out the four that are or hold a JSON object, so nothing runs at start-up. Every example is in `dist/scalars.json`.
 
 ## Changing or adding a type
 
 **Use what's in `dist/`. Edit what's in `src/`.** Both hold the same types. `src/` is short and has no repeats; `dist/` is generated from it with every value written out.
 
-Edit [`src/scalar.yaml`](src/scalar.yaml), plus [`src/targets/html.yaml`](src/targets/html.yaml) and [`src/targets/postgres.yaml`](src/targets/postgres.yaml). They're YAML 1.2, so comments are fine. Write patterns in single quotes (`'^[0-9]+$'`: no backslash is ever doubled), and quote any value a YAML 1.1 tool would read as a boolean or number, like `'NO'` or `'0'` (a test fails otherwise). A type can say `base: string` and then list only what differs. Three hidden building blocks (`_token`, `_json`, `_bytes`) hold settings that many types share. The HTML `pattern`, the Postgres `CHECK`s and the `docs_link`s are never written by hand; they're generated from the type's one `pattern`.
+Edit [`src/scalar.yaml`](src/scalar.yaml), plus [`src/targets/html.yaml`](src/targets/html.yaml) and [`src/targets/postgres.yaml`](src/targets/postgres.yaml). They're YAML 1.2, so comments are fine. Write patterns in single quotes (`'^[0-9]+$'`: no backslash is ever doubled), and quote any value a YAML 1.1 tool would read as a boolean or number, like `'NO'` or `'0'` (a test fails otherwise). A type can say `base: string` and then list only what differs. Three hidden building blocks (`_token`, `_json`, `_bytes`) hold settings that many types share. The HTML `pattern`, the Postgres functions and domain checks, and the `docs_link`s are never written by hand; they're generated from the type's one rule (`domain_check` in `postgres.yaml` covers the few a native column needs, like the IP family).
 
 Then rebuild and test (Node 22 or newer; this is dev tooling only, the release doesn't need it):
 
 ```sh
 cd dev
 npm install
-npm run build         # rewrites dist/, including the four language files
+npm run build         # rewrites dist/, including the five language files
 npm test              # every example runs through JSON Schema, the browser's regex engine and real Postgres
-npm run check:langs   # every example, normalize and lookup through the generated TypeScript, Python, Go and Rust files
+npm run check:langs   # every example and shared case through the generated TypeScript, Python, Go, Rust and Postgres files
 ```
 
 `check:langs` needs Python 3, Go and Cargo installed. The language files are generated by [`dev/codegen/`](dev/codegen/) (one runtime per language plus the type data), and the test runners in [`dev/langs/`](dev/langs/) import them.

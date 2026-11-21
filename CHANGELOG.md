@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.8.0 — 2026-11-21
+
+### Added
+- **Postgres is a fifth language:** [`dist/postgres/scalars.sql`](dist/postgres/scalars.sql) creates a `scalars` schema with, for every type but `enum`, `scalars.<type>_reason(v)` (NULL when valid, else the same reason the other languages give), `scalars.is_<type>(v)` and a `scalars.<type>` domain to use as the column type. Text columns get the whole rule, check digits and closed lists included (an `iban` with a wrong check digit or the country `XX` is refused). Native columns (uuid, inet, date, the integers, ...) keep Postgres's own parser, and the domain adds only what it misses: a narrower range, the IP family, no `NaN`, 32 bytes for `sha256`. Plain SQL and PL/pgSQL on Postgres 16+, no extensions. Run the file again to upgrade: it replaces the functions and keeps the domains.
+- Values go in clean: normalize in the app first. Number functions take JSON number text, and text a double can't hold (`1e400`) is `out_of_range`.
+- A fifth runner checks every example and shared case against Postgres (PGlite) in `npm run check:langs`.
+
+### Changed (breaking)
+- **`postgres.check` is gone** (the `CHECK ({column} ...)` snippets). Each type's `postgres` block has `domain` (`scalars.<type>`, absent for `enum`) and, when the domain needs one, `domain_check` (its CHECK, over `VALUE`). In `src/targets/postgres.yaml`, `check` becomes `domain_check`.
+
 ## 0.7.0 — 2026-11-21
 
 ### Removed

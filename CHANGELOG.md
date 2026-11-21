@@ -4,7 +4,7 @@
 
 ### Removed
 14 types that checked little or never appear as field data, leaving one type per concept (75 remain). Their aliases go with them.
-- **HTTP wire formats:** `sf_integer`, `sf_decimal`, `sf_string`, `sf_token`, `sf_binary`, `sf_boolean` (use `int64`, `decimal`, `string`, `enum`, `base64`, `boolean`), `http_date` (use `date_time`), `media_range` (use `media_type`).
+- **HTTP wire formats:** `sf_integer`, `sf_decimal`, `sf_string`, `sf_token`, `sf_binary`, `sf_boolean` (use `int64`, `decimal`, `string` for both strings and tokens, `base64`, `boolean`), `http_date` (use `date_time`), `media_range` (use `media_type`).
 - **International variants:** `idn_email` (use `email`, which already accepts addresses like `用户@例子.广告`), `idn_hostname` (use `hostname`, with the name in punycode), `iri` and `iri_reference` (use `uri` and `uri_reference`, percent-encoded).
 - **Niche:** `relative_json_pointer` (use `json_pointer`), `double_int` (use `int64`).
 

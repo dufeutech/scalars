@@ -36,6 +36,8 @@ jobs:
       - run: npm run check:langs
       # A quick fixed-seed run of the random models test; run more seeds by hand.
       - run: npm run fuzz:models -- 1 200
+      # The generated Go and the hand-written Go must both be gofmt-clean.
+      - run: test -z "$(gofmt -l ../dist/go codegen langs/go)" || { gofmt -l ../dist/go codegen langs/go; exit 1; }
       # cgo works here, unlike on the Windows dev machine.
       - run: go test -race ./...
         working-directory: dev/langs/go

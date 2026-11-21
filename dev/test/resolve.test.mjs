@@ -191,7 +191,7 @@ test("a number type can't take precision or scale", () => {
         ratio: { base: "float64", level: "core", params: ["scale"] },
     });
     s.core.$defs = { ...s.core.$defs, params: { precision: { type: "integer" }, scale: { type: "integer" } } };
-    assert.throws(() => resolve(s), /Type "ratio" is a number, so it can't take precision or scale/);
+    assert.throws(() => resolve(s), /Type "ratio" is number, not text, so it can't take precision or scale/);
 });
 
 test("enum is inherited, and the build checks every list", () => {

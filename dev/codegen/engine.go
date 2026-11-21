@@ -28,9 +28,9 @@ type Meta struct {
 // paramRule is the limits of one setting in $meta.params. A limit it does not have is the widest int64
 // (minimum, maximum) or 0 (minItems, maxItemBytes). Tables of these are arrays of literals, so Go builds them statically.
 type paramRule struct {
-	name, kind string
-	minimum    int64
-	maximum    int64
+	name, kind   string
+	minimum      int64
+	maximum      int64
 	minItems     int
 	maxItemBytes int
 }

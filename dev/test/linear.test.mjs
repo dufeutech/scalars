@@ -33,7 +33,7 @@ test("every source pattern is linear", () => {
 });
 
 test("bounded-ambiguity patterns pass", () => {
-    for (const n of ["base64", "hostname", "duration", "semver", "media_range"]) assert.deepEqual(linearProblems(types[n].pattern), [], n);
+    for (const n of ["base64", "hostname", "duration", "semver", "email"]) assert.deepEqual(linearProblems(types[n].pattern), [], n);
 });
 
 test("patterns outside the portable subset do not parse", () => {

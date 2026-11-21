@@ -1564,26 +1564,6 @@ A paper ID, like 10.1000/182
 
 A Digital Object Identifier: citations to papers, datasets, publications. Prefer uri only for links that are not registered DOIs."""
 
-double_int: Final[Scalar[int]] = Scalar(
-    name="double_int",
-    label="Safe whole number",
-    hint="Whole number JavaScript keeps exact",
-    error="Please use a whole number between ±9007199254740991.",
-    details="Integers exactly representable in an IEEE double (up to 2^53-1): safe as a plain number for every JSON consumer, including JavaScript. Prefer int64 when the full 64-bit range matters and consumers accept strings.",
-    level="advanced",
-    primitive="int32",
-    aliases=("safe_integer",),
-    examples={"valid": (9007199254740991, -9007199254740991), "invalid": (9007199254740992, 1.5)},
-    kind="integer",
-    minimum=-9007199254740991,
-    maximum=9007199254740991,
-)
-"""Safe whole number
-
-Whole number JavaScript keeps exact
-
-Integers exactly representable in an IEEE double (up to 2^53-1): safe as a plain number for every JSON consumer, including JavaScript. Prefer int64 when the full 64-bit range matters and consumers accept strings."""
-
 duration: Final[Scalar[str]] = Scalar(
     name="duration",
     label="Length of time",
@@ -1767,28 +1747,6 @@ Web page markup, like <p>Hello</p>
 
 HTML markup stored as-is: rendered output, email bodies. Sanitize on the way in; prefer commonmark when users author the content."""
 
-http_date: Final[Scalar[str]] = Scalar(
-    name="http_date",
-    label="HTTP date",
-    hint="Like Sun, 16 Aug 2026 14:30:00 GMT",
-    error="Please use the HTTP date form, like Sun, 16 Aug 2026 14:30:00 GMT.",
-    details="The HTTP header date format (IMF-fixdate): Last-Modified, Expires, and friends. HTTP interchange only - prefer date_time everywhere else.",
-    level="domain",
-    primitive="date_time",
-    aliases=("imf_fixdate",),
-    examples={"valid": ("Sun, 16 Aug 2026 14:30:00 GMT", "Mon, 01 Jan 2024 00:00:00 GMT"), "invalid": ("2026-08-16T14:30:00Z", "Sun, 16 Aug 2026 14:30:00 UTC")},
-    kind="text",
-    params=("fractional_seconds",),
-    pattern="^(Mon|Tue|Wed|Thu|Fri|Sat|Sun), [0-9]{2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2} GMT$",
-    min_len=29,
-    max_len=29,
-)
-"""HTTP date
-
-Like Sun, 16 Aug 2026 14:30:00 GMT
-
-The HTTP header date format (IMF-fixdate): Last-Modified, Expires, and friends. HTTP interchange only - prefer date_time everywhere else."""
-
 iban: Final[Scalar[str]] = Scalar(
     name="iban",
     label="Bank account (IBAN)",
@@ -1811,42 +1769,6 @@ iban: Final[Scalar[str]] = Scalar(
 Country code, 2 digits, then account
 
 An International Bank Account Number: identifying accounts for payments. Pair with bic for cross-border routing and treat as sensitive data."""
-
-idn_email: Final[Scalar[str]] = Scalar(
-    name="idn_email",
-    label="International email",
-    hint="Email that may use any alphabet",
-    error="That email looks wrong. Try ñoño@ejemplo.es.",
-    details="An internationalized email address: non-ASCII local parts and domains. Prefer email when every consumer requires ASCII.",
-    level="advanced",
-    primitive="string",
-    aliases=("unicode_email",),
-    examples={"valid": ("用户@例子.广告", "ñoño@ejemplo.es"), "invalid": ()},
-    kind="text",
-)
-"""International email
-
-Email that may use any alphabet
-
-An internationalized email address: non-ASCII local parts and domains. Prefer email when every consumer requires ASCII."""
-
-idn_hostname: Final[Scalar[str]] = Scalar(
-    name="idn_hostname",
-    label="International website name",
-    hint="A domain in any alphabet",
-    error="That domain looks wrong. Try bücher.example.",
-    details="An internationalized (IDNA2008) hostname. Prefer hostname when values are guaranteed ASCII or already punycode-encoded.",
-    level="advanced",
-    primitive="string",
-    aliases=("unicode_domain",),
-    examples={"valid": ("例子.广告", "bücher.example"), "invalid": ()},
-    kind="text",
-)
-"""International website name
-
-A domain in any alphabet
-
-An internationalized (IDNA2008) hostname. Prefer hostname when values are guaranteed ASCII or already punycode-encoded."""
 
 int16: Final[Scalar[int]] = Scalar(
     name="int16",
@@ -2007,42 +1929,6 @@ Like 2001:db8::/32
 
 An IPv6 network prefix like 2001:db8::/32. Prefer cidr when either family may appear, and ipv6 for a single host."""
 
-iri: Final[Scalar[str]] = Scalar(
-    name="iri",
-    label="International link",
-    hint="A link that may use any alphabet",
-    error="That link looks wrong. Try https://bücher.example/straße.",
-    details="An internationalized absolute URI: user-facing links in any script, unencoded. Prefer uri when consumers require ASCII with percent-encoding.",
-    level="advanced",
-    primitive="string",
-    aliases=("unicode_url",),
-    examples={"valid": ("https://例子.广告/路径", "https://bücher.example/straße"), "invalid": ()},
-    kind="text",
-)
-"""International link
-
-A link that may use any alphabet
-
-An internationalized absolute URI: user-facing links in any script, unencoded. Prefer uri when consumers require ASCII with percent-encoding."""
-
-iri_reference: Final[Scalar[str]] = Scalar(
-    name="iri_reference",
-    label="International link or path",
-    hint="A link or path in any alphabet",
-    error="That link or path looks wrong. Try ../straße.",
-    details="An internationalized URI reference, absolute or relative. Prefer iri for absolute-only values and uri_reference for ASCII-only ones.",
-    level="advanced",
-    primitive="string",
-    aliases=("unicode_href",),
-    examples={"valid": ("/路径?c=1", "../straße"), "invalid": ()},
-    kind="text",
-)
-"""International link or path
-
-A link or path in any alphabet
-
-An internationalized URI reference, absolute or relative. Prefer iri for absolute-only values and uri_reference for ASCII-only ones."""
-
 isbn: Final[Scalar[str]] = Scalar(
     name="isbn",
     label="Book number (ISBN)",
@@ -2191,26 +2077,6 @@ Six pairs of hex digits
 
 An EUI-48 hardware address: device inventory, DHCP leases. Never an identity for people or accounts - MACs are spoofable and privacy-sensitive."""
 
-media_range: Final[Scalar[str]] = Scalar(
-    name="media_range",
-    label="Accepted file types",
-    hint="Like text/html or image/*",
-    error="Please use kind/subkind or a *, like text/html;q=0.9.",
-    details="An HTTP media range with wildcards and parameters: Accept-style negotiation. Prefer media_type for one concrete type.",
-    level="domain",
-    primitive="string",
-    aliases=("accept",),
-    examples={"valid": ("text/html;q=0.9", "*/*", "image/*"), "invalid": ("*/html", "text")},
-    kind="text",
-    pattern="^(\\*/\\*|[A-Za-z0-9!#$&^_.+-]+/\\*|[A-Za-z0-9!#$&^_.+-]+/[A-Za-z0-9!#$&^_.+-]+)([\\x09\\x20]*;[^\\x00-\\x1F\\x7F]*)?$",
-    min_len=3,
-)
-"""Accepted file types
-
-Like text/html or image/*
-
-An HTTP media range with wildcards and parameters: Accept-style negotiation. Prefer media_type for one concrete type."""
-
 media_type: Final[Scalar[str]] = Scalar(
     name="media_type",
     label="File type",
@@ -2331,26 +2197,6 @@ A regular expression, like ^[a-z]+$
 
 An ECMA-262 regular expression source: validation rules and matchers stored as data. Prefer enum when the acceptable values are simply a closed set."""
 
-relative_json_pointer: Final[Scalar[str]] = Scalar(
-    name="relative_json_pointer",
-    label="Relative JSON Pointer",
-    hint="Steps up, then a path, like 1/name",
-    error="Please start with a number, like 1/name.",
-    details="A JSON Pointer relative to a known position (1/name). Prefer json_pointer when addressing from the document root.",
-    level="advanced",
-    primitive="string",
-    aliases=("relative_pointer",),
-    examples={"valid": ("1/name", "0", "2#"), "invalid": ("/name", "01/name")},
-    kind="text",
-    pattern="^(0|[1-9][0-9]*)(#|(/([^~/]|~[01])*)*)$",
-    min_len=1,
-)
-"""Relative JSON Pointer
-
-Steps up, then a path, like 1/name
-
-A JSON Pointer relative to a known position (1/name). Prefer json_pointer when addressing from the document root."""
-
 secret: Final[Scalar[str]] = Scalar(
     name="secret",
     label="Secret",
@@ -2388,122 +2234,6 @@ semver: Final[Scalar[str]] = Scalar(
 Major.minor.patch, like 1.4.2
 
 A Semantic Version (1.4.2-rc.1): package and API versions with defined precedence. Prefer string for version-ish labels that do not follow SemVer."""
-
-sf_binary: Final[Scalar[str]] = Scalar(
-    name="sf_binary",
-    label="Header bytes",
-    hint="Base64 between colons",
-    error="Please wrap base64 in colons, like :aGVsbG8=:.",
-    details="An HTTP Structured Fields byte sequence (colon-delimited base64): binary members of structured headers. Prefer base64 outside header serialization.",
-    level="domain",
-    primitive="binary",
-    aliases=("structured_binary",),
-    examples={"valid": (":aGVsbG8=:", "::"), "invalid": ("aGVsbG8=", "::x")},
-    kind="text",
-    pattern="^:[A-Za-z0-9+/]*={0,2}:$",
-    min_len=2,
-)
-"""Header bytes
-
-Base64 between colons
-
-An HTTP Structured Fields byte sequence (colon-delimited base64): binary members of structured headers. Prefer base64 outside header serialization."""
-
-sf_boolean: Final[Scalar[bool]] = Scalar(
-    name="sf_boolean",
-    label="Header yes/no",
-    hint="True or false",
-    error="Please pick true or false.",
-    details="An HTTP Structured Fields boolean (?1 / ?0): flags in structured headers. Prefer boolean outside header serialization.",
-    level="domain",
-    primitive="boolean",
-    aliases=("structured_boolean",),
-    examples={"valid": (True, False), "invalid": ("?1",)},
-    kind="boolean",
-)
-"""Header yes/no
-
-True or false
-
-An HTTP Structured Fields boolean (?1 / ?0): flags in structured headers. Prefer boolean outside header serialization."""
-
-sf_decimal: Final[Scalar[float]] = Scalar(
-    name="sf_decimal",
-    label="Header decimal",
-    hint="Up to 3 digits after the dot",
-    error="Please use a number with at most 3 decimals, like 4.5.",
-    details="An HTTP Structured Fields decimal (three fractional digits): weights and q-values in headers. Prefer decimal outside header serialization.",
-    level="domain",
-    primitive="float64",
-    aliases=("structured_decimal",),
-    examples={"valid": (4.5, -999999999999.999), "invalid": ("4.5",)},
-    kind="number",
-    params=("precision", "scale"),
-)
-"""Header decimal
-
-Up to 3 digits after the dot
-
-An HTTP Structured Fields decimal (three fractional digits): weights and q-values in headers. Prefer decimal outside header serialization."""
-
-sf_integer: Final[Scalar[int]] = Scalar(
-    name="sf_integer",
-    label="Header number",
-    hint="Up to 15 digits",
-    error="Please use a whole number with up to 15 digits.",
-    details="An HTTP Structured Fields integer (15 digits max): numeric members of structured headers. Prefer int64 outside header serialization.",
-    level="domain",
-    primitive="int32",
-    aliases=("structured_integer",),
-    examples={"valid": (42, -999999999999999), "invalid": (1000000000000000, 1.5)},
-    kind="integer",
-    minimum=-999999999999999,
-    maximum=999999999999999,
-)
-"""Header number
-
-Up to 15 digits
-
-An HTTP Structured Fields integer (15 digits max): numeric members of structured headers. Prefer int64 outside header serialization."""
-
-sf_string: Final[Scalar[str]] = Scalar(
-    name="sf_string",
-    label="Header text",
-    hint="Plain ASCII characters only",
-    error="Please use plain ASCII characters, like hello world.",
-    details="An HTTP Structured Fields quoted string (printable ASCII): textual members of structured headers. Prefer string outside header serialization.",
-    level="domain",
-    primitive="string",
-    aliases=("structured_string",),
-    examples={"valid": ("hello world", ""), "invalid": ("tab\there", "café")},
-    kind="text",
-    pattern="^[\\x20-\\x7E]*$",
-)
-"""Header text
-
-Plain ASCII characters only
-
-An HTTP Structured Fields quoted string (printable ASCII): textual members of structured headers. Prefer string outside header serialization."""
-
-sf_token: Final[Scalar[str]] = Scalar(
-    name="sf_token",
-    label="Header token",
-    hint="A short word like gzip",
-    error="Please start with a letter, no spaces, like gzip.",
-    details="An HTTP Structured Fields token like gzip: short symbolic header values. Prefer enum for closed sets outside HTTP.",
-    level="domain",
-    primitive="string",
-    aliases=("structured_token",),
-    examples={"valid": ("gzip", "*", "text/html"), "invalid": ("1gzip", "gz ip")},
-    kind="text",
-    pattern="^[A-Za-z*][A-Za-z0-9:/!#$%&'*+\\-.^_`|~]*$",
-    min_len=1,
-)
-"""Header token
-
-A short word like gzip
-
-An HTTP Structured Fields token like gzip: short symbolic header values. Prefer enum for closed sets outside HTTP."""
 
 sha256: Final[Scalar[str]] = Scalar(
     name="sha256",
@@ -2909,6 +2639,6 @@ Q and a number, like Q42
 
 A Wikidata entity ID (Q42): linking records to globally known entities. Prefer the domain registry when one exists - doi, orcid, lei, isbn."""
 
-Name = Literal["any", "array", "base64", "base64url", "bic", "binary", "boolean", "char", "cidr", "color", "commonmark", "country", "country_alpha3", "cron", "css_color", "currency", "date", "date_time", "date_time_local", "decimal", "decimal128", "doi", "double_int", "duration", "email", "enum", "float32", "float64", "gln", "gtin", "hostname", "html", "http_date", "iban", "idn_email", "idn_hostname", "int16", "int32", "int64", "int8", "ipv4", "ipv4_cidr", "ipv6", "ipv6_cidr", "iri", "iri_reference", "isbn", "json_pointer", "jwt", "language", "lei", "locale", "mac_address", "media_range", "media_type", "object", "orcid", "phone", "port", "regex", "relative_json_pointer", "secret", "semver", "sf_binary", "sf_boolean", "sf_decimal", "sf_integer", "sf_string", "sf_token", "sha256", "slug", "string", "subdivision", "text", "time", "time_local", "timezone", "uint16", "uint32", "uint64", "uint8", "ulid", "unix_time", "uri", "uri_reference", "uri_template", "uuid", "uuid_v7", "wikidata_qid"]
+Name = Literal["any", "array", "base64", "base64url", "bic", "binary", "boolean", "char", "cidr", "color", "commonmark", "country", "country_alpha3", "cron", "css_color", "currency", "date", "date_time", "date_time_local", "decimal", "decimal128", "doi", "duration", "email", "enum", "float32", "float64", "gln", "gtin", "hostname", "html", "iban", "int16", "int32", "int64", "int8", "ipv4", "ipv4_cidr", "ipv6", "ipv6_cidr", "isbn", "json_pointer", "jwt", "language", "lei", "locale", "mac_address", "media_type", "object", "orcid", "phone", "port", "regex", "secret", "semver", "sha256", "slug", "string", "subdivision", "text", "time", "time_local", "timezone", "uint16", "uint32", "uint64", "uint8", "ulid", "unix_time", "uri", "uri_reference", "uri_template", "uuid", "uuid_v7", "wikidata_qid"]
 
-all: Final[tuple[Scalar[_Any], ...]] = (any, array, base64, base64url, bic, binary, boolean, char, cidr, color, commonmark, country, country_alpha3, cron, css_color, currency, date, date_time, date_time_local, decimal, decimal128, doi, double_int, duration, email, enum, float32, float64, gln, gtin, hostname, html, http_date, iban, idn_email, idn_hostname, int16, int32, int64, int8, ipv4, ipv4_cidr, ipv6, ipv6_cidr, iri, iri_reference, isbn, json_pointer, jwt, language, lei, locale, mac_address, media_range, media_type, object, orcid, phone, port, regex, relative_json_pointer, secret, semver, sf_binary, sf_boolean, sf_decimal, sf_integer, sf_string, sf_token, sha256, slug, string, subdivision, text, time, time_local, timezone, uint16, uint32, uint64, uint8, ulid, unix_time, uri, uri_reference, uri_template, uuid, uuid_v7, wikidata_qid,)
+all: Final[tuple[Scalar[_Any], ...]] = (any, array, base64, base64url, bic, binary, boolean, char, cidr, color, commonmark, country, country_alpha3, cron, css_color, currency, date, date_time, date_time_local, decimal, decimal128, doi, duration, email, enum, float32, float64, gln, gtin, hostname, html, iban, int16, int32, int64, int8, ipv4, ipv4_cidr, ipv6, ipv6_cidr, isbn, json_pointer, jwt, language, lei, locale, mac_address, media_type, object, orcid, phone, port, regex, secret, semver, sha256, slug, string, subdivision, text, time, time_local, timezone, uint16, uint32, uint64, uint8, ulid, unix_time, uri, uri_reference, uri_template, uuid, uuid_v7, wikidata_qid,)

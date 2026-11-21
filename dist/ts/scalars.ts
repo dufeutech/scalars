@@ -1151,7 +1151,7 @@ const DIGIT_SETTINGS: readonly string[] = ["precision", "scale"];
 const NAME_PATTERN = "^[a-z][a-z0-9_]*$";
 const REF_PATTERN = "^(?:([a-z][a-z0-9_]*):)?([a-z][a-z0-9_]*)(?:\\.([a-z][a-z0-9_]*))?$";
 
-export type Name = "any" | "array" | "base64" | "base64url" | "bic" | "binary" | "boolean" | "char" | "cidr" | "color" | "commonmark" | "country" | "country_alpha3" | "cron" | "css_color" | "currency" | "date" | "date_time" | "date_time_local" | "decimal" | "decimal128" | "doi" | "double_int" | "duration" | "email" | "enum" | "float32" | "float64" | "gln" | "gtin" | "hostname" | "html" | "http_date" | "iban" | "idn_email" | "idn_hostname" | "int16" | "int32" | "int64" | "int8" | "ipv4" | "ipv4_cidr" | "ipv6" | "ipv6_cidr" | "iri" | "iri_reference" | "isbn" | "json_pointer" | "jwt" | "language" | "lei" | "locale" | "mac_address" | "media_range" | "media_type" | "object" | "orcid" | "phone" | "port" | "regex" | "relative_json_pointer" | "secret" | "semver" | "sf_binary" | "sf_boolean" | "sf_decimal" | "sf_integer" | "sf_string" | "sf_token" | "sha256" | "slug" | "string" | "subdivision" | "text" | "time" | "time_local" | "timezone" | "uint16" | "uint32" | "uint64" | "uint8" | "ulid" | "unix_time" | "uri" | "uri_reference" | "uri_template" | "uuid" | "uuid_v7" | "wikidata_qid";
+export type Name = "any" | "array" | "base64" | "base64url" | "bic" | "binary" | "boolean" | "char" | "cidr" | "color" | "commonmark" | "country" | "country_alpha3" | "cron" | "css_color" | "currency" | "date" | "date_time" | "date_time_local" | "decimal" | "decimal128" | "doi" | "duration" | "email" | "enum" | "float32" | "float64" | "gln" | "gtin" | "hostname" | "html" | "iban" | "int16" | "int32" | "int64" | "int8" | "ipv4" | "ipv4_cidr" | "ipv6" | "ipv6_cidr" | "isbn" | "json_pointer" | "jwt" | "language" | "lei" | "locale" | "mac_address" | "media_type" | "object" | "orcid" | "phone" | "port" | "regex" | "secret" | "semver" | "sha256" | "slug" | "string" | "subdivision" | "text" | "time" | "time_local" | "timezone" | "uint16" | "uint32" | "uint64" | "uint8" | "ulid" | "unix_time" | "uri" | "uri_reference" | "uri_template" | "uuid" | "uuid_v7" | "wikidata_qid";
 
 /** Every type by name, plus `get` (name or alias), `all` and `models`. */
 export const scalars = {
@@ -1487,21 +1487,6 @@ export const scalars = {
         pattern: "^10\\.[0-9]{4,9}/[-._;()/:A-Za-z0-9]+$",
         minLen: 9,
     }),
-    /** Safe whole number — Whole number JavaScript keeps exact. Integers exactly representable in an IEEE double (up to 2^53-1): safe as a plain number for every JSON consumer, including JavaScript. Prefer int64 when the full 64-bit range matters and consumers accept strings. */
-    "double_int": new Scalar<number>({
-        name: "double_int",
-        label: "Safe whole number",
-        hint: "Whole number JavaScript keeps exact",
-        error: "Please use a whole number between ±9007199254740991.",
-        details: "Integers exactly representable in an IEEE double (up to 2^53-1): safe as a plain number for every JSON consumer, including JavaScript. Prefer int64 when the full 64-bit range matters and consumers accept strings.",
-        level: "advanced",
-        primitive: "int32",
-        aliases: ["safe_integer"],
-        examples: { valid: [9007199254740991,-9007199254740991], invalid: [9007199254740992,1.5] },
-        kind: "integer",
-        minimum: -9007199254740991,
-        maximum: 9007199254740991,
-    }),
     /** Length of time — How long something lasts, like P3DT4H30M. A span of time (ISO 8601): timeouts, retention windows, billing periods. A length, not a position - prefer date_time for points in time. */
     "duration": new Scalar<string>({
         name: "duration",
@@ -1640,23 +1625,6 @@ export const scalars = {
         examples: { valid: ["<p>Hello</p>","<ul><li>one</li></ul>"], invalid: [] },
         kind: "text",
     }),
-    /** HTTP date — Like Sun, 16 Aug 2026 14:30:00 GMT. The HTTP header date format (IMF-fixdate): Last-Modified, Expires, and friends. HTTP interchange only - prefer date_time everywhere else. */
-    "http_date": new Scalar<string>({
-        name: "http_date",
-        label: "HTTP date",
-        hint: "Like Sun, 16 Aug 2026 14:30:00 GMT",
-        error: "Please use the HTTP date form, like Sun, 16 Aug 2026 14:30:00 GMT.",
-        details: "The HTTP header date format (IMF-fixdate): Last-Modified, Expires, and friends. HTTP interchange only - prefer date_time everywhere else.",
-        level: "domain",
-        primitive: "date_time",
-        aliases: ["imf_fixdate"],
-        examples: { valid: ["Sun, 16 Aug 2026 14:30:00 GMT","Mon, 01 Jan 2024 00:00:00 GMT"], invalid: ["2026-08-16T14:30:00Z","Sun, 16 Aug 2026 14:30:00 UTC"] },
-        kind: "text",
-        params: ["fractional_seconds"],
-        pattern: "^(Mon|Tue|Wed|Thu|Fri|Sat|Sun), [0-9]{2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2} GMT$",
-        minLen: 29,
-        maxLen: 29,
-    }),
     /** Bank account (IBAN) — Country code, 2 digits, then account. An International Bank Account Number: identifying accounts for payments. Pair with bic for cross-border routing and treat as sensitive data. */
     "iban": new Scalar<string>({
         name: "iban",
@@ -1674,32 +1642,6 @@ export const scalars = {
         check: "iban",
         minLen: 15,
         maxLen: 34,
-    }),
-    /** International email — Email that may use any alphabet. An internationalized email address: non-ASCII local parts and domains. Prefer email when every consumer requires ASCII. */
-    "idn_email": new Scalar<string>({
-        name: "idn_email",
-        label: "International email",
-        hint: "Email that may use any alphabet",
-        error: "That email looks wrong. Try ñoño@ejemplo.es.",
-        details: "An internationalized email address: non-ASCII local parts and domains. Prefer email when every consumer requires ASCII.",
-        level: "advanced",
-        primitive: "string",
-        aliases: ["unicode_email"],
-        examples: { valid: ["用户@例子.广告","ñoño@ejemplo.es"], invalid: [] },
-        kind: "text",
-    }),
-    /** International website name — A domain in any alphabet. An internationalized (IDNA2008) hostname. Prefer hostname when values are guaranteed ASCII or already punycode-encoded. */
-    "idn_hostname": new Scalar<string>({
-        name: "idn_hostname",
-        label: "International website name",
-        hint: "A domain in any alphabet",
-        error: "That domain looks wrong. Try bücher.example.",
-        details: "An internationalized (IDNA2008) hostname. Prefer hostname when values are guaranteed ASCII or already punycode-encoded.",
-        level: "advanced",
-        primitive: "string",
-        aliases: ["unicode_domain"],
-        examples: { valid: ["例子.广告","bücher.example"], invalid: [] },
-        kind: "text",
     }),
     /** Small whole number — From -32768 to 32767. Signed 16-bit integers: compact numeric codes and small bounded quantities. Prefer int32 as the general-purpose default. */
     "int16": new Scalar<number>({
@@ -1820,32 +1762,6 @@ export const scalars = {
         examples: { valid: ["2001:db8::/32","::/0"], invalid: [] },
         kind: "text",
     }),
-    /** International link — A link that may use any alphabet. An internationalized absolute URI: user-facing links in any script, unencoded. Prefer uri when consumers require ASCII with percent-encoding. */
-    "iri": new Scalar<string>({
-        name: "iri",
-        label: "International link",
-        hint: "A link that may use any alphabet",
-        error: "That link looks wrong. Try https://bücher.example/straße.",
-        details: "An internationalized absolute URI: user-facing links in any script, unencoded. Prefer uri when consumers require ASCII with percent-encoding.",
-        level: "advanced",
-        primitive: "string",
-        aliases: ["unicode_url"],
-        examples: { valid: ["https://例子.广告/路径","https://bücher.example/straße"], invalid: [] },
-        kind: "text",
-    }),
-    /** International link or path — A link or path in any alphabet. An internationalized URI reference, absolute or relative. Prefer iri for absolute-only values and uri_reference for ASCII-only ones. */
-    "iri_reference": new Scalar<string>({
-        name: "iri_reference",
-        label: "International link or path",
-        hint: "A link or path in any alphabet",
-        error: "That link or path looks wrong. Try ../straße.",
-        details: "An internationalized URI reference, absolute or relative. Prefer iri for absolute-only values and uri_reference for ASCII-only ones.",
-        level: "advanced",
-        primitive: "string",
-        aliases: ["unicode_href"],
-        examples: { valid: ["/路径?c=1","../straße"], invalid: [] },
-        kind: "text",
-    }),
     /** Book number (ISBN) — 10 or 13 digits. An ISBN identifying a book edition. Prefer gtin for general retail products; every ISBN-13 is a GTIN, but not the reverse. */
     "isbn": new Scalar<string>({
         name: "isbn",
@@ -1959,21 +1875,6 @@ export const scalars = {
         minLen: 17,
         maxLen: 17,
     }),
-    /** Accepted file types — Like text/html or image/*. An HTTP media range with wildcards and parameters: Accept-style negotiation. Prefer media_type for one concrete type. */
-    "media_range": new Scalar<string>({
-        name: "media_range",
-        label: "Accepted file types",
-        hint: "Like text/html or image/*",
-        error: "Please use kind/subkind or a *, like text/html;q=0.9.",
-        details: "An HTTP media range with wildcards and parameters: Accept-style negotiation. Prefer media_type for one concrete type.",
-        level: "domain",
-        primitive: "string",
-        aliases: ["accept"],
-        examples: { valid: ["text/html;q=0.9","*/*","image/*"], invalid: ["*/html","text"] },
-        kind: "text",
-        pattern: "^(\\*/\\*|[A-Za-z0-9!#$&^_.+-]+/\\*|[A-Za-z0-9!#$&^_.+-]+/[A-Za-z0-9!#$&^_.+-]+)([\\x09\\x20]*;[^\\x00-\\x1F\\x7F]*)?$",
-        minLen: 3,
-    }),
     /** File type — What kind of file, like application/json. A concrete media type like application/json: labeling stored content. */
     "media_type": new Scalar<string>({
         name: "media_type",
@@ -2064,21 +1965,6 @@ export const scalars = {
         examples: { valid: ["^[a-z][a-z0-9_]*$","\\d+"], invalid: [] },
         kind: "text",
     }),
-    /** Relative JSON Pointer — Steps up, then a path, like 1/name. A JSON Pointer relative to a known position (1/name). Prefer json_pointer when addressing from the document root. */
-    "relative_json_pointer": new Scalar<string>({
-        name: "relative_json_pointer",
-        label: "Relative JSON Pointer",
-        hint: "Steps up, then a path, like 1/name",
-        error: "Please start with a number, like 1/name.",
-        details: "A JSON Pointer relative to a known position (1/name). Prefer json_pointer when addressing from the document root.",
-        level: "advanced",
-        primitive: "string",
-        aliases: ["relative_pointer"],
-        examples: { valid: ["1/name","0","2#"], invalid: ["/name","01/name"] },
-        kind: "text",
-        pattern: "^(0|[1-9][0-9]*)(#|(/([^~/]|~[01])*)*)$",
-        minLen: 1,
-    }),
     /** Secret — Kept hidden, like a password. Sensitive text that must never be displayed or logged: passwords, API keys. The format is a masking hint, not protection - hash or encrypt at rest. */
     "secret": new Scalar<string>({
         name: "secret",
@@ -2106,92 +1992,6 @@ export const scalars = {
         kind: "text",
         pattern: "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
         minLen: 5,
-    }),
-    /** Header bytes — Base64 between colons. An HTTP Structured Fields byte sequence (colon-delimited base64): binary members of structured headers. Prefer base64 outside header serialization. */
-    "sf_binary": new Scalar<string>({
-        name: "sf_binary",
-        label: "Header bytes",
-        hint: "Base64 between colons",
-        error: "Please wrap base64 in colons, like :aGVsbG8=:.",
-        details: "An HTTP Structured Fields byte sequence (colon-delimited base64): binary members of structured headers. Prefer base64 outside header serialization.",
-        level: "domain",
-        primitive: "binary",
-        aliases: ["structured_binary"],
-        examples: { valid: [":aGVsbG8=:","::"], invalid: ["aGVsbG8=","::x"] },
-        kind: "text",
-        pattern: "^:[A-Za-z0-9+/]*={0,2}:$",
-        minLen: 2,
-    }),
-    /** Header yes/no — True or false. An HTTP Structured Fields boolean (?1 / ?0): flags in structured headers. Prefer boolean outside header serialization. */
-    "sf_boolean": new Scalar<boolean>({
-        name: "sf_boolean",
-        label: "Header yes/no",
-        hint: "True or false",
-        error: "Please pick true or false.",
-        details: "An HTTP Structured Fields boolean (?1 / ?0): flags in structured headers. Prefer boolean outside header serialization.",
-        level: "domain",
-        primitive: "boolean",
-        aliases: ["structured_boolean"],
-        examples: { valid: [true,false], invalid: ["?1"] },
-        kind: "boolean",
-    }),
-    /** Header decimal — Up to 3 digits after the dot. An HTTP Structured Fields decimal (three fractional digits): weights and q-values in headers. Prefer decimal outside header serialization. */
-    "sf_decimal": new Scalar<number>({
-        name: "sf_decimal",
-        label: "Header decimal",
-        hint: "Up to 3 digits after the dot",
-        error: "Please use a number with at most 3 decimals, like 4.5.",
-        details: "An HTTP Structured Fields decimal (three fractional digits): weights and q-values in headers. Prefer decimal outside header serialization.",
-        level: "domain",
-        primitive: "float64",
-        aliases: ["structured_decimal"],
-        examples: { valid: [4.5,-999999999999.999], invalid: ["4.5"] },
-        kind: "number",
-        params: ["precision","scale"],
-    }),
-    /** Header number — Up to 15 digits. An HTTP Structured Fields integer (15 digits max): numeric members of structured headers. Prefer int64 outside header serialization. */
-    "sf_integer": new Scalar<number>({
-        name: "sf_integer",
-        label: "Header number",
-        hint: "Up to 15 digits",
-        error: "Please use a whole number with up to 15 digits.",
-        details: "An HTTP Structured Fields integer (15 digits max): numeric members of structured headers. Prefer int64 outside header serialization.",
-        level: "domain",
-        primitive: "int32",
-        aliases: ["structured_integer"],
-        examples: { valid: [42,-999999999999999], invalid: [1000000000000000,1.5] },
-        kind: "integer",
-        minimum: -999999999999999,
-        maximum: 999999999999999,
-    }),
-    /** Header text — Plain ASCII characters only. An HTTP Structured Fields quoted string (printable ASCII): textual members of structured headers. Prefer string outside header serialization. */
-    "sf_string": new Scalar<string>({
-        name: "sf_string",
-        label: "Header text",
-        hint: "Plain ASCII characters only",
-        error: "Please use plain ASCII characters, like hello world.",
-        details: "An HTTP Structured Fields quoted string (printable ASCII): textual members of structured headers. Prefer string outside header serialization.",
-        level: "domain",
-        primitive: "string",
-        aliases: ["structured_string"],
-        examples: { valid: ["hello world",""], invalid: ["tab\there","café"] },
-        kind: "text",
-        pattern: "^[\\x20-\\x7E]*$",
-    }),
-    /** Header token — A short word like gzip. An HTTP Structured Fields token like gzip: short symbolic header values. Prefer enum for closed sets outside HTTP. */
-    "sf_token": new Scalar<string>({
-        name: "sf_token",
-        label: "Header token",
-        hint: "A short word like gzip",
-        error: "Please start with a letter, no spaces, like gzip.",
-        details: "An HTTP Structured Fields token like gzip: short symbolic header values. Prefer enum for closed sets outside HTTP.",
-        level: "domain",
-        primitive: "string",
-        aliases: ["structured_token"],
-        examples: { valid: ["gzip","*","text/html"], invalid: ["1gzip","gz ip"] },
-        kind: "text",
-        pattern: "^[A-Za-z*][A-Za-z0-9:/!#$%&'*+\\-.^_`|~]*$",
-        minLen: 1,
     }),
     /** SHA-256 hash — 64 hex characters. A SHA-256 digest: content addressing, integrity checks, dedup keys. Never for passwords - those take a dedicated password hash stored as secret. */
     "sha256": new Scalar<string>({
@@ -2511,6 +2311,6 @@ export const scalars = {
     },
 } as const;
 
-const every: readonly Scalar<unknown>[] = [scalars["any"], scalars["array"], scalars["base64"], scalars["base64url"], scalars["bic"], scalars["binary"], scalars["boolean"], scalars["char"], scalars["cidr"], scalars["color"], scalars["commonmark"], scalars["country"], scalars["country_alpha3"], scalars["cron"], scalars["css_color"], scalars["currency"], scalars["date"], scalars["date_time"], scalars["date_time_local"], scalars["decimal"], scalars["decimal128"], scalars["doi"], scalars["double_int"], scalars["duration"], scalars["email"], scalars["enum"], scalars["float32"], scalars["float64"], scalars["gln"], scalars["gtin"], scalars["hostname"], scalars["html"], scalars["http_date"], scalars["iban"], scalars["idn_email"], scalars["idn_hostname"], scalars["int16"], scalars["int32"], scalars["int64"], scalars["int8"], scalars["ipv4"], scalars["ipv4_cidr"], scalars["ipv6"], scalars["ipv6_cidr"], scalars["iri"], scalars["iri_reference"], scalars["isbn"], scalars["json_pointer"], scalars["jwt"], scalars["language"], scalars["lei"], scalars["locale"], scalars["mac_address"], scalars["media_range"], scalars["media_type"], scalars["object"], scalars["orcid"], scalars["phone"], scalars["port"], scalars["regex"], scalars["relative_json_pointer"], scalars["secret"], scalars["semver"], scalars["sf_binary"], scalars["sf_boolean"], scalars["sf_decimal"], scalars["sf_integer"], scalars["sf_string"], scalars["sf_token"], scalars["sha256"], scalars["slug"], scalars["string"], scalars["subdivision"], scalars["text"], scalars["time"], scalars["time_local"], scalars["timezone"], scalars["uint16"], scalars["uint32"], scalars["uint64"], scalars["uint8"], scalars["ulid"], scalars["unix_time"], scalars["uri"], scalars["uri_reference"], scalars["uri_template"], scalars["uuid"], scalars["uuid_v7"], scalars["wikidata_qid"]];
+const every: readonly Scalar<unknown>[] = [scalars["any"], scalars["array"], scalars["base64"], scalars["base64url"], scalars["bic"], scalars["binary"], scalars["boolean"], scalars["char"], scalars["cidr"], scalars["color"], scalars["commonmark"], scalars["country"], scalars["country_alpha3"], scalars["cron"], scalars["css_color"], scalars["currency"], scalars["date"], scalars["date_time"], scalars["date_time_local"], scalars["decimal"], scalars["decimal128"], scalars["doi"], scalars["duration"], scalars["email"], scalars["enum"], scalars["float32"], scalars["float64"], scalars["gln"], scalars["gtin"], scalars["hostname"], scalars["html"], scalars["iban"], scalars["int16"], scalars["int32"], scalars["int64"], scalars["int8"], scalars["ipv4"], scalars["ipv4_cidr"], scalars["ipv6"], scalars["ipv6_cidr"], scalars["isbn"], scalars["json_pointer"], scalars["jwt"], scalars["language"], scalars["lei"], scalars["locale"], scalars["mac_address"], scalars["media_type"], scalars["object"], scalars["orcid"], scalars["phone"], scalars["port"], scalars["regex"], scalars["secret"], scalars["semver"], scalars["sha256"], scalars["slug"], scalars["string"], scalars["subdivision"], scalars["text"], scalars["time"], scalars["time_local"], scalars["timezone"], scalars["uint16"], scalars["uint32"], scalars["uint64"], scalars["uint8"], scalars["ulid"], scalars["unix_time"], scalars["uri"], scalars["uri_reference"], scalars["uri_template"], scalars["uuid"], scalars["uuid_v7"], scalars["wikidata_qid"]];
 
 export default scalars;

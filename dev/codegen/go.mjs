@@ -58,7 +58,7 @@ function str(s) {
 }
 
 /** A pattern as a raw string when it can be one: raw strings can't hold a backtick, and drop carriage returns. */
-const pattern = (p) => (/[`\r﻿]/.test(noLoneSurrogate(p)) ? str(p) : `\`${p}\``);
+export const goPattern = (p) => (/[`\r﻿]/.test(noLoneSurrogate(p)) ? str(p) : `\`${p}\``);
 
 const isObject = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
 const hasObject = (v) => isObject(v) || (Array.isArray(v) && v.some(hasObject));
@@ -91,7 +91,7 @@ function rules(m, ids) {
         case "text":
             return [
                 ["steps", `[]step{${m.steps.map((s) => ids.step.get(s)).join(", ")}}`],
-                ["pattern", m.pattern === null ? `""` : pattern(m.pattern)],
+                ["pattern", m.pattern === null ? `""` : goPattern(m.pattern)],
                 ["minLen", String(m.minLen)],
                 ["maxLen", m.maxLen === null ? "noMax" : String(m.maxLen)],
                 ...(m.check === null ? [] : [["rule", ids.check.get(m.check)]]),

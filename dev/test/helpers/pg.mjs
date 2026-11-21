@@ -5,7 +5,6 @@ export function pgLiteral(t, value) {
     if (t.postgres.type === "bytea") {
         let s = String(value);
         if (t.name === "sha256") return `decode(${sqlString(s)}, 'hex')`;
-        if (t.name === "sf_binary") s = s.slice(1, -1);
         if (t.name === "base64url") {
             s = s.replace(/-/g, "+").replace(/_/g, "/").replace(/=+$/, "");
             s += "=".repeat((4 - (s.length % 4)) % 4);

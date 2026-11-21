@@ -25,10 +25,7 @@ $defs:
     rfc5646: https://datatracker.ietf.org/doc/html/rfc5646
     css_color_4: https://www.w3.org/TR/css-color-4/
     posix_epoch: https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/V1_chap04.html
-    rfc6531: https://datatracker.ietf.org/doc/html/rfc6531
-    rfc5890: https://datatracker.ietf.org/doc/html/rfc5890
     ieee802: https://standards.ieee.org/ieee/802/
-    rfc3987: https://datatracker.ietf.org/doc/html/rfc3987
     ulid: https://github.com/ulid/spec
     rfc4648: https://datatracker.ietf.org/doc/html/rfc4648
     commonmark: https://spec.commonmark.org/0.31.2/
@@ -43,12 +40,10 @@ $defs:
     posix_crontab: https://pubs.opengroup.org/onlinepubs/9799919799/utilities/crontab.html
     iso3166_2: https://www.iso.org/standard/72483.html
     iana_language: https://www.iana.org/assignments/language-subtag-registry/language-subtag-registry
-    rfc9110: https://datatracker.ietf.org/doc/html/rfc9110
     wikidata: https://www.wikidata.org/wiki/Wikidata:Identifiers
     doi: https://www.doi.org/the-identifier/what-is-a-doi/
     orcid: https://info.orcid.org/documentation/
     iso17442: https://www.gleif.org/en/about-lei/iso-17442-the-lei-code-structure
-    rfc9651: https://datatracker.ietf.org/doc/html/rfc9651
     iso13616: https://www.iso.org/standard/81090.html
     iso9362: https://www.iso.org/standard/60390.html
     isbn: https://www.isbn-international.org/
@@ -1106,29 +1101,6 @@ uint64:
   details: "The full unsigned 64-bit range: hashes and foreign systems' identifiers. Most languages and JSON cannot
     represent the upper half natively, so values travel as strings; prefer int64 unless the source really uses all 64
     bits."
-double_int:
-  base: int32
-  level: advanced
-  alternative: int64
-  label: Safe whole number
-  hint: Whole number JavaScript keeps exact
-  error: Please use a whole number between ±9007199254740991.
-  aliases:
-    - safe_integer
-  format: double-int
-  minimum: -9007199254740991
-  maximum: 9007199254740991
-  examples:
-    valid:
-      - 9007199254740991
-      - -9007199254740991
-    invalid:
-      - 9007199254740992
-      - 1.5
-  standard: OpenAPI Format Registry (integer exactly representable as a double)
-  docs: openapi_formats
-  details: 'Integers exactly representable in an IEEE double (up to 2^53-1): safe as a plain number for every JSON
-    consumer, including JavaScript. Prefer int64 when the full 64-bit range matters and consumers accept strings.'
 float32:
   base: float64
   level: advanced
@@ -1224,42 +1196,6 @@ unix_time:
   anchor: '#tag_04_19'
   details: 'Seconds since the Unix epoch as an integer: compact machine timestamps and TTLs. Prefer date_time for anything
     humans or APIs read directly.'
-idn_email:
-  base: _token
-  level: advanced
-  alternative: email
-  label: International email
-  hint: Email that may use any alphabet
-  error: That email looks wrong. Try ñoño@ejemplo.es.
-  aliases:
-    - unicode_email
-  format: idn-email
-  examples:
-    valid:
-      - 用户@例子.广告
-      - ñoño@ejemplo.es
-  standard: RFC 6531 (internationalized email)
-  docs: rfc6531
-  details: 'An internationalized email address: non-ASCII local parts and domains. Prefer email when every consumer
-    requires ASCII.'
-idn_hostname:
-  base: _token
-  level: advanced
-  alternative: hostname
-  label: International website name
-  hint: A domain in any alphabet
-  error: That domain looks wrong. Try bücher.example.
-  aliases:
-    - unicode_domain
-  format: idn-hostname
-  examples:
-    valid:
-      - 例子.广告
-      - bücher.example
-  standard: RFC 5890 (IDNA2008)
-  docs: rfc5890
-  details: An internationalized (IDNA2008) hostname. Prefer hostname when values are guaranteed ASCII or already
-    punycode-encoded.
 ipv4_cidr:
   base: cidr
   level: advanced
@@ -1343,43 +1279,6 @@ uri_reference:
   anchor: '#section-4.1'
   details: 'A URI reference, absolute or relative: redirect targets, in-site paths. Prefer uri when an absolute,
     scheme-carrying value is required.'
-iri:
-  base: _token
-  level: advanced
-  alternative: uri
-  label: International link
-  hint: A link that may use any alphabet
-  error: That link looks wrong. Try https://bücher.example/straße.
-  aliases:
-    - unicode_url
-  format: iri
-  examples:
-    valid:
-      - https://例子.广告/路径
-      - https://bücher.example/straße
-  standard: RFC 3987 (internationalized URI)
-  docs: rfc3987
-  details: 'An internationalized absolute URI: user-facing links in any script, unencoded. Prefer uri when consumers
-    require ASCII with percent-encoding.'
-iri_reference:
-  base: _token
-  level: advanced
-  alternative: uri
-  label: International link or path
-  hint: A link or path in any alphabet
-  error: That link or path looks wrong. Try ../straße.
-  aliases:
-    - unicode_href
-  format: iri-reference
-  examples:
-    valid:
-      - /路径?c=1
-      - ../straße
-  standard: RFC 3987 Section 2.2 (internationalized URI reference)
-  docs: rfc3987
-  anchor: '#section-2.2'
-  details: An internationalized URI reference, absolute or relative. Prefer iri for absolute-only values and uri_reference
-    for ASCII-only ones.
 uuid_v7:
   base: uuid
   level: advanced
@@ -1556,28 +1455,6 @@ json_pointer:
   standard: RFC 6901
   docs: rfc6901
   details: 'An absolute JSON Pointer (/users/0/email): addressing a location inside a document from its root.'
-relative_json_pointer:
-  base: _token
-  level: advanced
-  label: Relative JSON Pointer
-  hint: Steps up, then a path, like 1/name
-  error: Please start with a number, like 1/name.
-  aliases:
-    - relative_pointer
-  format: relative-json-pointer
-  pattern: '^(0|[1-9][0-9]*)(#|(/([^~/]|~[01])*)*)$'
-  examples:
-    valid:
-      - 1/name
-      - '0'
-      - 2#
-    invalid:
-      - /name
-      - 01/name
-  standard: JSON Schema 2020-12 (relative-json-pointer)
-  docs: json_schema_validation
-  anchor: '#name-relative-json-pointer'
-  details: A JSON Pointer relative to a known position (1/name). Prefer json_pointer when addressing from the document root.
 uri_template:
   base: _token
   level: advanced
@@ -2164,31 +2041,6 @@ language:
   details: 'A BCP 47 language code (en): tagging what language content is in, with the 2-letter code where one exists.
     Prefer locale when region or script variants matter. The list: current language subtags (not deprecated, not
     private-use) from the IANA Language Subtag Registry, File-Date 2026-11-18, copied 2026-11-21.'
-http_date:
-  base: date_time
-  level: domain
-  label: HTTP date
-  hint: Like Sun, 16 Aug 2026 14:30:00 GMT
-  error: Please use the HTTP date form, like Sun, 16 Aug 2026 14:30:00 GMT.
-  aliases:
-    - imf_fixdate
-  format: http-date
-  pattern: '^(Mon|Tue|Wed|Thu|Fri|Sat|Sun), [0-9]{2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [0-9]{4}
-    [0-9]{2}:[0-9]{2}:[0-9]{2} GMT$'
-  params:
-    - fractional_seconds
-  examples:
-    valid:
-      - Sun, 16 Aug 2026 14:30:00 GMT
-      - Mon, 01 Jan 2024 00:00:00 GMT
-    invalid:
-      - '2026-08-16T14:30:00Z'
-      - Sun, 16 Aug 2026 14:30:00 UTC
-  standard: RFC 9110 Section 5.6.7 (IMF-fixdate)
-  docs: rfc9110
-  anchor: '#section-5.6.7'
-  details: 'The HTTP header date format (IMF-fixdate): Last-Modified, Expires, and friends. HTTP interchange only - prefer
-    date_time everywhere else.'
 wikidata_qid:
   base: _token
   level: domain
@@ -2277,166 +2129,6 @@ lei:
   docs: iso17442
   details: 'A Legal Entity Identifier: organizations in financial and regulatory contexts. Identity, not routing - prefer
     bic for payment routing.'
-media_range:
-  base: media_type
-  level: domain
-  label: Accepted file types
-  hint: Like text/html or image/*
-  error: Please use kind/subkind or a *, like text/html;q=0.9.
-  aliases:
-    - accept
-  format: media-range
-  pattern: '^(\*/\*|[A-Za-z0-9!#$&^_.+-]+/\*|[A-Za-z0-9!#$&^_.+-]+/[A-Za-z0-9!#$&^_.+-]+)([\x09\x20]*;[^\x00-\x1F\x7F]*)?$'
-  examples:
-    valid:
-      - text/html;q=0.9
-      - '*/*'
-      - image/*
-    invalid:
-      - '*/html'
-      - text
-  standard: RFC 9110 Section 12.5.1 (media-range)
-  docs: rfc9110
-  anchor: '#section-12.5.1'
-  details: 'An HTTP media range with wildcards and parameters: Accept-style negotiation. Prefer media_type for one
-    concrete type.'
-sf_integer:
-  base: int32
-  level: domain
-  alternative: int64
-  label: Header number
-  hint: Up to 15 digits
-  error: Please use a whole number with up to 15 digits.
-  aliases:
-    - structured_integer
-  format: sf-integer
-  minimum: -999999999999999
-  maximum: 999999999999999
-  examples:
-    valid:
-      - 42
-      - -999999999999999
-    invalid:
-      - 1000000000000000
-      - 1.5
-  standard: RFC 9651 Section 3.3.1 (Structured Fields integer)
-  docs: rfc9651
-  anchor: '#section-3.3.1'
-  details: 'An HTTP Structured Fields integer (15 digits max): numeric members of structured headers. Prefer int64 outside
-    header serialization.'
-sf_decimal:
-  base: float64
-  level: domain
-  alternative: decimal
-  label: Header decimal
-  hint: Up to 3 digits after the dot
-  error: Please use a number with at most 3 decimals, like 4.5.
-  aliases:
-    - structured_decimal
-  format: sf-decimal
-  params:
-    - precision
-    - scale
-  examples:
-    valid:
-      - 4.5
-      - -999999999999.999
-    invalid:
-      - '4.5'
-    db_invalid:
-      - 1.2345
-  standard: RFC 9651 Section 3.3.2 (Structured Fields decimal)
-  docs: rfc9651
-  anchor: '#section-3.3.2'
-  details: 'An HTTP Structured Fields decimal (three fractional digits): weights and q-values in headers. Prefer decimal
-    outside header serialization.'
-sf_string:
-  base: _token
-  level: domain
-  label: Header text
-  hint: Plain ASCII characters only
-  error: Please use plain ASCII characters, like hello world.
-  aliases:
-    - structured_string
-  format: sf-string
-  pattern: '^[\x20-\x7E]*$'
-  examples:
-    valid:
-      - hello world
-      - ''
-    invalid:
-      - tab	here
-      - café
-  standard: RFC 9651 Section 3.3.3 (Structured Fields string)
-  docs: rfc9651
-  anchor: '#section-3.3.3'
-  details: 'An HTTP Structured Fields quoted string (printable ASCII): textual members of structured headers. Prefer
-    string outside header serialization.'
-sf_token:
-  base: _token
-  level: domain
-  label: Header token
-  hint: A short word like gzip
-  error: Please start with a letter, no spaces, like gzip.
-  aliases:
-    - structured_token
-  format: sf-token
-  pattern: '^[A-Za-z*][A-Za-z0-9:/!#$%&''*+\-.^_`|~]*$'
-  examples:
-    valid:
-      - gzip
-      - '*'
-      - text/html
-    invalid:
-      - 1gzip
-      - gz ip
-  standard: RFC 9651 Section 3.3.4 (Structured Fields token)
-  docs: rfc9651
-  anchor: '#section-3.3.4'
-  details: 'An HTTP Structured Fields token like gzip: short symbolic header values. Prefer enum for closed sets outside HTTP.'
-sf_binary:
-  base: binary
-  level: domain
-  label: Header bytes
-  hint: Base64 between colons
-  error: Please wrap base64 in colons, like :aGVsbG8=:.
-  aliases:
-    - structured_binary
-  format: sf-binary
-  pattern: '^:[A-Za-z0-9+/]*={0,2}:$'
-  contentEncoding: null
-  examples:
-    valid:
-      - ':aGVsbG8=:'
-      - '::'
-    invalid:
-      - aGVsbG8=
-      - ::x
-  standard: RFC 9651 Section 3.3.5 (Structured Fields byte sequence)
-  docs: rfc9651
-  anchor: '#section-3.3.5'
-  details: 'An HTTP Structured Fields byte sequence (colon-delimited base64): binary members of structured headers. Prefer
-    base64 outside header serialization.'
-sf_boolean:
-  base: boolean
-  level: domain
-  label: Header yes/no
-  hint: True or false
-  error: Please pick true or false.
-  aliases:
-    - structured_boolean
-  format: sf-boolean
-  examples:
-    valid:
-      - true
-      - false
-    invalid:
-      - ?1
-  standard: RFC 9651 Section 3.3.6 (Structured Fields boolean)
-  docs: rfc9651
-  anchor: '#section-3.3.6'
-  details: 'An HTTP Structured Fields boolean (?1 / ?0): flags in structured headers. Prefer boolean outside header
-    serialization.'
 iban:
   base: _token
   level: domain

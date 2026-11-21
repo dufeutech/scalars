@@ -30,9 +30,9 @@ test("params land on the right types", () => {
     for (const t of Object.values(types)) if (t.params) by[t.name] = t.params;
     assert.deepEqual(by, {
         string: ["length"],
-        decimal: ["precision", "scale"], decimal128: ["precision", "scale"], sf_decimal: ["precision", "scale"], uint64: ["precision", "scale"],
+        decimal: ["precision", "scale"], decimal128: ["precision", "scale"], uint64: ["precision", "scale"],
         time_local: ["fractional_seconds"], time: ["fractional_seconds"], date_time: ["fractional_seconds"],
-        date_time_local: ["fractional_seconds"], http_date: ["fractional_seconds"], duration: ["fractional_seconds"],
+        date_time_local: ["fractional_seconds"], duration: ["fractional_seconds"],
         enum: ["values"],
     });
 });

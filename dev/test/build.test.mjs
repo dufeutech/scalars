@@ -19,7 +19,7 @@ function keys(v, acc = new Set()) {
 }
 
 test("scalars has every type and validates against the dist schema", () => {
-    assert.equal(Object.keys(out.scalars.types).length, 89);
+    assert.equal(Object.keys(out.scalars.types).length, 75);
     assert.equal(out.scalars.version, "0.6.2");
     const validate = ajv().compile(JSON.parse(fs.readFileSync(path.join(root, "schema/dist.schema.json"), "utf8")));
     assert.ok(validate(out.scalars), JSON.stringify(validate.errors?.slice(0, 3)));
@@ -52,7 +52,7 @@ test("openapi components compile", () => {
     assert.equal(out.openapi.openapi, "3.1.0");
     assert.equal(out.openapi.info.version, "0.6.2");
     const schemas = out.openapi.components.schemas;
-    assert.equal(Object.keys(schemas).length, 89);
+    assert.equal(Object.keys(schemas).length, 75);
     const a = ajv();
     for (const [name, s] of Object.entries(schemas)) assert.doesNotThrow(() => a.compile(s), name);
 });

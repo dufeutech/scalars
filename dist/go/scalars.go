@@ -2209,28 +2209,6 @@ var scalarDoi = TextScalar{
 	maxLen:  noMax,
 }
 
-// DoubleInt is Safe whole number: Whole number JavaScript keeps exact.
-//
-// Integers exactly representable in an IEEE double (up to 2^53-1): safe as a plain number for every JSON consumer, including JavaScript. Prefer int64 when the full 64-bit range matters and consumers accept strings.
-var DoubleInt = &scalarDoubleInt
-
-var scalarDoubleInt = IntScalar{
-	Meta: Meta{
-		Name:      "double_int",
-		Label:     "Safe whole number",
-		Hint:      "Whole number JavaScript keeps exact",
-		Error:     "Please use a whole number between ±9007199254740991.",
-		Details:   "Integers exactly representable in an IEEE double (up to 2^53-1): safe as a plain number for every JSON consumer, including JavaScript. Prefer int64 when the full 64-bit range matters and consumers accept strings.",
-		Level:     "advanced",
-		Primitive: "int32",
-		Aliases:   []string{"safe_integer"},
-		Valid:     []any{9007199254740991.0, -9007199254740991.0},
-		Invalid:   []any{9007199254740992.0, 1.5},
-	},
-	minimum: -9007199254740991,
-	maximum: 9007199254740991,
-}
-
 // Duration is Length of time: How long something lasts, like P3DT4H30M.
 //
 // A span of time (ISO 8601): timeouts, retention windows, billing periods. A length, not a position - prefer date_time for points in time.
@@ -2449,31 +2427,6 @@ var scalarHtml = TextScalar{
 	maxLen:  noMax,
 }
 
-// HttpDate is HTTP date: Like Sun, 16 Aug 2026 14:30:00 GMT.
-//
-// The HTTP header date format (IMF-fixdate): Last-Modified, Expires, and friends. HTTP interchange only - prefer date_time everywhere else.
-var HttpDate = &scalarHttpDate
-
-var scalarHttpDate = TextScalar{
-	Meta: Meta{
-		Name:      "http_date",
-		Label:     "HTTP date",
-		Hint:      "Like Sun, 16 Aug 2026 14:30:00 GMT",
-		Error:     "Please use the HTTP date form, like Sun, 16 Aug 2026 14:30:00 GMT.",
-		Details:   "The HTTP header date format (IMF-fixdate): Last-Modified, Expires, and friends. HTTP interchange only - prefer date_time everywhere else.",
-		Level:     "domain",
-		Primitive: "date_time",
-		Aliases:   []string{"imf_fixdate"},
-		Params:    []string{"fractional_seconds"},
-		Valid:     []any{"Sun, 16 Aug 2026 14:30:00 GMT", "Mon, 01 Jan 2024 00:00:00 GMT"},
-		Invalid:   []any{"2026-08-16T14:30:00Z", "Sun, 16 Aug 2026 14:30:00 UTC"},
-	},
-	steps:   []step{},
-	pattern: `^(Mon|Tue|Wed|Thu|Fri|Sat|Sun), [0-9]{2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2} GMT$`,
-	minLen:  29,
-	maxLen:  29,
-}
-
 // Iban is Bank account (IBAN): Country code, 2 digits, then account.
 //
 // An International Bank Account Number: identifying accounts for payments. Pair with bic for cross-border routing and treat as sensitive data.
@@ -2498,54 +2451,6 @@ var scalarIban = TextScalar{
 	minLen:  15,
 	maxLen:  34,
 	rule:    checkIban,
-}
-
-// IdnEmail is International email: Email that may use any alphabet.
-//
-// An internationalized email address: non-ASCII local parts and domains. Prefer email when every consumer requires ASCII.
-var IdnEmail = &scalarIdnEmail
-
-var scalarIdnEmail = TextScalar{
-	Meta: Meta{
-		Name:      "idn_email",
-		Label:     "International email",
-		Hint:      "Email that may use any alphabet",
-		Error:     "That email looks wrong. Try ñoño@ejemplo.es.",
-		Details:   "An internationalized email address: non-ASCII local parts and domains. Prefer email when every consumer requires ASCII.",
-		Level:     "advanced",
-		Primitive: "string",
-		Aliases:   []string{"unicode_email"},
-		Valid:     []any{"用户@例子.广告", "ñoño@ejemplo.es"},
-		Invalid:   []any{},
-	},
-	steps:   []step{},
-	pattern: "",
-	minLen:  0,
-	maxLen:  noMax,
-}
-
-// IdnHostname is International website name: A domain in any alphabet.
-//
-// An internationalized (IDNA2008) hostname. Prefer hostname when values are guaranteed ASCII or already punycode-encoded.
-var IdnHostname = &scalarIdnHostname
-
-var scalarIdnHostname = TextScalar{
-	Meta: Meta{
-		Name:      "idn_hostname",
-		Label:     "International website name",
-		Hint:      "A domain in any alphabet",
-		Error:     "That domain looks wrong. Try bücher.example.",
-		Details:   "An internationalized (IDNA2008) hostname. Prefer hostname when values are guaranteed ASCII or already punycode-encoded.",
-		Level:     "advanced",
-		Primitive: "string",
-		Aliases:   []string{"unicode_domain"},
-		Valid:     []any{"例子.广告", "bücher.example"},
-		Invalid:   []any{},
-	},
-	steps:   []step{},
-	pattern: "",
-	minLen:  0,
-	maxLen:  noMax,
 }
 
 // Int16 is Small whole number: From -32768 to 32767.
@@ -2736,54 +2641,6 @@ var scalarIpv6Cidr = TextScalar{
 	maxLen:  noMax,
 }
 
-// Iri is International link: A link that may use any alphabet.
-//
-// An internationalized absolute URI: user-facing links in any script, unencoded. Prefer uri when consumers require ASCII with percent-encoding.
-var Iri = &scalarIri
-
-var scalarIri = TextScalar{
-	Meta: Meta{
-		Name:      "iri",
-		Label:     "International link",
-		Hint:      "A link that may use any alphabet",
-		Error:     "That link looks wrong. Try https://bücher.example/straße.",
-		Details:   "An internationalized absolute URI: user-facing links in any script, unencoded. Prefer uri when consumers require ASCII with percent-encoding.",
-		Level:     "advanced",
-		Primitive: "string",
-		Aliases:   []string{"unicode_url"},
-		Valid:     []any{"https://例子.广告/路径", "https://bücher.example/straße"},
-		Invalid:   []any{},
-	},
-	steps:   []step{},
-	pattern: "",
-	minLen:  0,
-	maxLen:  noMax,
-}
-
-// IriReference is International link or path: A link or path in any alphabet.
-//
-// An internationalized URI reference, absolute or relative. Prefer iri for absolute-only values and uri_reference for ASCII-only ones.
-var IriReference = &scalarIriReference
-
-var scalarIriReference = TextScalar{
-	Meta: Meta{
-		Name:      "iri_reference",
-		Label:     "International link or path",
-		Hint:      "A link or path in any alphabet",
-		Error:     "That link or path looks wrong. Try ../straße.",
-		Details:   "An internationalized URI reference, absolute or relative. Prefer iri for absolute-only values and uri_reference for ASCII-only ones.",
-		Level:     "advanced",
-		Primitive: "string",
-		Aliases:   []string{"unicode_href"},
-		Valid:     []any{"/路径?c=1", "../straße"},
-		Invalid:   []any{},
-	},
-	steps:   []step{},
-	pattern: "",
-	minLen:  0,
-	maxLen:  noMax,
-}
-
 // Isbn is Book number (ISBN): 10 or 13 digits.
 //
 // An ISBN identifying a book edition. Prefer gtin for general retail products; every ISBN-13 is a GTIN, but not the reverse.
@@ -2957,30 +2814,6 @@ var scalarMacAddress = TextScalar{
 	maxLen:  17,
 }
 
-// MediaRange is Accepted file types: Like text/html or image/*.
-//
-// An HTTP media range with wildcards and parameters: Accept-style negotiation. Prefer media_type for one concrete type.
-var MediaRange = &scalarMediaRange
-
-var scalarMediaRange = TextScalar{
-	Meta: Meta{
-		Name:      "media_range",
-		Label:     "Accepted file types",
-		Hint:      "Like text/html or image/*",
-		Error:     "Please use kind/subkind or a *, like text/html;q=0.9.",
-		Details:   "An HTTP media range with wildcards and parameters: Accept-style negotiation. Prefer media_type for one concrete type.",
-		Level:     "domain",
-		Primitive: "string",
-		Aliases:   []string{"accept"},
-		Valid:     []any{"text/html;q=0.9", "*/*", "image/*"},
-		Invalid:   []any{"*/html", "text"},
-	},
-	steps:   []step{},
-	pattern: `^(\*/\*|[A-Za-z0-9!#$&^_.+-]+/\*|[A-Za-z0-9!#$&^_.+-]+/[A-Za-z0-9!#$&^_.+-]+)([\x09\x20]*;[^\x00-\x1F\x7F]*)?$`,
-	minLen:  3,
-	maxLen:  noMax,
-}
-
 // MediaType is File type: What kind of file, like application/json.
 //
 // A concrete media type like application/json: labeling stored content.
@@ -3121,30 +2954,6 @@ var scalarRegex = TextScalar{
 	maxLen:  noMax,
 }
 
-// RelativeJsonPointer is Relative JSON Pointer: Steps up, then a path, like 1/name.
-//
-// A JSON Pointer relative to a known position (1/name). Prefer json_pointer when addressing from the document root.
-var RelativeJsonPointer = &scalarRelativeJsonPointer
-
-var scalarRelativeJsonPointer = TextScalar{
-	Meta: Meta{
-		Name:      "relative_json_pointer",
-		Label:     "Relative JSON Pointer",
-		Hint:      "Steps up, then a path, like 1/name",
-		Error:     "Please start with a number, like 1/name.",
-		Details:   "A JSON Pointer relative to a known position (1/name). Prefer json_pointer when addressing from the document root.",
-		Level:     "advanced",
-		Primitive: "string",
-		Aliases:   []string{"relative_pointer"},
-		Valid:     []any{"1/name", "0", "2#"},
-		Invalid:   []any{"/name", "01/name"},
-	},
-	steps:   []step{},
-	pattern: `^(0|[1-9][0-9]*)(#|(/([^~/]|~[01])*)*)$`,
-	minLen:  1,
-	maxLen:  noMax,
-}
-
 // Secret is Secret: Kept hidden, like a password.
 //
 // Sensitive text that must never be displayed or logged: passwords, API keys. The format is a masking hint, not protection - hash or encrypt at rest.
@@ -3190,143 +2999,6 @@ var scalarSemver = TextScalar{
 	steps:   []step{},
 	pattern: `^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$`,
 	minLen:  5,
-	maxLen:  noMax,
-}
-
-// SfBinary is Header bytes: Base64 between colons.
-//
-// An HTTP Structured Fields byte sequence (colon-delimited base64): binary members of structured headers. Prefer base64 outside header serialization.
-var SfBinary = &scalarSfBinary
-
-var scalarSfBinary = TextScalar{
-	Meta: Meta{
-		Name:      "sf_binary",
-		Label:     "Header bytes",
-		Hint:      "Base64 between colons",
-		Error:     "Please wrap base64 in colons, like :aGVsbG8=:.",
-		Details:   "An HTTP Structured Fields byte sequence (colon-delimited base64): binary members of structured headers. Prefer base64 outside header serialization.",
-		Level:     "domain",
-		Primitive: "binary",
-		Aliases:   []string{"structured_binary"},
-		Valid:     []any{":aGVsbG8=:", "::"},
-		Invalid:   []any{"aGVsbG8=", "::x"},
-	},
-	steps:   []step{},
-	pattern: `^:[A-Za-z0-9+/]*={0,2}:$`,
-	minLen:  2,
-	maxLen:  noMax,
-}
-
-// SfBoolean is Header yes/no: True or false.
-//
-// An HTTP Structured Fields boolean (?1 / ?0): flags in structured headers. Prefer boolean outside header serialization.
-var SfBoolean = &scalarSfBoolean
-
-var scalarSfBoolean = BoolScalar{
-	Meta: Meta{
-		Name:      "sf_boolean",
-		Label:     "Header yes/no",
-		Hint:      "True or false",
-		Error:     "Please pick true or false.",
-		Details:   "An HTTP Structured Fields boolean (?1 / ?0): flags in structured headers. Prefer boolean outside header serialization.",
-		Level:     "domain",
-		Primitive: "boolean",
-		Aliases:   []string{"structured_boolean"},
-		Valid:     []any{true, false},
-		Invalid:   []any{"?1"},
-	},
-}
-
-// SfDecimal is Header decimal: Up to 3 digits after the dot.
-//
-// An HTTP Structured Fields decimal (three fractional digits): weights and q-values in headers. Prefer decimal outside header serialization.
-var SfDecimal = &scalarSfDecimal
-
-var scalarSfDecimal = NumberScalar{
-	Meta: Meta{
-		Name:      "sf_decimal",
-		Label:     "Header decimal",
-		Hint:      "Up to 3 digits after the dot",
-		Error:     "Please use a number with at most 3 decimals, like 4.5.",
-		Details:   "An HTTP Structured Fields decimal (three fractional digits): weights and q-values in headers. Prefer decimal outside header serialization.",
-		Level:     "domain",
-		Primitive: "float64",
-		Aliases:   []string{"structured_decimal"},
-		Params:    []string{"precision", "scale"},
-		Valid:     []any{4.5, -999999999999.999},
-		Invalid:   []any{"4.5"},
-	},
-	minimum: -math.MaxFloat64,
-	maximum: math.MaxFloat64,
-}
-
-// SfInteger is Header number: Up to 15 digits.
-//
-// An HTTP Structured Fields integer (15 digits max): numeric members of structured headers. Prefer int64 outside header serialization.
-var SfInteger = &scalarSfInteger
-
-var scalarSfInteger = IntScalar{
-	Meta: Meta{
-		Name:      "sf_integer",
-		Label:     "Header number",
-		Hint:      "Up to 15 digits",
-		Error:     "Please use a whole number with up to 15 digits.",
-		Details:   "An HTTP Structured Fields integer (15 digits max): numeric members of structured headers. Prefer int64 outside header serialization.",
-		Level:     "domain",
-		Primitive: "int32",
-		Aliases:   []string{"structured_integer"},
-		Valid:     []any{42.0, -999999999999999.0},
-		Invalid:   []any{1000000000000000.0, 1.5},
-	},
-	minimum: -999999999999999,
-	maximum: 999999999999999,
-}
-
-// SfString is Header text: Plain ASCII characters only.
-//
-// An HTTP Structured Fields quoted string (printable ASCII): textual members of structured headers. Prefer string outside header serialization.
-var SfString = &scalarSfString
-
-var scalarSfString = TextScalar{
-	Meta: Meta{
-		Name:      "sf_string",
-		Label:     "Header text",
-		Hint:      "Plain ASCII characters only",
-		Error:     "Please use plain ASCII characters, like hello world.",
-		Details:   "An HTTP Structured Fields quoted string (printable ASCII): textual members of structured headers. Prefer string outside header serialization.",
-		Level:     "domain",
-		Primitive: "string",
-		Aliases:   []string{"structured_string"},
-		Valid:     []any{"hello world", ""},
-		Invalid:   []any{"tab\there", "café"},
-	},
-	steps:   []step{},
-	pattern: `^[\x20-\x7E]*$`,
-	minLen:  0,
-	maxLen:  noMax,
-}
-
-// SfToken is Header token: A short word like gzip.
-//
-// An HTTP Structured Fields token like gzip: short symbolic header values. Prefer enum for closed sets outside HTTP.
-var SfToken = &scalarSfToken
-
-var scalarSfToken = TextScalar{
-	Meta: Meta{
-		Name:      "sf_token",
-		Label:     "Header token",
-		Hint:      "A short word like gzip",
-		Error:     "Please start with a letter, no spaces, like gzip.",
-		Details:   "An HTTP Structured Fields token like gzip: short symbolic header values. Prefer enum for closed sets outside HTTP.",
-		Level:     "domain",
-		Primitive: "string",
-		Aliases:   []string{"structured_token"},
-		Valid:     []any{"gzip", "*", "text/html"},
-		Invalid:   []any{"1gzip", "gz ip"},
-	},
-	steps:   []step{},
-	pattern: "^[A-Za-z*][A-Za-z0-9:/!#$%&'*+\\-.^_`|~]*$",
-	minLen:  1,
 	maxLen:  noMax,
 }
 
@@ -3832,7 +3504,6 @@ var All = []*Meta{
 	&scalarDecimal.Meta,
 	&scalarDecimal128.Meta,
 	&scalarDoi.Meta,
-	&scalarDoubleInt.Meta,
 	&scalarDuration.Meta,
 	&scalarEmail.Meta,
 	&scalarEnum.Meta,
@@ -3842,10 +3513,7 @@ var All = []*Meta{
 	&scalarGtin.Meta,
 	&scalarHostname.Meta,
 	&scalarHtml.Meta,
-	&scalarHttpDate.Meta,
 	&scalarIban.Meta,
-	&scalarIdnEmail.Meta,
-	&scalarIdnHostname.Meta,
 	&scalarInt16.Meta,
 	&scalarInt32.Meta,
 	&scalarInt64.Meta,
@@ -3854,8 +3522,6 @@ var All = []*Meta{
 	&scalarIpv4Cidr.Meta,
 	&scalarIpv6.Meta,
 	&scalarIpv6Cidr.Meta,
-	&scalarIri.Meta,
-	&scalarIriReference.Meta,
 	&scalarIsbn.Meta,
 	&scalarJsonPointer.Meta,
 	&scalarJwt.Meta,
@@ -3863,22 +3529,14 @@ var All = []*Meta{
 	&scalarLei.Meta,
 	&scalarLocale.Meta,
 	&scalarMacAddress.Meta,
-	&scalarMediaRange.Meta,
 	&scalarMediaType.Meta,
 	&scalarObject.Meta,
 	&scalarOrcid.Meta,
 	&scalarPhone.Meta,
 	&scalarPort.Meta,
 	&scalarRegex.Meta,
-	&scalarRelativeJsonPointer.Meta,
 	&scalarSecret.Meta,
 	&scalarSemver.Meta,
-	&scalarSfBinary.Meta,
-	&scalarSfBoolean.Meta,
-	&scalarSfDecimal.Meta,
-	&scalarSfInteger.Meta,
-	&scalarSfString.Meta,
-	&scalarSfToken.Meta,
 	&scalarSha256.Meta,
 	&scalarSlug.Meta,
 	&scalarString.Meta,
@@ -3948,8 +3606,6 @@ func Lookup(name string) any {
 		return Decimal128
 	case "doi":
 		return Doi
-	case "double_int":
-		return DoubleInt
 	case "duration":
 		return Duration
 	case "email":
@@ -3968,14 +3624,8 @@ func Lookup(name string) any {
 		return Hostname
 	case "html":
 		return Html
-	case "http_date":
-		return HttpDate
 	case "iban":
 		return Iban
-	case "idn_email":
-		return IdnEmail
-	case "idn_hostname":
-		return IdnHostname
 	case "int16":
 		return Int16
 	case "int32":
@@ -3992,10 +3642,6 @@ func Lookup(name string) any {
 		return Ipv6
 	case "ipv6_cidr":
 		return Ipv6Cidr
-	case "iri":
-		return Iri
-	case "iri_reference":
-		return IriReference
 	case "isbn":
 		return Isbn
 	case "json_pointer":
@@ -4010,8 +3656,6 @@ func Lookup(name string) any {
 		return Locale
 	case "mac_address":
 		return MacAddress
-	case "media_range":
-		return MediaRange
 	case "media_type":
 		return MediaType
 	case "object":
@@ -4024,24 +3668,10 @@ func Lookup(name string) any {
 		return Port
 	case "regex":
 		return Regex
-	case "relative_json_pointer":
-		return RelativeJsonPointer
 	case "secret":
 		return Secret
 	case "semver":
 		return Semver
-	case "sf_binary":
-		return SfBinary
-	case "sf_boolean":
-		return SfBoolean
-	case "sf_decimal":
-		return SfDecimal
-	case "sf_integer":
-		return SfInteger
-	case "sf_string":
-		return SfString
-	case "sf_token":
-		return SfToken
 	case "sha256":
 		return Sha256
 	case "slug":

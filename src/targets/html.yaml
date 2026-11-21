@@ -188,10 +188,6 @@ uint32:
   attrs:
     min: '0'
     max: '4294967295'
-double_int:
-  attrs:
-    min: '-9007199254740991'
-    max: '9007199254740991'
 time:
   note: The time input has no offset; append the user's current UTC offset before sending.
 unix_time:
@@ -200,13 +196,6 @@ unix_time:
     min: null
     max: null
   note: 'Show as a local date-time and convert: Math.floor(new Date(value).getTime() / 1000).'
-idn_email:
-  attrs:
-    autocomplete: email
-    inputmode: email
-  note: 'Not type="email": browsers reject non-ASCII local parts there.'
-iri:
-  note: 'Not type="url": it normalizes non-ASCII to punycode/percent-encoding.'
 uuid_v7:
   note: Generated server-side, shown read-only.
 ulid:
@@ -246,21 +235,6 @@ language:
     source: IANA Language Subtag Registry
     note: The options are schema.enum.
     js: "new Intl.DisplayNames([locale], { type: 'language' }).of(code)"
-http_date:
-  note: Not entered by people; format with new Date(value).toUTCString().
-sf_integer:
-  attrs:
-    min: '-999999999999999'
-    max: '999999999999999'
-sf_decimal:
-  attrs:
-    step: '0.001'
-    min: '-999999999999.999'
-    max: '999999999999.999'
-sf_binary:
-  note: null
-sf_boolean:
-  note: null
 iban:
   attrs:
     autocapitalize: characters

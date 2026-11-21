@@ -145,9 +145,6 @@ uint64:
   type: numeric
   note: No unsigned 64-bit type; numeric(20, 0) covers the whole uint64 range.
   check: CHECK ({column} >= 0 AND {column} <= 18446744073709551615 AND {column} = trunc({column}))
-double_int:
-  type: bigint
-  note: Bounded by 2^53, so it always survives a round trip through a double.
 float32:
   type: real
   note: float(p) with p in 1-24 is a spelling of real; it is not a stored precision.
@@ -175,8 +172,6 @@ commonmark:
   note: Markdown source; Postgres stores the text and never parses it.
 html:
   note: Markup source; escape it on output, not on the way in.
-relative_json_pointer:
-  note: Resolved against a base pointer; the leading integer counts levels up.
 semver:
   note: Ordering is lexical unless the parts are split out or an extension type is used.
 jwt:
@@ -189,23 +184,3 @@ port:
   note: No unsigned 16-bit type; integer plus a range check covers 0-65535.
 country_alpha3:
   note: null
-http_date:
-  note: A header wire format, parsed to an instant on the way in. The OpenAPI registry still sources it to RFC 7231, which
-    RFC 9110 obsoletes.
-media_range:
-  note: A range admits wildcards and parameters; media_type admits neither.
-sf_integer:
-  type: bigint
-  note: Structured Fields caps integers at fifteen digits, well inside bigint.
-sf_decimal:
-  type: numeric
-  note: At most twelve integer and three fractional digits, which numeric keeps exactly.
-  check: CHECK (abs({column}) < 1000000000000 AND {column} = round({column}, 3))
-sf_string:
-  note: Printable ASCII only; DQUOTE and backslash are escaped in transport.
-sf_token:
-  note: A bare token, never quoted; that is what distinguishes it from sf_string.
-sf_binary:
-  note: Stored decoded; the surrounding colons are Structured Fields syntax, not data.
-sf_boolean:
-  note: Serialized as ?1 and ?0 on the wire, which is syntax rather than a distinct type.

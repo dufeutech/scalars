@@ -3131,26 +3131,6 @@ pub static DOI: Text = Text {
     re: OnceLock::new(),
 };
 
-/// Safe whole number: Whole number JavaScript keeps exact.
-///
-/// Integers exactly representable in an IEEE double (up to 2^53-1): safe as a plain number for every JSON consumer, including JavaScript. Prefer int64 when the full 64-bit range matters and consumers accept strings.
-pub static DOUBLE_INT: Int = Int {
-    meta: Meta {
-        name: "double_int",
-        label: "Safe whole number",
-        hint: "Whole number JavaScript keeps exact",
-        error: "Please use a whole number between ±9007199254740991.",
-        details: "Integers exactly representable in an IEEE double (up to 2^53-1): safe as a plain number for every JSON consumer, including JavaScript. Prefer int64 when the full 64-bit range matters and consumers accept strings.",
-        level: "advanced",
-        primitive: "int32",
-        aliases: &["safe_integer"],
-        params: &[],
-        check: None,
-    },
-    minimum: -9007199254740991,
-    maximum: 9007199254740991,
-};
-
 /// Length of time: How long something lasts, like P3DT4H30M.
 ///
 /// A span of time (ISO 8601): timeouts, retention windows, billing periods. A length, not a position - prefer date_time for points in time.
@@ -3370,33 +3350,6 @@ pub static HTML: Text = Text {
     re: OnceLock::new(),
 };
 
-/// HTTP date: Like Sun, 16 Aug 2026 14:30:00 GMT.
-///
-/// The HTTP header date format (IMF-fixdate): Last-Modified, Expires, and friends. HTTP interchange only - prefer date_time everywhere else.
-pub static HTTP_DATE: Text = Text {
-    meta: Meta {
-        name: "http_date",
-        label: "HTTP date",
-        hint: "Like Sun, 16 Aug 2026 14:30:00 GMT",
-        error: "Please use the HTTP date form, like Sun, 16 Aug 2026 14:30:00 GMT.",
-        details: "The HTTP header date format (IMF-fixdate): Last-Modified, Expires, and friends. HTTP interchange only - prefer date_time everywhere else.",
-        level: "domain",
-        primitive: "date_time",
-        aliases: &["imf_fixdate"],
-        params: &["fractional_seconds"],
-        check: None,
-    },
-    steps: &[],
-    pattern: Some(
-        r"^(Mon|Tue|Wed|Thu|Fri|Sat|Sun), [0-9]{2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) [0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2} GMT$",
-    ),
-    min_len: 29,
-    max_len: 29,
-    rule: None,
-    list: &[],
-    re: OnceLock::new(),
-};
-
 /// Bank account (IBAN): Country code, 2 digits, then account.
 ///
 /// An International Bank Account Number: identifying accounts for payments. Pair with bic for cross-border routing and treat as sensitive data.
@@ -3418,56 +3371,6 @@ pub static IBAN: Text = Text {
     min_len: 15,
     max_len: 34,
     rule: Some(Check::Iban),
-    list: &[],
-    re: OnceLock::new(),
-};
-
-/// International email: Email that may use any alphabet.
-///
-/// An internationalized email address: non-ASCII local parts and domains. Prefer email when every consumer requires ASCII.
-pub static IDN_EMAIL: Text = Text {
-    meta: Meta {
-        name: "idn_email",
-        label: "International email",
-        hint: "Email that may use any alphabet",
-        error: "That email looks wrong. Try ñoño@ejemplo.es.",
-        details: "An internationalized email address: non-ASCII local parts and domains. Prefer email when every consumer requires ASCII.",
-        level: "advanced",
-        primitive: "string",
-        aliases: &["unicode_email"],
-        params: &[],
-        check: None,
-    },
-    steps: &[],
-    pattern: None,
-    min_len: 0,
-    max_len: usize::MAX,
-    rule: None,
-    list: &[],
-    re: OnceLock::new(),
-};
-
-/// International website name: A domain in any alphabet.
-///
-/// An internationalized (IDNA2008) hostname. Prefer hostname when values are guaranteed ASCII or already punycode-encoded.
-pub static IDN_HOSTNAME: Text = Text {
-    meta: Meta {
-        name: "idn_hostname",
-        label: "International website name",
-        hint: "A domain in any alphabet",
-        error: "That domain looks wrong. Try bücher.example.",
-        details: "An internationalized (IDNA2008) hostname. Prefer hostname when values are guaranteed ASCII or already punycode-encoded.",
-        level: "advanced",
-        primitive: "string",
-        aliases: &["unicode_domain"],
-        params: &[],
-        check: None,
-    },
-    steps: &[],
-    pattern: None,
-    min_len: 0,
-    max_len: usize::MAX,
-    rule: None,
     list: &[],
     re: OnceLock::new(),
 };
@@ -3649,56 +3552,6 @@ pub static IPV6_CIDR: Text = Text {
         level: "advanced",
         primitive: "string",
         aliases: &["ipv6_subnet"],
-        params: &[],
-        check: None,
-    },
-    steps: &[],
-    pattern: None,
-    min_len: 0,
-    max_len: usize::MAX,
-    rule: None,
-    list: &[],
-    re: OnceLock::new(),
-};
-
-/// International link: A link that may use any alphabet.
-///
-/// An internationalized absolute URI: user-facing links in any script, unencoded. Prefer uri when consumers require ASCII with percent-encoding.
-pub static IRI: Text = Text {
-    meta: Meta {
-        name: "iri",
-        label: "International link",
-        hint: "A link that may use any alphabet",
-        error: "That link looks wrong. Try https://bücher.example/straße.",
-        details: "An internationalized absolute URI: user-facing links in any script, unencoded. Prefer uri when consumers require ASCII with percent-encoding.",
-        level: "advanced",
-        primitive: "string",
-        aliases: &["unicode_url"],
-        params: &[],
-        check: None,
-    },
-    steps: &[],
-    pattern: None,
-    min_len: 0,
-    max_len: usize::MAX,
-    rule: None,
-    list: &[],
-    re: OnceLock::new(),
-};
-
-/// International link or path: A link or path in any alphabet.
-///
-/// An internationalized URI reference, absolute or relative. Prefer iri for absolute-only values and uri_reference for ASCII-only ones.
-pub static IRI_REFERENCE: Text = Text {
-    meta: Meta {
-        name: "iri_reference",
-        label: "International link or path",
-        hint: "A link or path in any alphabet",
-        error: "That link or path looks wrong. Try ../straße.",
-        details: "An internationalized URI reference, absolute or relative. Prefer iri for absolute-only values and uri_reference for ASCII-only ones.",
-        level: "advanced",
-        primitive: "string",
-        aliases: &["unicode_href"],
         params: &[],
         check: None,
     },
@@ -11930,33 +11783,6 @@ pub static MAC_ADDRESS: Text = Text {
     re: OnceLock::new(),
 };
 
-/// Accepted file types: Like text/html or image/*.
-///
-/// An HTTP media range with wildcards and parameters: Accept-style negotiation. Prefer media_type for one concrete type.
-pub static MEDIA_RANGE: Text = Text {
-    meta: Meta {
-        name: "media_range",
-        label: "Accepted file types",
-        hint: "Like text/html or image/*",
-        error: "Please use kind/subkind or a *, like text/html;q=0.9.",
-        details: "An HTTP media range with wildcards and parameters: Accept-style negotiation. Prefer media_type for one concrete type.",
-        level: "domain",
-        primitive: "string",
-        aliases: &["accept"],
-        params: &[],
-        check: None,
-    },
-    steps: &[],
-    pattern: Some(
-        r"^(\*/\*|[A-Za-z0-9!#$&^_.+-]+/\*|[A-Za-z0-9!#$&^_.+-]+/[A-Za-z0-9!#$&^_.+-]+)([\x09\x20]*;[^\x00-\x1F\x7F]*)?$",
-    ),
-    min_len: 3,
-    max_len: usize::MAX,
-    rule: None,
-    list: &[],
-    re: OnceLock::new(),
-};
-
 /// File type: What kind of file, like application/json.
 ///
 /// A concrete media type like application/json: labeling stored content.
@@ -12093,31 +11919,6 @@ pub static REGEX: Text = Text {
     re: OnceLock::new(),
 };
 
-/// Relative JSON Pointer: Steps up, then a path, like 1/name.
-///
-/// A JSON Pointer relative to a known position (1/name). Prefer json_pointer when addressing from the document root.
-pub static RELATIVE_JSON_POINTER: Text = Text {
-    meta: Meta {
-        name: "relative_json_pointer",
-        label: "Relative JSON Pointer",
-        hint: "Steps up, then a path, like 1/name",
-        error: "Please start with a number, like 1/name.",
-        details: "A JSON Pointer relative to a known position (1/name). Prefer json_pointer when addressing from the document root.",
-        level: "advanced",
-        primitive: "string",
-        aliases: &["relative_pointer"],
-        params: &[],
-        check: None,
-    },
-    steps: &[],
-    pattern: Some(r"^(0|[1-9][0-9]*)(#|(/([^~/]|~[01])*)*)$"),
-    min_len: 1,
-    max_len: usize::MAX,
-    rule: None,
-    list: &[],
-    re: OnceLock::new(),
-};
-
 /// Secret: Kept hidden, like a password.
 ///
 /// Sensitive text that must never be displayed or logged: passwords, API keys. The format is a masking hint, not protection - hash or encrypt at rest.
@@ -12164,139 +11965,6 @@ pub static SEMVER: Text = Text {
         r"^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$",
     ),
     min_len: 5,
-    max_len: usize::MAX,
-    rule: None,
-    list: &[],
-    re: OnceLock::new(),
-};
-
-/// Header bytes: Base64 between colons.
-///
-/// An HTTP Structured Fields byte sequence (colon-delimited base64): binary members of structured headers. Prefer base64 outside header serialization.
-pub static SF_BINARY: Text = Text {
-    meta: Meta {
-        name: "sf_binary",
-        label: "Header bytes",
-        hint: "Base64 between colons",
-        error: "Please wrap base64 in colons, like :aGVsbG8=:.",
-        details: "An HTTP Structured Fields byte sequence (colon-delimited base64): binary members of structured headers. Prefer base64 outside header serialization.",
-        level: "domain",
-        primitive: "binary",
-        aliases: &["structured_binary"],
-        params: &[],
-        check: None,
-    },
-    steps: &[],
-    pattern: Some(r"^:[A-Za-z0-9+/]*={0,2}:$"),
-    min_len: 2,
-    max_len: usize::MAX,
-    rule: None,
-    list: &[],
-    re: OnceLock::new(),
-};
-
-/// Header yes/no: True or false.
-///
-/// An HTTP Structured Fields boolean (?1 / ?0): flags in structured headers. Prefer boolean outside header serialization.
-pub static SF_BOOLEAN: Bool = Bool {
-    meta: Meta {
-        name: "sf_boolean",
-        label: "Header yes/no",
-        hint: "True or false",
-        error: "Please pick true or false.",
-        details: "An HTTP Structured Fields boolean (?1 / ?0): flags in structured headers. Prefer boolean outside header serialization.",
-        level: "domain",
-        primitive: "boolean",
-        aliases: &["structured_boolean"],
-        params: &[],
-        check: None,
-    },
-};
-
-/// Header decimal: Up to 3 digits after the dot.
-///
-/// An HTTP Structured Fields decimal (three fractional digits): weights and q-values in headers. Prefer decimal outside header serialization.
-pub static SF_DECIMAL: Number = Number {
-    meta: Meta {
-        name: "sf_decimal",
-        label: "Header decimal",
-        hint: "Up to 3 digits after the dot",
-        error: "Please use a number with at most 3 decimals, like 4.5.",
-        details: "An HTTP Structured Fields decimal (three fractional digits): weights and q-values in headers. Prefer decimal outside header serialization.",
-        level: "domain",
-        primitive: "float64",
-        aliases: &["structured_decimal"],
-        params: &["precision", "scale"],
-        check: None,
-    },
-    minimum: f64::MIN,
-    maximum: f64::MAX,
-};
-
-/// Header number: Up to 15 digits.
-///
-/// An HTTP Structured Fields integer (15 digits max): numeric members of structured headers. Prefer int64 outside header serialization.
-pub static SF_INTEGER: Int = Int {
-    meta: Meta {
-        name: "sf_integer",
-        label: "Header number",
-        hint: "Up to 15 digits",
-        error: "Please use a whole number with up to 15 digits.",
-        details: "An HTTP Structured Fields integer (15 digits max): numeric members of structured headers. Prefer int64 outside header serialization.",
-        level: "domain",
-        primitive: "int32",
-        aliases: &["structured_integer"],
-        params: &[],
-        check: None,
-    },
-    minimum: -999999999999999,
-    maximum: 999999999999999,
-};
-
-/// Header text: Plain ASCII characters only.
-///
-/// An HTTP Structured Fields quoted string (printable ASCII): textual members of structured headers. Prefer string outside header serialization.
-pub static SF_STRING: Text = Text {
-    meta: Meta {
-        name: "sf_string",
-        label: "Header text",
-        hint: "Plain ASCII characters only",
-        error: "Please use plain ASCII characters, like hello world.",
-        details: "An HTTP Structured Fields quoted string (printable ASCII): textual members of structured headers. Prefer string outside header serialization.",
-        level: "domain",
-        primitive: "string",
-        aliases: &["structured_string"],
-        params: &[],
-        check: None,
-    },
-    steps: &[],
-    pattern: Some(r"^[\x20-\x7E]*$"),
-    min_len: 0,
-    max_len: usize::MAX,
-    rule: None,
-    list: &[],
-    re: OnceLock::new(),
-};
-
-/// Header token: A short word like gzip.
-///
-/// An HTTP Structured Fields token like gzip: short symbolic header values. Prefer enum for closed sets outside HTTP.
-pub static SF_TOKEN: Text = Text {
-    meta: Meta {
-        name: "sf_token",
-        label: "Header token",
-        hint: "A short word like gzip",
-        error: "Please start with a letter, no spaces, like gzip.",
-        details: "An HTTP Structured Fields token like gzip: short symbolic header values. Prefer enum for closed sets outside HTTP.",
-        level: "domain",
-        primitive: "string",
-        aliases: &["structured_token"],
-        params: &[],
-        check: None,
-    },
-    steps: &[],
-    pattern: Some(r"^[A-Za-z*][A-Za-z0-9:/!#$%&'*+\-.^_`|~]*$"),
-    min_len: 1,
     max_len: usize::MAX,
     rule: None,
     list: &[],
@@ -12809,7 +12477,6 @@ pub static ALL: &[&Meta] = &[
     &DECIMAL.meta,
     &DECIMAL128.meta,
     &DOI.meta,
-    &DOUBLE_INT.meta,
     &DURATION.meta,
     &EMAIL.meta,
     &ENUM.meta,
@@ -12819,10 +12486,7 @@ pub static ALL: &[&Meta] = &[
     &GTIN.meta,
     &HOSTNAME.meta,
     &HTML.meta,
-    &HTTP_DATE.meta,
     &IBAN.meta,
-    &IDN_EMAIL.meta,
-    &IDN_HOSTNAME.meta,
     &INT16.meta,
     &INT32.meta,
     &INT64.meta,
@@ -12831,8 +12495,6 @@ pub static ALL: &[&Meta] = &[
     &IPV4_CIDR.meta,
     &IPV6.meta,
     &IPV6_CIDR.meta,
-    &IRI.meta,
-    &IRI_REFERENCE.meta,
     &ISBN.meta,
     &JSON_POINTER.meta,
     &JWT.meta,
@@ -12840,22 +12502,14 @@ pub static ALL: &[&Meta] = &[
     &LEI.meta,
     &LOCALE.meta,
     &MAC_ADDRESS.meta,
-    &MEDIA_RANGE.meta,
     &MEDIA_TYPE.meta,
     &OBJECT,
     &ORCID.meta,
     &PHONE.meta,
     &PORT.meta,
     &REGEX.meta,
-    &RELATIVE_JSON_POINTER.meta,
     &SECRET.meta,
     &SEMVER.meta,
-    &SF_BINARY.meta,
-    &SF_BOOLEAN.meta,
-    &SF_DECIMAL.meta,
-    &SF_INTEGER.meta,
-    &SF_STRING.meta,
-    &SF_TOKEN.meta,
     &SHA256.meta,
     &SLUG.meta,
     &STRING.meta,
@@ -12903,7 +12557,6 @@ pub fn lookup(name: &str) -> Option<Kind> {
         "decimal" => Kind::Text(&DECIMAL),
         "decimal128" => Kind::Text(&DECIMAL128),
         "doi" => Kind::Text(&DOI),
-        "double_int" => Kind::Int(&DOUBLE_INT),
         "duration" => Kind::Text(&DURATION),
         "email" => Kind::Text(&EMAIL),
         "enum" => Kind::Text(&ENUM),
@@ -12913,10 +12566,7 @@ pub fn lookup(name: &str) -> Option<Kind> {
         "gtin" => Kind::Text(&GTIN),
         "hostname" => Kind::Text(&HOSTNAME),
         "html" => Kind::Text(&HTML),
-        "http_date" => Kind::Text(&HTTP_DATE),
         "iban" => Kind::Text(&IBAN),
-        "idn_email" => Kind::Text(&IDN_EMAIL),
-        "idn_hostname" => Kind::Text(&IDN_HOSTNAME),
         "int16" => Kind::Int(&INT16),
         "int32" => Kind::Int(&INT32),
         "int64" => Kind::Text(&INT64),
@@ -12925,8 +12575,6 @@ pub fn lookup(name: &str) -> Option<Kind> {
         "ipv4_cidr" => Kind::Text(&IPV4_CIDR),
         "ipv6" => Kind::Text(&IPV6),
         "ipv6_cidr" => Kind::Text(&IPV6_CIDR),
-        "iri" => Kind::Text(&IRI),
-        "iri_reference" => Kind::Text(&IRI_REFERENCE),
         "isbn" => Kind::Text(&ISBN),
         "json_pointer" => Kind::Text(&JSON_POINTER),
         "jwt" => Kind::Text(&JWT),
@@ -12934,22 +12582,14 @@ pub fn lookup(name: &str) -> Option<Kind> {
         "lei" => Kind::Text(&LEI),
         "locale" => Kind::Text(&LOCALE),
         "mac_address" => Kind::Text(&MAC_ADDRESS),
-        "media_range" => Kind::Text(&MEDIA_RANGE),
         "media_type" => Kind::Text(&MEDIA_TYPE),
         "object" => Kind::Shape(&OBJECT),
         "orcid" => Kind::Text(&ORCID),
         "phone" => Kind::Text(&PHONE),
         "port" => Kind::Int(&PORT),
         "regex" => Kind::Text(&REGEX),
-        "relative_json_pointer" => Kind::Text(&RELATIVE_JSON_POINTER),
         "secret" => Kind::Text(&SECRET),
         "semver" => Kind::Text(&SEMVER),
-        "sf_binary" => Kind::Text(&SF_BINARY),
-        "sf_boolean" => Kind::Bool(&SF_BOOLEAN),
-        "sf_decimal" => Kind::Number(&SF_DECIMAL),
-        "sf_integer" => Kind::Int(&SF_INTEGER),
-        "sf_string" => Kind::Text(&SF_STRING),
-        "sf_token" => Kind::Text(&SF_TOKEN),
         "sha256" => Kind::Text(&SHA256),
         "slug" => Kind::Text(&SLUG),
         "string" => Kind::Text(&STRING),

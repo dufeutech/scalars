@@ -4,7 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build, serialize } from "../build.mjs";
-import { emitGo, RESERVED_GO } from "../codegen/go.mjs";
+import { emitGo, goPattern, RESERVED_GO } from "../codegen/go.mjs";
 import { emitRust, RESERVED_RUST } from "../codegen/rust.mjs";
 import { RESERVED_PY } from "../codegen/python.mjs";
 import { toModel, modelOf, paramRules, identifiers, metaFields, pascal, styled } from "../codegen/model.mjs";
@@ -70,8 +70,8 @@ test("go: the package-level map guard sees every form", () => {
 test("go: patterns, reserved names, static table", () => {
     const go = emitGo(toModel(scalars), scalars.version, scalars.$meta)["go/scalars.go"];
     assert.match(go, /^\/\/ Code generated .* DO NOT EDIT\.$/m);
-    const token = scalars.types.sf_token.schema.pattern;
-    assert.ok(token.includes("`") && go.includes(`\tpattern: ${JSON.stringify(token)},\n`), "sf_token's backtick forces an interpreted string");
+    assert.equal(goPattern("^a`b$"), JSON.stringify("^a`b$"), "a backtick forces an interpreted string");
+    assert.equal(goPattern("^ab$"), "`^ab$`", "other patterns are raw strings");
     assert.ok(go.includes(`\tpattern: \`${scalars.types.email.schema.pattern}\`,\n`), "other patterns are raw strings");
     assert.ok(go.includes("\tsteps:   []step{stepTrim, stepLowercase},\n"), "steps are constants");
     // The engine builds maps inside functions; the generated tables after it, and every package-level var, don't.

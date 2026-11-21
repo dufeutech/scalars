@@ -56,12 +56,14 @@ type Cases struct {
 		Special   string `json:"special"`
 		Dynamic   bool   `json:"dynamic"`
 		Malformed string `json:"malformed"`
+		Reason    string `json:"reason"`
 	} `json:"validate"`
 	Hostile []struct {
 		Type, Prefix, Repeat, Suffix string
 		Count                        int
 		Ok                           bool
 		Malformed                    string
+		Reason                       string
 	} `json:"hostile"`
 	Models struct {
 		Load []struct {
@@ -382,6 +384,8 @@ func main() {
 				fail("%s rejects %#v", c.Type, v)
 			} else if !errors.As(r.err, &e) || e.Error() != types[c.Type].Error || e.Scalar != meta(t) {
 				fail("%s error %v is not the type's error", c.Type, r.err)
+			} else if string(e.Reason) != c.Reason {
+				fail("%s on %#v: reason %s, want %s", c.Type, v, e.Reason, c.Reason)
 			}
 			continue
 		}
@@ -419,6 +423,8 @@ func main() {
 		for _, s := range []string{"a\xffb", "\xc3", " a@b.co\xed\xa0\x80 "} { // \xed\xa0\x80 encodes U+D800
 			if _, err := t.Validate(s); err == nil || t.IsValid(s) {
 				fail("%s accepts invalid UTF-8 %q", t.Name, s)
+			} else if r := err.(*scalars.ScalarError).Reason; r != scalars.ReasonMalformed {
+				fail("%s on invalid UTF-8 %q: reason %s, want malformed", t.Name, s, r)
 			}
 		}
 	}
@@ -442,6 +448,11 @@ func main() {
 		}
 		if got != c.Ok {
 			fail("hostile %s: want %v", c.Type, c.Ok)
+		}
+		if !c.Ok {
+			if _, err := t.Validate(text); err != nil && string(err.(*scalars.ScalarError).Reason) != c.Reason {
+				fail("hostile %s: reason %s, want %s", c.Type, err.(*scalars.ScalarError).Reason, c.Reason)
+			}
 		}
 		if ms >= 2000 {
 			fail("hostile %s took %.0f ms", c.Type, ms)

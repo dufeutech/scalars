@@ -44,9 +44,11 @@ type paramRule struct {
 // errorTemplate is the message template of one error code in $meta.errors; "{name}" is replaced by a param.
 type errorTemplate struct{ code, text string }
 
-// ScalarError is a value that failed a type's rule. Error returns the type's error text.
+// ScalarError is a value that failed a type's rule. Error returns the type's error text; Reason is the first
+// rule the value broke.
 type ScalarError struct {
 	Scalar *Meta
+	Reason Reason
 }
 
 func (e *ScalarError) Error() string { return e.Scalar.Error }
@@ -188,27 +190,29 @@ func (t *TextScalar) Normalize(s string) string {
 // Validate normalizes s, then checks length and pattern. It returns the clean text (a substring of s when only
 // trimming applied), or a *ScalarError.
 func (t *TextScalar) Validate(s string) (string, error) {
-	if out, ok := t.check(s); ok {
+	out, reason := t.check(s)
+	if reason == "" {
 		return out, nil
 	}
-	return "", &ScalarError{&t.Meta}
+	return "", &ScalarError{&t.Meta, reason}
 }
 
 // IsValid reports whether Validate would succeed. It never builds an error.
 func (t *TextScalar) IsValid(s string) bool {
-	_, ok := t.check(s)
-	return ok
+	_, reason := t.check(s)
+	return reason == ""
 }
 
-func (t *TextScalar) check(s string) (string, bool) {
+// check returns the clean text and "", or "" and the first rule s broke.
+func (t *TextScalar) check(s string) (string, Reason) {
 	gated, formed := false, false
 	for _, st := range t.steps {
 		// Once trimming is done, before any other step: trim cannot make invalid bytes valid, but removing a
 		// space or hyphen between two stray bytes could.
 		if !formed && st != stepTrim {
 			formed = true
-			if !t.wellFormed(s) {
-				return "", false
+			if reason := t.wellFormed(s); reason != "" {
+				return "", reason
 			}
 		}
 		// Text already too long is refused before case mapping copies it. The gate waits for the first case
@@ -216,37 +220,46 @@ func (t *TextScalar) check(s string) (string, bool) {
 		if !gated && (st == stepLowercase || st == stepUppercase) {
 			gated = true
 			if longerThan(s, t.maxLen) {
-				return "", false
+				return "", ReasonTooLong
 			}
 		}
 		s = apply(st, s)
 	}
-	if !formed && !t.wellFormed(s) {
-		return "", false
+	if !formed {
+		if reason := t.wellFormed(s); reason != "" {
+			return "", reason
+		}
 	}
-	if longerThan(s, t.maxLen) || shorterThan(s, t.minLen) {
-		return "", false
+	if longerThan(s, t.maxLen) {
+		return "", ReasonTooLong
+	}
+	if shorterThan(s, t.minLen) {
+		return "", ReasonTooShort
 	}
 	if t.pattern != "" {
 		t.once.Do(t.compile)
 		if !t.re.MatchString(s) {
-			return "", false
+			return "", ReasonPattern
 		}
 	}
 	if !t.rule.passes(s) {
-		return "", false
+		return "", ReasonCheck
 	}
-	return s, true
+	return s, ""
 }
 
-// wellFormed reports whether trimmed text is not already too long (settled by the byte length alone, unless a
-// later step can shorten it) and is well-formed UTF-8: Unicode scalar values only (WHATWG USVString, RFC 7493).
-// utf8.ValidString skips ASCII eight bytes at a time and allocates nothing.
-func (t *TextScalar) wellFormed(s string) bool {
-	if len(s)/utf8.UTFMax > t.maxLen && !t.shortens() {
-		return false
+// wellFormed returns ReasonTooLong when trimmed text is already too long (unless a later step can shorten it;
+// counting stops once the limit is passed), ReasonMalformed when it is not well-formed UTF-8 (Unicode scalar
+// values only: WHATWG USVString, RFC 7493), else "". utf8.ValidString skips ASCII eight bytes at a time and
+// allocates nothing.
+func (t *TextScalar) wellFormed(s string) Reason {
+	if !t.shortens() && longerThan(s, t.maxLen) {
+		return ReasonTooLong
 	}
-	return utf8.ValidString(s)
+	if !utf8.ValidString(s) {
+		return ReasonMalformed
+	}
+	return ""
 }
 
 // shortens reports whether a step of the type can make text shorter.
@@ -272,7 +285,7 @@ func (t *IntScalar) Validate(n int64) (int64, error) {
 	if t.IsValid(n) {
 		return n, nil
 	}
-	return 0, &ScalarError{&t.Meta}
+	return 0, &ScalarError{&t.Meta, ReasonOutOfRange}
 }
 
 // IsValid reports whether Validate would succeed. It never builds an error.
@@ -289,7 +302,7 @@ func (t *NumberScalar) Validate(f float64) (float64, error) {
 	if t.IsValid(f) {
 		return f, nil
 	}
-	return 0, &ScalarError{&t.Meta}
+	return 0, &ScalarError{&t.Meta, ReasonOutOfRange}
 }
 
 // IsValid reports whether Validate would succeed. It never builds an error.
@@ -718,40 +731,46 @@ func modelInt(v any) (int64, bool) {
 	return int64(f), true
 }
 
-// check runs the typed scalar t on a JSON value: the cleaned value, or false when v is the wrong kind or breaks
-// the type's rule.
-func check(t any, v any) (any, bool) {
+// check runs the typed scalar t on a JSON value: the cleaned value and "", or nil and the reason it failed
+// (ReasonWrongKind when v is not the type's kind).
+func check(t any, v any) (any, Reason) {
 	switch t := t.(type) {
 	case *TextScalar:
 		if s, ok := v.(string); ok {
 			return t.check(s)
 		}
 	case *IntScalar:
-		if n, ok := modelInt(v); ok && t.IsValid(n) {
-			return n, true
+		if n, ok := modelInt(v); ok {
+			if !t.IsValid(n) {
+				return nil, ReasonOutOfRange
+			}
+			return n, ""
 		}
 	case *NumberScalar:
-		if f, ok := v.(float64); ok && t.IsValid(f) {
-			return f, true
+		if f, ok := v.(float64); ok {
+			if !t.IsValid(f) {
+				return nil, ReasonOutOfRange
+			}
+			return f, ""
 		}
 	case *BoolScalar:
 		if b, ok := v.(bool); ok {
-			return b, true
+			return b, ""
 		}
 	case *ShapeScalar[map[string]any]:
 		if m, ok := v.(map[string]any); ok {
-			return m, true
+			return m, ""
 		}
 	case *ShapeScalar[[]any]:
 		if a, ok := v.([]any); ok {
-			return a, true
+			return a, ""
 		}
 	case *ShapeScalar[any]:
-		return v, true
+		return v, ""
 	default:
 		panic(fmt.Sprintf("scalars: no models check for scalar type %T", t))
 	}
-	return nil, false
+	return nil, ReasonWrongKind
 }
 
 type fieldKind uint8
@@ -1231,7 +1250,8 @@ func (l *loader) checkSetting(t *typeInfo, v *modelDef, k string) (any, bool) {
 		for i, entry := range list {
 			s, isText := entry.(string)
 			if isText {
-				clean, valid := check(t.scalar, s)
+				clean, reason := check(t.scalar, s)
+				valid := reason == ""
 				_, dup := seen[s]
 				fits := rule.maxItemBytes == 0 || len(s) <= rule.maxItemBytes
 				isText = valid && clean == s && fits && !dup
@@ -1465,8 +1485,8 @@ func (w *walker) walk(f *field, v any, at *loc) any {
 	switch f.kind {
 	case kindType:
 		t := f.typ
-		r, ok := check(t.scalar, v)
-		if !ok {
+		r, reason := check(t.scalar, v)
+		if reason != "" {
 			w.report(at, "invalid", map[string]any{"type": t.meta.Name}, t.meta.Error)
 			return nil
 		}
@@ -1584,6 +1604,28 @@ func fitsNumeric(t string, p, s int64) bool {
 	}
 	return int64(width+extra) <= p
 }
+
+// Reason is why a value failed ($meta.reasons): the first rule the single pass trips, in this order.
+type Reason string
+
+const (
+	// ReasonWrongKind: Not the type's primitive kind (TS, Python and models only; Go and Rust are typed by their signatures).
+	ReasonWrongKind Reason = "wrong_kind"
+	// ReasonMalformed: Text that isn't well-formed Unicode (a lone surrogate).
+	ReasonMalformed Reason = "malformed"
+	// ReasonTooLong: More code points than the type's maxLength (or a field's length).
+	ReasonTooLong Reason = "too_long"
+	// ReasonTooShort: Fewer code points than the type's minLength.
+	ReasonTooShort Reason = "too_short"
+	// ReasonPattern: Doesn't match the type's pattern.
+	ReasonPattern Reason = "pattern"
+	// ReasonOutOfRange: Below minimum, above maximum, or a non-finite number.
+	ReasonOutOfRange Reason = "out_of_range"
+	// ReasonCheck: Failed the type's check (a check digit, a 64-bit range).
+	ReasonCheck Reason = "check"
+	// ReasonNotInList: Not on the type's enum.
+	ReasonNotInList Reason = "not_in_list"
+)
 
 // maxDepth is how deep models may nest, each model and each `items` one level; deeper is refused at load.
 const maxDepth = 64

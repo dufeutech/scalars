@@ -252,40 +252,46 @@ func modelInt(v any) (int64, bool) {
 	return int64(f), true
 }
 
-// check runs the typed scalar t on a JSON value: the cleaned value, or false when v is the wrong kind or breaks
-// the type's rule.
-func check(t any, v any) (any, bool) {
+// check runs the typed scalar t on a JSON value: the cleaned value and "", or nil and the reason it failed
+// (ReasonWrongKind when v is not the type's kind).
+func check(t any, v any) (any, Reason) {
 	switch t := t.(type) {
 	case *TextScalar:
 		if s, ok := v.(string); ok {
 			return t.check(s)
 		}
 	case *IntScalar:
-		if n, ok := modelInt(v); ok && t.IsValid(n) {
-			return n, true
+		if n, ok := modelInt(v); ok {
+			if !t.IsValid(n) {
+				return nil, ReasonOutOfRange
+			}
+			return n, ""
 		}
 	case *NumberScalar:
-		if f, ok := v.(float64); ok && t.IsValid(f) {
-			return f, true
+		if f, ok := v.(float64); ok {
+			if !t.IsValid(f) {
+				return nil, ReasonOutOfRange
+			}
+			return f, ""
 		}
 	case *BoolScalar:
 		if b, ok := v.(bool); ok {
-			return b, true
+			return b, ""
 		}
 	case *ShapeScalar[map[string]any]:
 		if m, ok := v.(map[string]any); ok {
-			return m, true
+			return m, ""
 		}
 	case *ShapeScalar[[]any]:
 		if a, ok := v.([]any); ok {
-			return a, true
+			return a, ""
 		}
 	case *ShapeScalar[any]:
-		return v, true
+		return v, ""
 	default:
 		panic(fmt.Sprintf("scalars: no models check for scalar type %T", t))
 	}
-	return nil, false
+	return nil, ReasonWrongKind
 }
 
 type fieldKind uint8
@@ -765,7 +771,8 @@ func (l *loader) checkSetting(t *typeInfo, v *modelDef, k string) (any, bool) {
 		for i, entry := range list {
 			s, isText := entry.(string)
 			if isText {
-				clean, valid := check(t.scalar, s)
+				clean, reason := check(t.scalar, s)
+				valid := reason == ""
 				_, dup := seen[s]
 				fits := rule.maxItemBytes == 0 || len(s) <= rule.maxItemBytes
 				isText = valid && clean == s && fits && !dup
@@ -999,8 +1006,8 @@ func (w *walker) walk(f *field, v any, at *loc) any {
 	switch f.kind {
 	case kindType:
 		t := f.typ
-		r, ok := check(t.scalar, v)
-		if !ok {
+		r, reason := check(t.scalar, v)
+		if reason != "" {
 			w.report(at, "invalid", map[string]any{"type": t.meta.Name}, t.meta.Error)
 			return nil
 		}

@@ -1,12 +1,12 @@
 // Emits dist/go/scalars.go (the hand-written engine.go and models.go, then one generated record per type) and its go.mod.
 // Everything is written already gofmt-clean, and the table is plain composite literals, so Go builds it statically.
 import { fail, header, int64, lockedVersion, noLoneSurrogate, readEngine } from "./common.mjs";
-import { engineNames, identifiers, metaFields, paramRules } from "./model.mjs";
+import { engineNames, identifiers, metaFields, paramRules, pascal } from "./model.mjs";
 import { MAX_DEPTH } from "../lib/models.mjs";
 
-/** Names the engine exports, so no type may take them. */
+/** Names the engine exports, so no type may take them (nor the Reason constants: see emitGo). */
 export const RESERVED_GO = [
-    "Meta", "ScalarError", "TextScalar", "IntScalar", "NumberScalar", "BoolScalar", "ShapeScalar", "Get", "All", "Lookup",
+    "Meta", "ScalarError", "Reason", "TextScalar", "IntScalar", "NumberScalar", "BoolScalar", "ShapeScalar", "Get", "All", "Lookup",
     "Models", "ModelSet", "Model", "ModelError", "ModelsError", "Problem",
 ];
 
@@ -142,7 +142,14 @@ function tables(meta) {
     const rules = Object.entries(paramRules(meta)).map(([name, r]) =>
         `\t{${str(name)}, ${str(r.kind)}, ${int64(r.minimum, name, "math.MinInt64")}, ${int64(r.maximum, name, "math.MaxInt64")}, ${r.minItems ?? 0}, ${r.maxItemBytes ?? 0}},\n`);
     const errors = Object.entries(meta.errors).map(([code, text]) => `\t{${str(code)}, ${str(text)}},\n`);
-    return `// maxDepth is how deep models may nest, each model and each \`items\` one level; deeper is refused at load.
+    const reasons = Object.entries(meta.reasons).map(([r, about]) => `\t// ${reasonId(r)}: ${about}\n\t${reasonId(r)} Reason = ${str(r)}\n`);
+    return `// Reason is why a value failed ($meta.reasons): the first rule the single pass trips, in this order.
+type Reason string
+
+const (
+${reasons.join("")})
+
+// maxDepth is how deep models may nest, each model and each \`items\` one level; deeper is refused at load.
 const maxDepth = ${MAX_DEPTH}
 
 // paramRules holds the limits of each setting in $meta.params.
@@ -155,8 +162,11 @@ ${errors.join("")}}
 `;
 }
 
+/** The exported constant of a reason: ReasonTooLong. */
+const reasonId = (r) => `Reason${pascal(r)}`;
+
 export function emitGo(models, version, meta) {
-    const ids = identifiers(models, "go", RESERVED_GO);
+    const ids = identifiers(models, "go", [...RESERVED_GO, ...Object.keys(meta.reasons).map(reasonId)]);
     const id = (m) => ids.get(m.name);
     const engine = engineIds(models, meta);
     const top = header({

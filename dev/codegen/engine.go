@@ -37,9 +37,11 @@ type paramRule struct {
 // errorTemplate is the message template of one error code in $meta.errors; "{name}" is replaced by a param.
 type errorTemplate struct{ code, text string }
 
-// ScalarError is a value that failed a type's rule. Error returns the type's error text.
+// ScalarError is a value that failed a type's rule. Error returns the type's error text; Reason is the first
+// rule the value broke.
 type ScalarError struct {
 	Scalar *Meta
+	Reason Reason
 }
 
 func (e *ScalarError) Error() string { return e.Scalar.Error }
@@ -181,27 +183,29 @@ func (t *TextScalar) Normalize(s string) string {
 // Validate normalizes s, then checks length and pattern. It returns the clean text (a substring of s when only
 // trimming applied), or a *ScalarError.
 func (t *TextScalar) Validate(s string) (string, error) {
-	if out, ok := t.check(s); ok {
+	out, reason := t.check(s)
+	if reason == "" {
 		return out, nil
 	}
-	return "", &ScalarError{&t.Meta}
+	return "", &ScalarError{&t.Meta, reason}
 }
 
 // IsValid reports whether Validate would succeed. It never builds an error.
 func (t *TextScalar) IsValid(s string) bool {
-	_, ok := t.check(s)
-	return ok
+	_, reason := t.check(s)
+	return reason == ""
 }
 
-func (t *TextScalar) check(s string) (string, bool) {
+// check returns the clean text and "", or "" and the first rule s broke.
+func (t *TextScalar) check(s string) (string, Reason) {
 	gated, formed := false, false
 	for _, st := range t.steps {
 		// Once trimming is done, before any other step: trim cannot make invalid bytes valid, but removing a
 		// space or hyphen between two stray bytes could.
 		if !formed && st != stepTrim {
 			formed = true
-			if !t.wellFormed(s) {
-				return "", false
+			if reason := t.wellFormed(s); reason != "" {
+				return "", reason
 			}
 		}
 		// Text already too long is refused before case mapping copies it. The gate waits for the first case
@@ -209,37 +213,46 @@ func (t *TextScalar) check(s string) (string, bool) {
 		if !gated && (st == stepLowercase || st == stepUppercase) {
 			gated = true
 			if longerThan(s, t.maxLen) {
-				return "", false
+				return "", ReasonTooLong
 			}
 		}
 		s = apply(st, s)
 	}
-	if !formed && !t.wellFormed(s) {
-		return "", false
+	if !formed {
+		if reason := t.wellFormed(s); reason != "" {
+			return "", reason
+		}
 	}
-	if longerThan(s, t.maxLen) || shorterThan(s, t.minLen) {
-		return "", false
+	if longerThan(s, t.maxLen) {
+		return "", ReasonTooLong
+	}
+	if shorterThan(s, t.minLen) {
+		return "", ReasonTooShort
 	}
 	if t.pattern != "" {
 		t.once.Do(t.compile)
 		if !t.re.MatchString(s) {
-			return "", false
+			return "", ReasonPattern
 		}
 	}
 	if !t.rule.passes(s) {
-		return "", false
+		return "", ReasonCheck
 	}
-	return s, true
+	return s, ""
 }
 
-// wellFormed reports whether trimmed text is not already too long (settled by the byte length alone, unless a
-// later step can shorten it) and is well-formed UTF-8: Unicode scalar values only (WHATWG USVString, RFC 7493).
-// utf8.ValidString skips ASCII eight bytes at a time and allocates nothing.
-func (t *TextScalar) wellFormed(s string) bool {
-	if len(s)/utf8.UTFMax > t.maxLen && !t.shortens() {
-		return false
+// wellFormed returns ReasonTooLong when trimmed text is already too long (unless a later step can shorten it;
+// counting stops once the limit is passed), ReasonMalformed when it is not well-formed UTF-8 (Unicode scalar
+// values only: WHATWG USVString, RFC 7493), else "". utf8.ValidString skips ASCII eight bytes at a time and
+// allocates nothing.
+func (t *TextScalar) wellFormed(s string) Reason {
+	if !t.shortens() && longerThan(s, t.maxLen) {
+		return ReasonTooLong
 	}
-	return utf8.ValidString(s)
+	if !utf8.ValidString(s) {
+		return ReasonMalformed
+	}
+	return ""
 }
 
 // shortens reports whether a step of the type can make text shorter.
@@ -265,7 +278,7 @@ func (t *IntScalar) Validate(n int64) (int64, error) {
 	if t.IsValid(n) {
 		return n, nil
 	}
-	return 0, &ScalarError{&t.Meta}
+	return 0, &ScalarError{&t.Meta, ReasonOutOfRange}
 }
 
 // IsValid reports whether Validate would succeed. It never builds an error.
@@ -282,7 +295,7 @@ func (t *NumberScalar) Validate(f float64) (float64, error) {
 	if t.IsValid(f) {
 		return f, nil
 	}
-	return 0, &ScalarError{&t.Meta}
+	return 0, &ScalarError{&t.Meta, ReasonOutOfRange}
 }
 
 // IsValid reports whether Validate would succeed. It never builds an error.

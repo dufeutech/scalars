@@ -32,6 +32,7 @@ jobs:
       - run: npm ci
       # Includes the check that the committed dist/ matches a fresh build.
       - run: npm test
+      - run: npm run check:ts
       - run: npm run check:langs
       # cgo works here, unlike on the Windows dev machine.
       - run: go test -race ./...

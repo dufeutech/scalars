@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=../schema/scalar.schema.json
 $schema: ../schema/scalar.schema.json
-version: 0.8.0
+version: 0.8.1
 $defs:
   docs:
     json_schema_validation: https://json-schema.org/draft/2020-12/json-schema-validation

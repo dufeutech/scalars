@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.1 — 2026-11-22
+
+### Fixed
+- **Postgres answers the same whatever the session's settings.** Patterns are written `E'...'`, so they read the same with `standard_conforming_strings` off (before, `\.` meant any character). Each `scalars.<type>_reason` pins `search_path` to `pg_catalog`, and each domain's CHECK is created under it, so a schema placed before `pg_catalog` can't swap `char_length`, `~` or `family` under them. The cost is about 3 µs per checked value.
+- `scalars.sql` suggests `psql -v ON_ERROR_STOP=1 -1 -f scalars.sql`, so a failed load changes nothing.
+- Number text a double can't hold, `1e400` or `1e-400`, is `out_of_range` in Postgres, as a `float8` column refuses it; now pinned by a test and in the README. The README also says `scalars.<type>_reason(NULL)` is NULL.
+
 ## 0.8.0 — 2026-11-21
 
 ### Added

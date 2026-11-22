@@ -38,6 +38,7 @@ test("a pattern that is not linear fails the build", () => {
 
 test("quote escaped", () => {
     assert.equal(sqlString("a'b"), "'a''b'");
+    assert.equal(sqlString(String.raw`^a\.b'$`), String.raw`E'^a\\.b''$'`);
 });
 
 test("a text column's domain calls the type's is_ function", () => {

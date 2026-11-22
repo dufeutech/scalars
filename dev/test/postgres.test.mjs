@@ -95,9 +95,8 @@ test("scalars.sql loads twice (an upgrade) and has no enum functions", async () 
     await pg.close();
 });
 
-test("every example gets the reference's reason from scalars.<type>_reason", async () => {
-    const pg = new PGlite();
-    await pg.exec(sql);
+/** Each example whose reason or is_ answer from Postgres differs from the reference's. */
+async function exampleMismatches(pg) {
     const bad = [];
     for (const t of types.filter((t) => t.name !== "enum")) {
         const ex = t.examples;
@@ -111,7 +110,57 @@ test("every example gets the reference's reason from scalars.<type>_reason", asy
             if (got !== want || is !== ref.ok) bad.push(`${t.name} ${JSON.stringify(input.arg)}: got ${got}/${is}, want ${want}`);
         }
     }
-    assert.deepEqual(bad, []);
+    return bad;
+}
+
+test("every example gets the reference's reason from scalars.<type>_reason", async () => {
+    const pg = new PGlite();
+    await pg.exec(sql);
+    assert.deepEqual(await exampleMismatches(pg), []);
+    await pg.close();
+});
+
+/** A session that reads '\.' as "." and puts a schema shadowing char_length, !~ and family before pg_catalog. */
+const HOSTILE = `
+    SET standard_conforming_strings = off;
+    CREATE SCHEMA evil;
+    CREATE FUNCTION evil.char_length(text) RETURNS integer LANGUAGE sql AS 'SELECT 0';
+    CREATE FUNCTION evil.never(text, text) RETURNS boolean LANGUAGE sql AS 'SELECT false';
+    CREATE OPERATOR evil.!~ (LEFTARG = text, RIGHTARG = text, FUNCTION = evil.never);
+    CREATE FUNCTION evil.family(inet) RETURNS integer LANGUAGE sql AS 'SELECT 4';
+    SET search_path = evil, pg_catalog, public;
+`;
+
+test("scalars.sql loads and answers the same in a hostile session", async () => {
+    const pg = new PGlite();
+    await pg.exec(HOSTILE);
+    assert.equal(Object.values((await pg.query("SELECT char_length('abc') AS n")).rows[0])[0], 0, "the shadow is in effect");
+    await pg.exec(sql);
+    assert.deepEqual(await exampleMismatches(pg), []);
+    await assert.rejects(pg.exec("SELECT '::1/32'::scalars.ipv4"), /violates check constraint/);
+    await pg.close();
+});
+
+test("every reason function pins search_path", async () => {
+    const pg = new PGlite();
+    await pg.exec(sql);
+    const rows = (await pg.query("SELECT proname, proconfig FROM pg_proc WHERE pronamespace = 'scalars'::regnamespace")).rows;
+    const bad = rows.filter((r) => r.proname.endsWith("_reason") && !(r.proconfig ?? []).includes("search_path=pg_catalog, pg_temp"));
+    assert.deepEqual(bad.map((r) => r.proname), []);
+    await pg.close();
+});
+
+test("number text a double can't hold is out_of_range, as a float8 column refuses it", async () => {
+    const pg = new PGlite();
+    await pg.exec(sql);
+    const number = types.find((t) => modelOf(t).kind === "number");
+    const integer = types.find((t) => modelOf(t).kind === "integer");
+    for (const t of [number, integer]) {
+        for (const v of ["1e400", "-1e400", "1e-400"]) {
+            assert.equal(await pgReason(pg, t, { arg: v, sqlType: "text" }), "out_of_range", `${t.name} ${v}`);
+        }
+    }
+    await assert.rejects(pg.exec(`SELECT '1e-400'::scalars.${number.name}`), /out of range/);
     await pg.close();
 });
 

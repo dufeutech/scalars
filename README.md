@@ -79,7 +79,7 @@ let err = scalars::PHONE.validate("4155552671"); // Err(ScalarError): displays t
 
 ```sh
 curl -O https://raw.githubusercontent.com/dufeutech/scalars/v0.8.0/dist/postgres/scalars.sql
-psql -f scalars.sql  # creates the scalars schema; run it again to upgrade
+psql -v ON_ERROR_STOP=1 -1 -f scalars.sql  # creates the scalars schema in one transaction; run it again to upgrade
 ```
 
 ```sql
@@ -337,8 +337,8 @@ One type in `dist/scalars.json` (shortened):
 
 ## Good to know
 
-- **Fast on any input.** `validate` takes time proportional to the input length, in all four languages. The build rejects any pattern that isn't provably linear, so no input can make a regex run for seconds. Postgres runs the same patterns in its own regex engine; the longest shared test inputs (200,000 characters) take under 15 ms there.
-- **Check digits and 64-bit ranges are checked.** `validate` rejects a `gtin`, `gln`, `iban`, `lei`, `isbn` or `orcid` with a wrong check digit, and an `int64` or `uint64` too big for 64 bits, in all four languages and in Postgres. JSON Schema and HTML only check the pattern.
+- **Fast on any input.** `validate` (and `scalars.<type>_reason` in Postgres) takes time proportional to the input length, in all five languages. The build rejects any pattern that isn't provably linear, so no input can make a regex run for seconds. Postgres runs the same patterns in its own regex engine; the longest shared test inputs (200,000 characters) take under 15 ms there.
+- **Check digits and 64-bit ranges are checked.** `validate` rejects a `gtin`, `gln`, `iban`, `lei`, `isbn` or `orcid` with a wrong check digit, and an `int64` or `uint64` too big for 64 bits, in all five languages. JSON Schema and HTML only check the pattern.
 - **Text must be well-formed Unicode** (no lone surrogates, no invalid UTF-8), as the web's `USVString` and RFC 7493 require. Anything else fails `validate` like any other bad value.
 - **Go and Rust: `get` returns metadata only.** To validate a type you found by alias, pass its name to `scalars.Lookup` (Go, returns `*TextScalar`, `*IntScalar`, ... as `any`) or `scalars::lookup` (Rust, returns a `Kind`):
 
@@ -355,7 +355,8 @@ One type in `dist/scalars.json` (shortened):
   ```
 
 - **Postgres takes clean values.** Run `normalize` (or `validate`) in the app first: `scalars.iban_reason(' de89 3704 0044 0532 0130 00')` is `pattern`. The cleanup steps stay out of the database because Postgres's `lower()` and `upper()` depend on how the server was set up.
-- **Postgres's native types use its own parser.** `scalars.uuid`, `scalars.date`, `scalars.ipv4`, the integers and the other non-text column types are the native type plus only what it misses (a narrower range, the IP family, no `NaN` or `infinity`, the UUID version for `uuid_v7`). So a `scalars.uuid` column accepts `{a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11}` and stores it in Postgres's form; `scalars.is_uuid(text)` checks the exact text when you need it. Number functions take JSON number text; text a double can't hold, like `1e400`, is `out_of_range`.
+- **Postgres's native types use its own parser.** `scalars.uuid`, `scalars.date`, `scalars.ipv4`, the integers and the other non-text column types are the native type plus only what it misses (a narrower range, the IP family, no `NaN` or `infinity`, the UUID version for `uuid_v7`). So a `scalars.uuid` column accepts `{a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11}` and stores it in Postgres's form; `scalars.is_uuid(text)` checks the exact text when you need it. Number functions take JSON number text; text a double can't hold, like `1e400` or `1e-400`, is `out_of_range` (a `float8` column refuses it too), where Python and TypeScript read those as infinity and 0.
+- **Postgres functions return NULL for NULL,** as Postgres functions do: `scalars.iban_reason(NULL)` is NULL, so `WHERE scalars.iban_reason(account) IS NOT NULL` lists the bad rows and leaves out the NULL ones.
 - **Postgres domains take no settings.** For a `string` with a length or a `decimal` with a precision, write `varchar(200)` or `numeric(12, 2)`. `enum` has no domain: create a Postgres enum with your values.
 - **Upgrade Postgres by running `scalars.sql` again.** It replaces every function and each domain's CHECK, and keeps the domains themselves. New values meet the new rules; rows already stored are not rechecked.
 - **Go and Rust only `normalize` text types**, and in Rust `object`, `array` and `any` are metadata only. Rust's `Meta` has no examples, and Go's leaves out the four that are or hold a JSON object, so nothing runs at start-up. Every example is in `dist/scalars.json`.

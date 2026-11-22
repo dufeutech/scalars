@@ -1,7 +1,11 @@
 -- The checks, one function per $meta.checks entry, named check_ + the check's name. Each takes the normalized,
--- pattern-matched value and returns false (never an error) on anything outside its alphabet. Characters are read as
--- UTF-8 bytes with get_byte, which is O(1); substr on text walks from the start, so a loop over it would be quadratic.
--- Sums are reduced mod as they go, in integer: no numeric, no growing totals.
+-- pattern-matched value, as the reference does. The check-digit functions return false (never an error) on anything
+-- outside their alphabet; the range functions only compare digits, so they are true for text with none (the reason
+-- functions run the pattern first). Characters are read as UTF-8 bytes with get_byte, which is O(1); substr on text
+-- walks from the start, so a loop over it would be quadratic. Sums are reduced mod as they go, in integer: no numeric,
+-- no growing totals. These take the caller's search_path (a SET on each would cost a few microseconds per call):
+-- scalars.<type>_reason pins it to pg_catalog, so through a reason function, is_ function or domain no schema
+-- placed before pg_catalog can swap char_length, ~ or + under them.
 CREATE SCHEMA IF NOT EXISTS scalars;
 
 -- GS1 mod 10: from the right, digits weigh 1, 3, 1, 3, ...; the total is a multiple of 10.

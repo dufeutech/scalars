@@ -48,7 +48,14 @@ export function htmlPattern(jsonPattern) {
     return out;
 }
 
-export const sqlString = (s) => "'" + String(s).replace(/'/g, "''") + "'";
+/**
+ * A SQL string literal. Text with a backslash is written E'...' with each backslash doubled, which reads the same
+ * whatever the session's standard_conforming_strings (a plain '\.' would mean "." with it off).
+ */
+export const sqlString = (s) => {
+    const q = String(s).replace(/'/g, "''");
+    return q.includes("\\") ? "E'" + q.replace(/\\/g, "\\\\") + "'" : "'" + q + "'";
+};
 
 const TEXT_COLUMNS = new Set(["text", "varchar"]);
 const INT_RANGES = {

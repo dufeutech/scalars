@@ -9,6 +9,12 @@ const JSON_NUMBER = "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?$";
 const JSONB_KINDS = new Set(["object", "array", "any"]);
 /** Types with no functions: enum needs a named Postgres enum per field. */
 const SKIP = new Set(["enum"]);
+/**
+ * Pinned on each reason function, so its gates and the engine checks it calls (which run under it) read pg_catalog
+ * whatever the caller's search_path. Not on the is_ wrappers (they only call a qualified function, and stay
+ * inlinable) nor on the checks (a SET is a few microseconds per call, paid again at each nested one).
+ */
+const SEARCH_PATH = "pg_catalog, pg_temp";
 
 /** `(models, version, $meta) => { "postgres/scalars.sql": text }`. */
 export function emitPostgres(models, version, meta) {
@@ -22,7 +28,7 @@ export function emitPostgres(models, version, meta) {
         file: "scalars.sql",
         source: "postgres.mjs",
         version,
-        requires: "Postgres 16+, plain SQL and PL/pgSQL, no extensions. Install or upgrade: psql -f scalars.sql",
+        requires: "Postgres 16+, plain SQL and PL/pgSQL, no extensions. Install or upgrade: psql -v ON_ERROR_STOP=1 -1 -f scalars.sql",
     }) + "\n" + engine + "\n" + used.map((m) => typeFunctions(m, reason)).join("\n")
         + "\n-- The column types. Postgres has no CREATE OR REPLACE DOMAIN: a re-run keeps each domain and replaces its\n"
         + "-- CHECK, NOT VALID, so new values meet the new rule and rows already stored are not rechecked.\n"
@@ -35,6 +41,8 @@ function domain(m) {
     if (m.pgType === null) fail(`postgres: type ${m.name} has no column type`);
     const lines = [
         "DO $$ BEGIN",
+        // The CHECK binds its functions and operators now, so it reads them from pg_catalog, not the loader's path.
+        `    SET LOCAL search_path = ${SEARCH_PATH};`,
         `    IF NOT EXISTS (SELECT FROM pg_type WHERE typname = ${sqlString(m.name)} AND typnamespace = 'scalars'::regnamespace) THEN`,
         `        CREATE DOMAIN scalars.${m.name} AS ${m.pgType};`,
         "    END IF;",
@@ -86,7 +94,8 @@ function typeFunctions(m, reason) {
     return [
         `-- ${m.name}`,
         `CREATE OR REPLACE FUNCTION scalars.${m.name}_reason(v ${arg}) RETURNS text`,
-        "LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$",
+        "LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE",
+        `SET search_path = ${SEARCH_PATH} AS $$`,
         "BEGIN",
         `${body}    RETURN NULL;`,
         "END $$;",

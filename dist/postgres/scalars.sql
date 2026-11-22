@@ -1,11 +1,15 @@
 -- scalars.sql, catalogue version 0.8.0.
 -- Generated from dist/scalars.json by dev/codegen/postgres.mjs. Do not edit: run `npm run build` in dev/.
--- Postgres 16+, plain SQL and PL/pgSQL, no extensions. Install or upgrade: psql -f scalars.sql
+-- Postgres 16+, plain SQL and PL/pgSQL, no extensions. Install or upgrade: psql -v ON_ERROR_STOP=1 -1 -f scalars.sql
 
 -- The checks, one function per $meta.checks entry, named check_ + the check's name. Each takes the normalized,
--- pattern-matched value and returns false (never an error) on anything outside its alphabet. Characters are read as
--- UTF-8 bytes with get_byte, which is O(1); substr on text walks from the start, so a loop over it would be quadratic.
--- Sums are reduced mod as they go, in integer: no numeric, no growing totals.
+-- pattern-matched value, as the reference does. The check-digit functions return false (never an error) on anything
+-- outside their alphabet; the range functions only compare digits, so they are true for text with none (the reason
+-- functions run the pattern first). Characters are read as UTF-8 bytes with get_byte, which is O(1); substr on text
+-- walks from the start, so a loop over it would be quadratic. Sums are reduced mod as they go, in integer: no numeric,
+-- no growing totals. These take the caller's search_path (a SET on each would cost a few microseconds per call):
+-- scalars.<type>_reason pins it to pg_catalog, so through a reason function, is_ function or domain no schema
+-- placed before pg_catalog can swap char_length, ~ or + under them.
 CREATE SCHEMA IF NOT EXISTS scalars;
 
 -- GS1 mod 10: from the right, digits weigh 1, 3, 1, 3, ...; the total is a multiple of 10.
@@ -116,7 +120,8 @@ $$;
 
 -- any
 CREATE OR REPLACE FUNCTION scalars.any_reason(v jsonb) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     RETURN NULL;
 END $$;
@@ -127,7 +132,8 @@ $$;
 
 -- array
 CREATE OR REPLACE FUNCTION scalars.array_reason(v jsonb) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF jsonb_typeof(v) <> 'array' THEN RETURN 'wrong_kind'; END IF;
     RETURN NULL;
@@ -139,7 +145,8 @@ $$;
 
 -- base64
 CREATE OR REPLACE FUNCTION scalars.base64_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF v !~ '^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$' THEN RETURN 'pattern'; END IF;
     RETURN NULL;
@@ -151,7 +158,8 @@ $$;
 
 -- base64url
 CREATE OR REPLACE FUNCTION scalars.base64url_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF v !~ '^[A-Za-z0-9_-]*={0,2}$' THEN RETURN 'pattern'; END IF;
     RETURN NULL;
@@ -163,7 +171,8 @@ $$;
 
 -- bic
 CREATE OR REPLACE FUNCTION scalars.bic_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) > 11 THEN RETURN 'too_long'; END IF;
     IF char_length(v) < 8 THEN RETURN 'too_short'; END IF;
@@ -177,7 +186,8 @@ $$;
 
 -- binary
 CREATE OR REPLACE FUNCTION scalars.binary_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     RETURN NULL;
 END $$;
@@ -188,7 +198,8 @@ $$;
 
 -- boolean
 CREATE OR REPLACE FUNCTION scalars.boolean_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF v NOT IN ('true', 'false') THEN RETURN 'wrong_kind'; END IF;
     RETURN NULL;
@@ -200,7 +211,8 @@ $$;
 
 -- char
 CREATE OR REPLACE FUNCTION scalars.char_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) > 1 THEN RETURN 'too_long'; END IF;
     IF char_length(v) < 1 THEN RETURN 'too_short'; END IF;
@@ -213,7 +225,8 @@ $$;
 
 -- cidr
 CREATE OR REPLACE FUNCTION scalars.cidr_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     RETURN NULL;
 END $$;
@@ -224,7 +237,8 @@ $$;
 
 -- color
 CREATE OR REPLACE FUNCTION scalars.color_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) > 9 THEN RETURN 'too_long'; END IF;
     IF char_length(v) < 7 THEN RETURN 'too_short'; END IF;
@@ -238,7 +252,8 @@ $$;
 
 -- commonmark
 CREATE OR REPLACE FUNCTION scalars.commonmark_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     RETURN NULL;
 END $$;
@@ -249,7 +264,8 @@ $$;
 
 -- country
 CREATE OR REPLACE FUNCTION scalars.country_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) > 2 THEN RETURN 'too_long'; END IF;
     IF char_length(v) < 2 THEN RETURN 'too_short'; END IF;
@@ -264,7 +280,8 @@ $$;
 
 -- country_alpha3
 CREATE OR REPLACE FUNCTION scalars.country_alpha3_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) > 3 THEN RETURN 'too_long'; END IF;
     IF char_length(v) < 3 THEN RETURN 'too_short'; END IF;
@@ -279,7 +296,8 @@ $$;
 
 -- cron
 CREATE OR REPLACE FUNCTION scalars.cron_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     RETURN NULL;
 END $$;
@@ -290,10 +308,11 @@ $$;
 
 -- css_color
 CREATE OR REPLACE FUNCTION scalars.css_color_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) < 1 THEN RETURN 'too_short'; END IF;
-    IF v !~ '^(#[0-9a-fA-F]{3,4}|#[0-9a-fA-F]{6}|#[0-9a-fA-F]{8}|[a-zA-Z]+|(rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\([^()]*\))$' THEN RETURN 'pattern'; END IF;
+    IF v !~ E'^(#[0-9a-fA-F]{3,4}|#[0-9a-fA-F]{6}|#[0-9a-fA-F]{8}|[a-zA-Z]+|(rgba?|hsla?|hwb|lab|lch|oklab|oklch|color)\\([^()]*\\))$' THEN RETURN 'pattern'; END IF;
     RETURN NULL;
 END $$;
 CREATE OR REPLACE FUNCTION scalars.is_css_color(v text) RETURNS boolean
@@ -303,7 +322,8 @@ $$;
 
 -- currency
 CREATE OR REPLACE FUNCTION scalars.currency_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) > 3 THEN RETURN 'too_long'; END IF;
     IF char_length(v) < 3 THEN RETURN 'too_short'; END IF;
@@ -318,7 +338,8 @@ $$;
 
 -- date
 CREATE OR REPLACE FUNCTION scalars.date_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) > 10 THEN RETURN 'too_long'; END IF;
     IF char_length(v) < 10 THEN RETURN 'too_short'; END IF;
@@ -332,10 +353,11 @@ $$;
 
 -- date_time
 CREATE OR REPLACE FUNCTION scalars.date_time_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) < 20 THEN RETURN 'too_short'; END IF;
-    IF v !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt][0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?([Zz]|[+-][0-9]{2}:[0-9]{2})$' THEN RETURN 'pattern'; END IF;
+    IF v !~ E'^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt][0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?([Zz]|[+-][0-9]{2}:[0-9]{2})$' THEN RETURN 'pattern'; END IF;
     RETURN NULL;
 END $$;
 CREATE OR REPLACE FUNCTION scalars.is_date_time(v text) RETURNS boolean
@@ -345,10 +367,11 @@ $$;
 
 -- date_time_local
 CREATE OR REPLACE FUNCTION scalars.date_time_local_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) < 19 THEN RETURN 'too_short'; END IF;
-    IF v !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt][0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?$' THEN RETURN 'pattern'; END IF;
+    IF v !~ E'^[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt][0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?$' THEN RETURN 'pattern'; END IF;
     RETURN NULL;
 END $$;
 CREATE OR REPLACE FUNCTION scalars.is_date_time_local(v text) RETURNS boolean
@@ -358,10 +381,11 @@ $$;
 
 -- decimal
 CREATE OR REPLACE FUNCTION scalars.decimal_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) < 1 THEN RETURN 'too_short'; END IF;
-    IF v !~ '^-?[0-9]+(\.[0-9]+)?$' THEN RETURN 'pattern'; END IF;
+    IF v !~ E'^-?[0-9]+(\\.[0-9]+)?$' THEN RETURN 'pattern'; END IF;
     RETURN NULL;
 END $$;
 CREATE OR REPLACE FUNCTION scalars.is_decimal(v text) RETURNS boolean
@@ -371,10 +395,11 @@ $$;
 
 -- decimal128
 CREATE OR REPLACE FUNCTION scalars.decimal128_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) < 1 THEN RETURN 'too_short'; END IF;
-    IF v !~ '^-?[0-9]+(\.[0-9]+)?$' THEN RETURN 'pattern'; END IF;
+    IF v !~ E'^-?[0-9]+(\\.[0-9]+)?$' THEN RETURN 'pattern'; END IF;
     RETURN NULL;
 END $$;
 CREATE OR REPLACE FUNCTION scalars.is_decimal128(v text) RETURNS boolean
@@ -384,10 +409,11 @@ $$;
 
 -- doi
 CREATE OR REPLACE FUNCTION scalars.doi_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) < 9 THEN RETURN 'too_short'; END IF;
-    IF v !~ '^10\.[0-9]{4,9}/[-._;()/:A-Za-z0-9]+$' THEN RETURN 'pattern'; END IF;
+    IF v !~ E'^10\\.[0-9]{4,9}/[-._;()/:A-Za-z0-9]+$' THEN RETURN 'pattern'; END IF;
     RETURN NULL;
 END $$;
 CREATE OR REPLACE FUNCTION scalars.is_doi(v text) RETURNS boolean
@@ -397,10 +423,11 @@ $$;
 
 -- duration
 CREATE OR REPLACE FUNCTION scalars.duration_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) < 3 THEN RETURN 'too_short'; END IF;
-    IF v !~ '^P(([0-9]+Y([0-9]+M)?([0-9]+W)?([0-9]+D)?|[0-9]+M([0-9]+W)?([0-9]+D)?|[0-9]+W([0-9]+D)?|[0-9]+D)(T([0-9]+H([0-9]+M)?([0-9]+(\.[0-9]+)?S)?|[0-9]+M([0-9]+(\.[0-9]+)?S)?|[0-9]+(\.[0-9]+)?S))?|T([0-9]+H([0-9]+M)?([0-9]+(\.[0-9]+)?S)?|[0-9]+M([0-9]+(\.[0-9]+)?S)?|[0-9]+(\.[0-9]+)?S))$' THEN RETURN 'pattern'; END IF;
+    IF v !~ E'^P(([0-9]+Y([0-9]+M)?([0-9]+W)?([0-9]+D)?|[0-9]+M([0-9]+W)?([0-9]+D)?|[0-9]+W([0-9]+D)?|[0-9]+D)(T([0-9]+H([0-9]+M)?([0-9]+(\\.[0-9]+)?S)?|[0-9]+M([0-9]+(\\.[0-9]+)?S)?|[0-9]+(\\.[0-9]+)?S))?|T([0-9]+H([0-9]+M)?([0-9]+(\\.[0-9]+)?S)?|[0-9]+M([0-9]+(\\.[0-9]+)?S)?|[0-9]+(\\.[0-9]+)?S))$' THEN RETURN 'pattern'; END IF;
     RETURN NULL;
 END $$;
 CREATE OR REPLACE FUNCTION scalars.is_duration(v text) RETURNS boolean
@@ -410,10 +437,11 @@ $$;
 
 -- email
 CREATE OR REPLACE FUNCTION scalars.email_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) < 5 THEN RETURN 'too_short'; END IF;
-    IF v !~ '^[^@\x09-\x0D\x20]+@[^@\x09-\x0D\x20][^.@\x09-\x0D\x20]*\.[^@\x09-\x0D\x20]+$' THEN RETURN 'pattern'; END IF;
+    IF v !~ E'^[^@\\x09-\\x0D\\x20]+@[^@\\x09-\\x0D\\x20][^.@\\x09-\\x0D\\x20]*\\.[^@\\x09-\\x0D\\x20]+$' THEN RETURN 'pattern'; END IF;
     RETURN NULL;
 END $$;
 CREATE OR REPLACE FUNCTION scalars.is_email(v text) RETURNS boolean
@@ -423,10 +451,11 @@ $$;
 
 -- float32
 CREATE OR REPLACE FUNCTION scalars.float32_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF v IN ('NaN', 'Infinity', '-Infinity') THEN RETURN 'out_of_range'; END IF;
-    IF v !~ '^-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?$' THEN RETURN 'wrong_kind'; END IF;
+    IF v !~ E'^-?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?$' THEN RETURN 'wrong_kind'; END IF;
     IF NOT pg_input_is_valid(v, 'float8') THEN RETURN 'out_of_range'; END IF;
     RETURN NULL;
 END $$;
@@ -437,10 +466,11 @@ $$;
 
 -- float64
 CREATE OR REPLACE FUNCTION scalars.float64_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF v IN ('NaN', 'Infinity', '-Infinity') THEN RETURN 'out_of_range'; END IF;
-    IF v !~ '^-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?$' THEN RETURN 'wrong_kind'; END IF;
+    IF v !~ E'^-?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?$' THEN RETURN 'wrong_kind'; END IF;
     IF NOT pg_input_is_valid(v, 'float8') THEN RETURN 'out_of_range'; END IF;
     RETURN NULL;
 END $$;
@@ -451,7 +481,8 @@ $$;
 
 -- gln
 CREATE OR REPLACE FUNCTION scalars.gln_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) > 13 THEN RETURN 'too_long'; END IF;
     IF char_length(v) < 13 THEN RETURN 'too_short'; END IF;
@@ -466,7 +497,8 @@ $$;
 
 -- gtin
 CREATE OR REPLACE FUNCTION scalars.gtin_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) > 14 THEN RETURN 'too_long'; END IF;
     IF char_length(v) < 8 THEN RETURN 'too_short'; END IF;
@@ -481,11 +513,12 @@ $$;
 
 -- hostname
 CREATE OR REPLACE FUNCTION scalars.hostname_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) > 253 THEN RETURN 'too_long'; END IF;
     IF char_length(v) < 1 THEN RETURN 'too_short'; END IF;
-    IF v !~ '^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$' THEN RETURN 'pattern'; END IF;
+    IF v !~ E'^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$' THEN RETURN 'pattern'; END IF;
     RETURN NULL;
 END $$;
 CREATE OR REPLACE FUNCTION scalars.is_hostname(v text) RETURNS boolean
@@ -495,7 +528,8 @@ $$;
 
 -- html
 CREATE OR REPLACE FUNCTION scalars.html_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     RETURN NULL;
 END $$;
@@ -506,7 +540,8 @@ $$;
 
 -- iban
 CREATE OR REPLACE FUNCTION scalars.iban_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) > 34 THEN RETURN 'too_long'; END IF;
     IF char_length(v) < 15 THEN RETURN 'too_short'; END IF;
@@ -521,9 +556,10 @@ $$;
 
 -- int16
 CREATE OR REPLACE FUNCTION scalars.int16_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
-    IF v !~ '^-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?$' THEN RETURN 'wrong_kind'; END IF;
+    IF v !~ E'^-?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?$' THEN RETURN 'wrong_kind'; END IF;
     IF NOT pg_input_is_valid(v, 'float8') THEN RETURN 'out_of_range'; END IF;
     IF v::float8 <> trunc(v::float8) THEN RETURN 'wrong_kind'; END IF;
     IF v::float8 < -32768 THEN RETURN 'out_of_range'; END IF;
@@ -537,9 +573,10 @@ $$;
 
 -- int32
 CREATE OR REPLACE FUNCTION scalars.int32_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
-    IF v !~ '^-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?$' THEN RETURN 'wrong_kind'; END IF;
+    IF v !~ E'^-?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?$' THEN RETURN 'wrong_kind'; END IF;
     IF NOT pg_input_is_valid(v, 'float8') THEN RETURN 'out_of_range'; END IF;
     IF v::float8 <> trunc(v::float8) THEN RETURN 'wrong_kind'; END IF;
     IF v::float8 < -2147483648 THEN RETURN 'out_of_range'; END IF;
@@ -553,7 +590,8 @@ $$;
 
 -- int64
 CREATE OR REPLACE FUNCTION scalars.int64_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) < 1 THEN RETURN 'too_short'; END IF;
     IF v !~ '^-?[0-9]+$' THEN RETURN 'pattern'; END IF;
@@ -567,9 +605,10 @@ $$;
 
 -- int8
 CREATE OR REPLACE FUNCTION scalars.int8_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
-    IF v !~ '^-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?$' THEN RETURN 'wrong_kind'; END IF;
+    IF v !~ E'^-?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?$' THEN RETURN 'wrong_kind'; END IF;
     IF NOT pg_input_is_valid(v, 'float8') THEN RETURN 'out_of_range'; END IF;
     IF v::float8 <> trunc(v::float8) THEN RETURN 'wrong_kind'; END IF;
     IF v::float8 < -128 THEN RETURN 'out_of_range'; END IF;
@@ -583,11 +622,12 @@ $$;
 
 -- ipv4
 CREATE OR REPLACE FUNCTION scalars.ipv4_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) > 15 THEN RETURN 'too_long'; END IF;
     IF char_length(v) < 7 THEN RETURN 'too_short'; END IF;
-    IF v !~ '^((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])$' THEN RETURN 'pattern'; END IF;
+    IF v !~ E'^((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])$' THEN RETURN 'pattern'; END IF;
     RETURN NULL;
 END $$;
 CREATE OR REPLACE FUNCTION scalars.is_ipv4(v text) RETURNS boolean
@@ -597,11 +637,12 @@ $$;
 
 -- ipv4_cidr
 CREATE OR REPLACE FUNCTION scalars.ipv4_cidr_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) > 18 THEN RETURN 'too_long'; END IF;
     IF char_length(v) < 9 THEN RETURN 'too_short'; END IF;
-    IF v !~ '^((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])/(3[0-2]|[12]?[0-9])$' THEN RETURN 'pattern'; END IF;
+    IF v !~ E'^((25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.){3}(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])/(3[0-2]|[12]?[0-9])$' THEN RETURN 'pattern'; END IF;
     RETURN NULL;
 END $$;
 CREATE OR REPLACE FUNCTION scalars.is_ipv4_cidr(v text) RETURNS boolean
@@ -611,7 +652,8 @@ $$;
 
 -- ipv6
 CREATE OR REPLACE FUNCTION scalars.ipv6_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     RETURN NULL;
 END $$;
@@ -622,7 +664,8 @@ $$;
 
 -- ipv6_cidr
 CREATE OR REPLACE FUNCTION scalars.ipv6_cidr_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     RETURN NULL;
 END $$;
@@ -633,7 +676,8 @@ $$;
 
 -- isbn
 CREATE OR REPLACE FUNCTION scalars.isbn_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) > 13 THEN RETURN 'too_long'; END IF;
     IF char_length(v) < 10 THEN RETURN 'too_short'; END IF;
@@ -648,7 +692,8 @@ $$;
 
 -- json_pointer
 CREATE OR REPLACE FUNCTION scalars.json_pointer_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF v !~ '^(/([^~/]|~[01])*)*$' THEN RETURN 'pattern'; END IF;
     RETURN NULL;
@@ -660,10 +705,11 @@ $$;
 
 -- jwt
 CREATE OR REPLACE FUNCTION scalars.jwt_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) < 4 THEN RETURN 'too_short'; END IF;
-    IF v !~ '^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]*$' THEN RETURN 'pattern'; END IF;
+    IF v !~ E'^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]*$' THEN RETURN 'pattern'; END IF;
     RETURN NULL;
 END $$;
 CREATE OR REPLACE FUNCTION scalars.is_jwt(v text) RETURNS boolean
@@ -673,7 +719,8 @@ $$;
 
 -- language
 CREATE OR REPLACE FUNCTION scalars.language_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) > 3 THEN RETURN 'too_long'; END IF;
     IF char_length(v) < 2 THEN RETURN 'too_short'; END IF;
@@ -688,7 +735,8 @@ $$;
 
 -- lei
 CREATE OR REPLACE FUNCTION scalars.lei_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) > 20 THEN RETURN 'too_long'; END IF;
     IF char_length(v) < 20 THEN RETURN 'too_short'; END IF;
@@ -703,7 +751,8 @@ $$;
 
 -- locale
 CREATE OR REPLACE FUNCTION scalars.locale_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) > 12 THEN RETURN 'too_long'; END IF;
     IF char_length(v) < 2 THEN RETURN 'too_short'; END IF;
@@ -717,7 +766,8 @@ $$;
 
 -- mac_address
 CREATE OR REPLACE FUNCTION scalars.mac_address_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) > 17 THEN RETURN 'too_long'; END IF;
     IF char_length(v) < 17 THEN RETURN 'too_short'; END IF;
@@ -731,10 +781,11 @@ $$;
 
 -- media_type
 CREATE OR REPLACE FUNCTION scalars.media_type_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) < 3 THEN RETURN 'too_short'; END IF;
-    IF v !~ '^[A-Za-z0-9!#$&^_.+-]+/[A-Za-z0-9!#$&^_.+-]+(;[^\x00-\x1F\x7F]*)?$' THEN RETURN 'pattern'; END IF;
+    IF v !~ E'^[A-Za-z0-9!#$&^_.+-]+/[A-Za-z0-9!#$&^_.+-]+(;[^\\x00-\\x1F\\x7F]*)?$' THEN RETURN 'pattern'; END IF;
     RETURN NULL;
 END $$;
 CREATE OR REPLACE FUNCTION scalars.is_media_type(v text) RETURNS boolean
@@ -744,7 +795,8 @@ $$;
 
 -- object
 CREATE OR REPLACE FUNCTION scalars.object_reason(v jsonb) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF jsonb_typeof(v) <> 'object' THEN RETURN 'wrong_kind'; END IF;
     RETURN NULL;
@@ -756,7 +808,8 @@ $$;
 
 -- orcid
 CREATE OR REPLACE FUNCTION scalars.orcid_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) > 19 THEN RETURN 'too_long'; END IF;
     IF char_length(v) < 19 THEN RETURN 'too_short'; END IF;
@@ -771,11 +824,12 @@ $$;
 
 -- phone
 CREATE OR REPLACE FUNCTION scalars.phone_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) > 16 THEN RETURN 'too_long'; END IF;
     IF char_length(v) < 3 THEN RETURN 'too_short'; END IF;
-    IF v !~ '^\+[1-9][0-9]{1,14}$' THEN RETURN 'pattern'; END IF;
+    IF v !~ E'^\\+[1-9][0-9]{1,14}$' THEN RETURN 'pattern'; END IF;
     RETURN NULL;
 END $$;
 CREATE OR REPLACE FUNCTION scalars.is_phone(v text) RETURNS boolean
@@ -785,9 +839,10 @@ $$;
 
 -- port
 CREATE OR REPLACE FUNCTION scalars.port_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
-    IF v !~ '^-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?$' THEN RETURN 'wrong_kind'; END IF;
+    IF v !~ E'^-?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?$' THEN RETURN 'wrong_kind'; END IF;
     IF NOT pg_input_is_valid(v, 'float8') THEN RETURN 'out_of_range'; END IF;
     IF v::float8 <> trunc(v::float8) THEN RETURN 'wrong_kind'; END IF;
     IF v::float8 < 0 THEN RETURN 'out_of_range'; END IF;
@@ -801,7 +856,8 @@ $$;
 
 -- regex
 CREATE OR REPLACE FUNCTION scalars.regex_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     RETURN NULL;
 END $$;
@@ -812,7 +868,8 @@ $$;
 
 -- secret
 CREATE OR REPLACE FUNCTION scalars.secret_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     RETURN NULL;
 END $$;
@@ -823,10 +880,11 @@ $$;
 
 -- semver
 CREATE OR REPLACE FUNCTION scalars.semver_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) < 5 THEN RETURN 'too_short'; END IF;
-    IF v !~ '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$' THEN RETURN 'pattern'; END IF;
+    IF v !~ E'^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$' THEN RETURN 'pattern'; END IF;
     RETURN NULL;
 END $$;
 CREATE OR REPLACE FUNCTION scalars.is_semver(v text) RETURNS boolean
@@ -836,7 +894,8 @@ $$;
 
 -- sha256
 CREATE OR REPLACE FUNCTION scalars.sha256_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) > 64 THEN RETURN 'too_long'; END IF;
     IF char_length(v) < 64 THEN RETURN 'too_short'; END IF;
@@ -850,7 +909,8 @@ $$;
 
 -- slug
 CREATE OR REPLACE FUNCTION scalars.slug_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) < 1 THEN RETURN 'too_short'; END IF;
     IF v !~ '^[a-z0-9]+(-[a-z0-9]+)*$' THEN RETURN 'pattern'; END IF;
@@ -863,7 +923,8 @@ $$;
 
 -- string
 CREATE OR REPLACE FUNCTION scalars.string_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     RETURN NULL;
 END $$;
@@ -874,7 +935,8 @@ $$;
 
 -- subdivision
 CREATE OR REPLACE FUNCTION scalars.subdivision_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) > 6 THEN RETURN 'too_long'; END IF;
     IF char_length(v) < 4 THEN RETURN 'too_short'; END IF;
@@ -888,7 +950,8 @@ $$;
 
 -- text
 CREATE OR REPLACE FUNCTION scalars.text_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     RETURN NULL;
 END $$;
@@ -899,10 +962,11 @@ $$;
 
 -- time
 CREATE OR REPLACE FUNCTION scalars.time_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) < 9 THEN RETURN 'too_short'; END IF;
-    IF v !~ '^[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?([Zz]|[+-][0-9]{2}:[0-9]{2})$' THEN RETURN 'pattern'; END IF;
+    IF v !~ E'^[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?([Zz]|[+-][0-9]{2}:[0-9]{2})$' THEN RETURN 'pattern'; END IF;
     RETURN NULL;
 END $$;
 CREATE OR REPLACE FUNCTION scalars.is_time(v text) RETURNS boolean
@@ -912,10 +976,11 @@ $$;
 
 -- time_local
 CREATE OR REPLACE FUNCTION scalars.time_local_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) < 8 THEN RETURN 'too_short'; END IF;
-    IF v !~ '^[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]+)?$' THEN RETURN 'pattern'; END IF;
+    IF v !~ E'^[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?$' THEN RETURN 'pattern'; END IF;
     RETURN NULL;
 END $$;
 CREATE OR REPLACE FUNCTION scalars.is_time_local(v text) RETURNS boolean
@@ -925,7 +990,8 @@ $$;
 
 -- timezone
 CREATE OR REPLACE FUNCTION scalars.timezone_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) < 3 THEN RETURN 'too_short'; END IF;
     IF v !~ '^(UTC|[A-Za-z_]+/[A-Za-z0-9_+-]+(/[A-Za-z0-9_+-]+)?)$' THEN RETURN 'pattern'; END IF;
@@ -938,9 +1004,10 @@ $$;
 
 -- uint16
 CREATE OR REPLACE FUNCTION scalars.uint16_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
-    IF v !~ '^-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?$' THEN RETURN 'wrong_kind'; END IF;
+    IF v !~ E'^-?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?$' THEN RETURN 'wrong_kind'; END IF;
     IF NOT pg_input_is_valid(v, 'float8') THEN RETURN 'out_of_range'; END IF;
     IF v::float8 <> trunc(v::float8) THEN RETURN 'wrong_kind'; END IF;
     IF v::float8 < 0 THEN RETURN 'out_of_range'; END IF;
@@ -954,9 +1021,10 @@ $$;
 
 -- uint32
 CREATE OR REPLACE FUNCTION scalars.uint32_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
-    IF v !~ '^-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?$' THEN RETURN 'wrong_kind'; END IF;
+    IF v !~ E'^-?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?$' THEN RETURN 'wrong_kind'; END IF;
     IF NOT pg_input_is_valid(v, 'float8') THEN RETURN 'out_of_range'; END IF;
     IF v::float8 <> trunc(v::float8) THEN RETURN 'wrong_kind'; END IF;
     IF v::float8 < 0 THEN RETURN 'out_of_range'; END IF;
@@ -970,7 +1038,8 @@ $$;
 
 -- uint64
 CREATE OR REPLACE FUNCTION scalars.uint64_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) < 1 THEN RETURN 'too_short'; END IF;
     IF v !~ '^[0-9]+$' THEN RETURN 'pattern'; END IF;
@@ -984,9 +1053,10 @@ $$;
 
 -- uint8
 CREATE OR REPLACE FUNCTION scalars.uint8_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
-    IF v !~ '^-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?$' THEN RETURN 'wrong_kind'; END IF;
+    IF v !~ E'^-?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?$' THEN RETURN 'wrong_kind'; END IF;
     IF NOT pg_input_is_valid(v, 'float8') THEN RETURN 'out_of_range'; END IF;
     IF v::float8 <> trunc(v::float8) THEN RETURN 'wrong_kind'; END IF;
     IF v::float8 < 0 THEN RETURN 'out_of_range'; END IF;
@@ -1000,7 +1070,8 @@ $$;
 
 -- ulid
 CREATE OR REPLACE FUNCTION scalars.ulid_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) > 26 THEN RETURN 'too_long'; END IF;
     IF char_length(v) < 26 THEN RETURN 'too_short'; END IF;
@@ -1014,9 +1085,10 @@ $$;
 
 -- unix_time
 CREATE OR REPLACE FUNCTION scalars.unix_time_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
-    IF v !~ '^-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][+-]?[0-9]+)?$' THEN RETURN 'wrong_kind'; END IF;
+    IF v !~ E'^-?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?$' THEN RETURN 'wrong_kind'; END IF;
     IF NOT pg_input_is_valid(v, 'float8') THEN RETURN 'out_of_range'; END IF;
     IF v::float8 <> trunc(v::float8) THEN RETURN 'wrong_kind'; END IF;
     IF v::float8 < -9007199254740991 THEN RETURN 'out_of_range'; END IF;
@@ -1030,7 +1102,8 @@ $$;
 
 -- uri
 CREATE OR REPLACE FUNCTION scalars.uri_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     RETURN NULL;
 END $$;
@@ -1041,7 +1114,8 @@ $$;
 
 -- uri_reference
 CREATE OR REPLACE FUNCTION scalars.uri_reference_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     RETURN NULL;
 END $$;
@@ -1052,7 +1126,8 @@ $$;
 
 -- uri_template
 CREATE OR REPLACE FUNCTION scalars.uri_template_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     RETURN NULL;
 END $$;
@@ -1063,7 +1138,8 @@ $$;
 
 -- uuid
 CREATE OR REPLACE FUNCTION scalars.uuid_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) > 36 THEN RETURN 'too_long'; END IF;
     IF char_length(v) < 36 THEN RETURN 'too_short'; END IF;
@@ -1077,7 +1153,8 @@ $$;
 
 -- uuid_v7
 CREATE OR REPLACE FUNCTION scalars.uuid_v7_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) > 36 THEN RETURN 'too_long'; END IF;
     IF char_length(v) < 36 THEN RETURN 'too_short'; END IF;
@@ -1091,7 +1168,8 @@ $$;
 
 -- wikidata_qid
 CREATE OR REPLACE FUNCTION scalars.wikidata_qid_reason(v text) RETURNS text
-LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE AS $$
+LANGUAGE plpgsql IMMUTABLE STRICT PARALLEL SAFE
+SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
     IF char_length(v) < 2 THEN RETURN 'too_short'; END IF;
     IF v !~ '^Q[1-9][0-9]*$' THEN RETURN 'pattern'; END IF;
@@ -1105,30 +1183,35 @@ $$;
 -- The column types. Postgres has no CREATE OR REPLACE DOMAIN: a re-run keeps each domain and replaces its
 -- CHECK, NOT VALID, so new values meet the new rule and rows already stored are not rechecked.
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'any' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.any AS jsonb;
     END IF;
     ALTER DOMAIN scalars.any DROP CONSTRAINT IF EXISTS any_check;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'array' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.array AS jsonb;
     END IF;
     ALTER DOMAIN scalars.array DROP CONSTRAINT IF EXISTS array_check;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'base64' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.base64 AS bytea;
     END IF;
     ALTER DOMAIN scalars.base64 DROP CONSTRAINT IF EXISTS base64_check;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'base64url' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.base64url AS bytea;
     END IF;
     ALTER DOMAIN scalars.base64url DROP CONSTRAINT IF EXISTS base64url_check;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'bic' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.bic AS text;
     END IF;
@@ -1136,18 +1219,21 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.bic ADD CONSTRAINT bic_check CHECK (scalars.is_bic(VALUE)) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'binary' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.binary AS bytea;
     END IF;
     ALTER DOMAIN scalars.binary DROP CONSTRAINT IF EXISTS binary_check;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'boolean' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.boolean AS boolean;
     END IF;
     ALTER DOMAIN scalars.boolean DROP CONSTRAINT IF EXISTS boolean_check;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'char' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.char AS varchar;
     END IF;
@@ -1155,12 +1241,14 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.char ADD CONSTRAINT char_check CHECK (scalars.is_char(VALUE)) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'cidr' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.cidr AS cidr;
     END IF;
     ALTER DOMAIN scalars.cidr DROP CONSTRAINT IF EXISTS cidr_check;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'color' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.color AS text;
     END IF;
@@ -1168,12 +1256,14 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.color ADD CONSTRAINT color_check CHECK (scalars.is_color(VALUE)) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'commonmark' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.commonmark AS text;
     END IF;
     ALTER DOMAIN scalars.commonmark DROP CONSTRAINT IF EXISTS commonmark_check;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'country' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.country AS text;
     END IF;
@@ -1181,6 +1271,7 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.country ADD CONSTRAINT country_check CHECK (scalars.is_country(VALUE)) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'country_alpha3' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.country_alpha3 AS text;
     END IF;
@@ -1188,12 +1279,14 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.country_alpha3 ADD CONSTRAINT country_alpha3_check CHECK (scalars.is_country_alpha3(VALUE)) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'cron' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.cron AS text;
     END IF;
     ALTER DOMAIN scalars.cron DROP CONSTRAINT IF EXISTS cron_check;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'css_color' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.css_color AS text;
     END IF;
@@ -1201,6 +1294,7 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.css_color ADD CONSTRAINT css_color_check CHECK (scalars.is_css_color(VALUE)) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'currency' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.currency AS text;
     END IF;
@@ -1208,6 +1302,7 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.currency ADD CONSTRAINT currency_check CHECK (scalars.is_currency(VALUE)) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'date' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.date AS date;
     END IF;
@@ -1215,6 +1310,7 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.date ADD CONSTRAINT date_check CHECK (isfinite(VALUE)) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'date_time' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.date_time AS timestamptz;
     END IF;
@@ -1222,6 +1318,7 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.date_time ADD CONSTRAINT date_time_check CHECK (isfinite(VALUE)) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'date_time_local' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.date_time_local AS timestamp;
     END IF;
@@ -1229,6 +1326,7 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.date_time_local ADD CONSTRAINT date_time_local_check CHECK (isfinite(VALUE)) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'decimal' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.decimal AS numeric;
     END IF;
@@ -1236,6 +1334,7 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.decimal ADD CONSTRAINT decimal_check CHECK (VALUE NOT IN ('NaN', 'Infinity', '-Infinity')) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'decimal128' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.decimal128 AS numeric;
     END IF;
@@ -1243,6 +1342,7 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.decimal128 ADD CONSTRAINT decimal128_check CHECK (VALUE NOT IN ('NaN', 'Infinity', '-Infinity')) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'doi' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.doi AS text;
     END IF;
@@ -1250,12 +1350,14 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.doi ADD CONSTRAINT doi_check CHECK (scalars.is_doi(VALUE)) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'duration' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.duration AS interval;
     END IF;
     ALTER DOMAIN scalars.duration DROP CONSTRAINT IF EXISTS duration_check;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'email' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.email AS text;
     END IF;
@@ -1263,6 +1365,7 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.email ADD CONSTRAINT email_check CHECK (scalars.is_email(VALUE)) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'float32' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.float32 AS real;
     END IF;
@@ -1270,6 +1373,7 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.float32 ADD CONSTRAINT float32_check CHECK (VALUE NOT IN ('NaN', 'Infinity', '-Infinity')) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'float64' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.float64 AS double precision;
     END IF;
@@ -1277,6 +1381,7 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.float64 ADD CONSTRAINT float64_check CHECK (VALUE NOT IN ('NaN', 'Infinity', '-Infinity')) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'gln' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.gln AS text;
     END IF;
@@ -1284,6 +1389,7 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.gln ADD CONSTRAINT gln_check CHECK (scalars.is_gln(VALUE)) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'gtin' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.gtin AS text;
     END IF;
@@ -1291,6 +1397,7 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.gtin ADD CONSTRAINT gtin_check CHECK (scalars.is_gtin(VALUE)) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'hostname' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.hostname AS text;
     END IF;
@@ -1298,12 +1405,14 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.hostname ADD CONSTRAINT hostname_check CHECK (scalars.is_hostname(VALUE)) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'html' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.html AS text;
     END IF;
     ALTER DOMAIN scalars.html DROP CONSTRAINT IF EXISTS html_check;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'iban' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.iban AS text;
     END IF;
@@ -1311,24 +1420,28 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.iban ADD CONSTRAINT iban_check CHECK (scalars.is_iban(VALUE)) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'int16' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.int16 AS smallint;
     END IF;
     ALTER DOMAIN scalars.int16 DROP CONSTRAINT IF EXISTS int16_check;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'int32' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.int32 AS integer;
     END IF;
     ALTER DOMAIN scalars.int32 DROP CONSTRAINT IF EXISTS int32_check;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'int64' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.int64 AS bigint;
     END IF;
     ALTER DOMAIN scalars.int64 DROP CONSTRAINT IF EXISTS int64_check;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'int8' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.int8 AS smallint;
     END IF;
@@ -1336,6 +1449,7 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.int8 ADD CONSTRAINT int8_check CHECK (VALUE BETWEEN -128 AND 127) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'ipv4' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.ipv4 AS inet;
     END IF;
@@ -1343,6 +1457,7 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.ipv4 ADD CONSTRAINT ipv4_check CHECK (family(VALUE) = 4 AND masklen(VALUE) = 32) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'ipv4_cidr' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.ipv4_cidr AS cidr;
     END IF;
@@ -1350,6 +1465,7 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.ipv4_cidr ADD CONSTRAINT ipv4_cidr_check CHECK (family(VALUE) = 4) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'ipv6' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.ipv6 AS inet;
     END IF;
@@ -1357,6 +1473,7 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.ipv6 ADD CONSTRAINT ipv6_check CHECK (family(VALUE) = 6 AND masklen(VALUE) = 128) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'ipv6_cidr' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.ipv6_cidr AS cidr;
     END IF;
@@ -1364,6 +1481,7 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.ipv6_cidr ADD CONSTRAINT ipv6_cidr_check CHECK (family(VALUE) = 6) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'isbn' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.isbn AS text;
     END IF;
@@ -1371,6 +1489,7 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.isbn ADD CONSTRAINT isbn_check CHECK (scalars.is_isbn(VALUE)) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'json_pointer' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.json_pointer AS text;
     END IF;
@@ -1378,6 +1497,7 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.json_pointer ADD CONSTRAINT json_pointer_check CHECK (scalars.is_json_pointer(VALUE)) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'jwt' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.jwt AS text;
     END IF;
@@ -1385,6 +1505,7 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.jwt ADD CONSTRAINT jwt_check CHECK (scalars.is_jwt(VALUE)) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'language' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.language AS text;
     END IF;
@@ -1392,6 +1513,7 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.language ADD CONSTRAINT language_check CHECK (scalars.is_language(VALUE)) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'lei' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.lei AS text;
     END IF;
@@ -1399,6 +1521,7 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.lei ADD CONSTRAINT lei_check CHECK (scalars.is_lei(VALUE)) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'locale' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.locale AS text;
     END IF;
@@ -1406,12 +1529,14 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.locale ADD CONSTRAINT locale_check CHECK (scalars.is_locale(VALUE)) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'mac_address' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.mac_address AS macaddr;
     END IF;
     ALTER DOMAIN scalars.mac_address DROP CONSTRAINT IF EXISTS mac_address_check;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'media_type' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.media_type AS text;
     END IF;
@@ -1419,12 +1544,14 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.media_type ADD CONSTRAINT media_type_check CHECK (scalars.is_media_type(VALUE)) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'object' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.object AS jsonb;
     END IF;
     ALTER DOMAIN scalars.object DROP CONSTRAINT IF EXISTS object_check;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'orcid' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.orcid AS text;
     END IF;
@@ -1432,6 +1559,7 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.orcid ADD CONSTRAINT orcid_check CHECK (scalars.is_orcid(VALUE)) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'phone' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.phone AS text;
     END IF;
@@ -1439,6 +1567,7 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.phone ADD CONSTRAINT phone_check CHECK (scalars.is_phone(VALUE)) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'port' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.port AS integer;
     END IF;
@@ -1446,18 +1575,21 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.port ADD CONSTRAINT port_check CHECK (VALUE BETWEEN 0 AND 65535) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'regex' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.regex AS text;
     END IF;
     ALTER DOMAIN scalars.regex DROP CONSTRAINT IF EXISTS regex_check;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'secret' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.secret AS text;
     END IF;
     ALTER DOMAIN scalars.secret DROP CONSTRAINT IF EXISTS secret_check;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'semver' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.semver AS text;
     END IF;
@@ -1465,6 +1597,7 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.semver ADD CONSTRAINT semver_check CHECK (scalars.is_semver(VALUE)) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'sha256' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.sha256 AS bytea;
     END IF;
@@ -1472,6 +1605,7 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.sha256 ADD CONSTRAINT sha256_check CHECK (octet_length(VALUE) = 32) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'slug' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.slug AS text;
     END IF;
@@ -1479,12 +1613,14 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.slug ADD CONSTRAINT slug_check CHECK (scalars.is_slug(VALUE)) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'string' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.string AS varchar;
     END IF;
     ALTER DOMAIN scalars.string DROP CONSTRAINT IF EXISTS string_check;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'subdivision' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.subdivision AS text;
     END IF;
@@ -1492,24 +1628,28 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.subdivision ADD CONSTRAINT subdivision_check CHECK (scalars.is_subdivision(VALUE)) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'text' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.text AS text;
     END IF;
     ALTER DOMAIN scalars.text DROP CONSTRAINT IF EXISTS text_check;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'time' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.time AS timetz;
     END IF;
     ALTER DOMAIN scalars.time DROP CONSTRAINT IF EXISTS time_check;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'time_local' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.time_local AS time;
     END IF;
     ALTER DOMAIN scalars.time_local DROP CONSTRAINT IF EXISTS time_local_check;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'timezone' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.timezone AS text;
     END IF;
@@ -1517,6 +1657,7 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.timezone ADD CONSTRAINT timezone_check CHECK (scalars.is_timezone(VALUE)) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'uint16' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.uint16 AS integer;
     END IF;
@@ -1524,6 +1665,7 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.uint16 ADD CONSTRAINT uint16_check CHECK (VALUE BETWEEN 0 AND 65535) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'uint32' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.uint32 AS bigint;
     END IF;
@@ -1531,6 +1673,7 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.uint32 ADD CONSTRAINT uint32_check CHECK (VALUE BETWEEN 0 AND 4294967295) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'uint64' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.uint64 AS numeric;
     END IF;
@@ -1538,6 +1681,7 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.uint64 ADD CONSTRAINT uint64_check CHECK (VALUE >= 0 AND VALUE <= 18446744073709551615 AND VALUE = trunc(VALUE)) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'uint8' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.uint8 AS smallint;
     END IF;
@@ -1545,6 +1689,7 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.uint8 ADD CONSTRAINT uint8_check CHECK (VALUE BETWEEN 0 AND 255) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'ulid' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.ulid AS text;
     END IF;
@@ -1552,6 +1697,7 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.ulid ADD CONSTRAINT ulid_check CHECK (scalars.is_ulid(VALUE)) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'unix_time' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.unix_time AS bigint;
     END IF;
@@ -1559,30 +1705,35 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.unix_time ADD CONSTRAINT unix_time_check CHECK (VALUE BETWEEN -9007199254740991 AND 9007199254740991) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'uri' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.uri AS text;
     END IF;
     ALTER DOMAIN scalars.uri DROP CONSTRAINT IF EXISTS uri_check;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'uri_reference' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.uri_reference AS text;
     END IF;
     ALTER DOMAIN scalars.uri_reference DROP CONSTRAINT IF EXISTS uri_reference_check;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'uri_template' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.uri_template AS text;
     END IF;
     ALTER DOMAIN scalars.uri_template DROP CONSTRAINT IF EXISTS uri_template_check;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'uuid' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.uuid AS uuid;
     END IF;
     ALTER DOMAIN scalars.uuid DROP CONSTRAINT IF EXISTS uuid_check;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'uuid_v7' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.uuid_v7 AS uuid;
     END IF;
@@ -1590,6 +1741,7 @@ DO $$ BEGIN
     ALTER DOMAIN scalars.uuid_v7 ADD CONSTRAINT uuid_v7_check CHECK (substr(VALUE::text, 15, 1) = '7' AND substr(VALUE::text, 20, 1) IN ('8', '9', 'a', 'b')) NOT VALID;
 END $$;
 DO $$ BEGIN
+    SET LOCAL search_path = pg_catalog, pg_temp;
     IF NOT EXISTS (SELECT FROM pg_type WHERE typname = 'wikidata_qid' AND typnamespace = 'scalars'::regnamespace) THEN
         CREATE DOMAIN scalars.wikidata_qid AS text;
     END IF;

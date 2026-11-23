@@ -1,6 +1,6 @@
 # Handoff
 
-State of the project for whoever picks it up next. Last updated 2026-11-22, after 0.9.0 (entities, values and links) and `check:langs` gaining `go test`.
+State of the project for whoever picks it up next. Last updated 2026-11-23, after the `dev/gui/` fields explorer (unreleased).
 
 **Keep this file current:** after every big event (a release, a merged feature, a CI break and its fix, a finished review), update this handoff and commit it as its own `docs(handoff)` commit, without waiting to be asked.
 
@@ -65,6 +65,7 @@ State of the project for whoever picks it up next. Last updated 2026-11-22, afte
 - `dev/codegen/`: the generator. `model.mjs` is the shared model, `generate.mjs` drives it, `python.mjs` `ts.mjs` `go.mjs` `rust.mjs` `postgres.mjs` write each language, and `engine.*` is the hand-written runtime each one embeds.
 - `dev/`: build, tests, and `dev/langs/` (one runner per language, plus the shared `cases.json`).
 - `.github/workflows/test.yml`: CI.
+- `dev/gui/`: a fields explorer over `dist/scalars.json` (added 2026-11-23, unreleased). Plain HTML, CSS and JS, no dependencies, plus a small Go server (`go run .` from `dev/gui/`, port 8080) that serves the folder and `../../dist/scalars.json` at `/scalars.json`. Search by name, label or alias, filter by level; each type shows its details, examples, normalize, check, settings and its html, schema and postgres blocks. "Try it" builds the control from the type's `html` block, so it checks the HTML attributes only (no checksum, no normalize); `enum` shows an empty select. It lives under `dev/` because a test keeps the repo root data-only. Not in CI, not in `gofmt`'s list.
 - `AGENTS.md`: the short version of this file for coding agents (commands, rules, design, commits). Keep the two in step.
 - `coding/`: the owner's own gitignored scratch folder. Leave it alone.
 
@@ -93,6 +94,8 @@ The 0.8.0 review's deferred minors were fixed in 0.8.1. Nothing is left. Models 
 - Deferred on purpose: units and quantities (UCUM, which needs two fields, so a schema), translated labels, hints and errors, and JSON-LD mappings.
 
 ## History
+
+- `dev/gui/` (2026-11-23): the owner's Go static-server scaffold (its own commit) grown into a fields explorer at the owner's request; moved from a root `gui/` to `dev/gui/` because "repo root holds only data" failed. Checked by hand in a browser (alias search, an IBAN with spaces flagged).
 
 - 0.9.0 (2026-11-22): entities, values and links, above. Built inline from a plan in eight tasks: the reference and the shared cases first (47 new ones: 27 load, 19 validate, 1 hostile; embedded models in the old cases gained `$value`, entity results `"id": null`), the emitted keywords, then TypeScript, Python, Go and Rust, the fuzzer, the docs. A bug was planted per task and caught by a shared case (a skipped repeat check, the conflict never on `one`, no `id` on entities, `$value: false` read as a value), except Go's: a link counted as a nesting level passed every case, so `link_depth_64_ok` was added and caught it. The plan's expected `pattern` for `"nope"` was wrong (a 36-character minimum makes it `too_short`); the cases expect the real reason. The final whole-branch review was a self-review (no fresh reviewer was started, since this session starts agents only when the owner asks), with no Critical or Important findings. The spec and plan are in git history (`docs/superpowers/specs/2026-11-22-model-links-design.md`, `docs/superpowers/plans/2026-11-22-model-links.md`, removed in the commit that recorded it here, with the stale 2026-11-20 models spec and plan).
 

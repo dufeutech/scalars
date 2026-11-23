@@ -4,7 +4,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { loadModels, validateModel } from "../lib/models.mjs";
+import { ID_FIELD, LINK_KEYWORD, VALUE_KEY, loadModels, validateModel } from "../lib/models.mjs";
 import { CASES, DIST, runAll } from "./runners.mjs";
 
 const seed = Number(process.argv[2] ?? Date.now() % 2 ** 32) >>> 0;
@@ -33,7 +33,7 @@ const examples = (t, kind) => (t.examples?.[kind] ?? []).filter((v) => usable(t,
 const typeNames = Object.keys(types);
 const aliasOf = new Map(Object.entries(types).flatMap(([n, t]) => (t.aliases ?? []).map((a) => [a, n])));
 const typeOf = (word) => types[word] ?? types[aliasOf.get(word)];
-const NAMES = ["id", "name", "note", "total", "status", "tags", "owner", "items", "created", "code", "a", "b"];
+const NAMES = ["name", "note", "total", "status", "tags", "owner", "items", "created", "code", "a", "b"];
 const ENUM_POOL = ["draft", "sent", "paid", "", "Ünïcode", "a b", "x", "🙂"];
 
 /** Settings for a field object of type `t`, within range. */
@@ -50,24 +50,39 @@ function settings(t) {
     return out;
 }
 
+/** A model reference written in `domain`: the bare name when it's at home, sometimes. */
+const refTo = (domain, [d, m]) => (d === domain && chance(0.5) ? m : `${d}:${m}`);
+/** A model's fields as written, without VALUE_KEY. */
+const ownKeys = (fields) => Object.keys(fields).filter((k) => k !== VALUE_KEY);
+
 /**
- * One written field: a type name, a model name, a field reference, or an object with settings. References point at
- * models written earlier (`done`, [domain, model, fields]), so a file without a deliberate mistake has no cycle.
+ * One written field: a type name, a model name, a field reference, a link, or an object with settings. References
+ * point at models written earlier (`done`, [domain, model, fields, isValue]), so a file without a deliberate mistake
+ * has no cycle; only a value is embedded. A link (never under `items`) points at any entity, `self` included (the
+ * model being written, [domain, model, isValue]): links are no edges, so they can't make a cycle.
  */
-function field(done, domain, depth = 0) {
-    const r = random();
-    if (r < 0.3) return pick(typeNames);
-    if (r < 0.42 && done.length) {
-        const [d, m] = pick(done);
-        return d === domain && chance(0.5) ? m : `${d}:${m}`;
+function field(done, domain, self, depth = 0) {
+    if (depth === 0 && chance(0.15)) {
+        const entities = done.filter((x) => !x[3]).concat(self[2] ? [] : [self]);
+        if (entities.length) {
+            const f = { type: LINK_KEYWORD, to: refTo(domain, pick(entities)) };
+            if (chance(0.25)) f.many = true;
+            else if (chance(0.2)) f.one = true;
+            if (chance(0.2)) f.nullable = true;
+            return f;
+        }
     }
+    const r = random();
+    const values = done.filter((x) => x[3]);
+    if (r < 0.3) return pick(typeNames);
+    if (r < 0.42 && values.length) return refTo(domain, pick(values));
     if (r < 0.5 && done.length) {
         const [d, m, fields] = pick(done);
         return `${d}:${m}.${pick(Object.keys(fields))}`;
     }
     const type = chance(0.15) && depth < 2 ? "array" : pick(typeNames);
     const f = { type, ...settings(types[type]) };
-    if (type === "array") f.items = field(done, domain, depth + 1);
+    if (type === "array") f.items = field(done, domain, self, depth + 1);
     if (chance(0.25)) f.nullable = true;
     return f;
 }
@@ -76,8 +91,13 @@ function field(done, domain, depth = 0) {
 function mistake(data, file) {
     const [d, m] = pick(file.names);
     const fields = data[d][m];
-    const key = pick(Object.keys(fields));
-    switch (int(0, 11)) {
+    const key = pick(ownKeys(fields));
+    const kinds = (value) => file.names.filter(([d2, m2]) => (data[d2][m2][VALUE_KEY] === true) === value);
+    switch (int(0, 15)) {
+        case 12: { const e = kinds(false); fields[key] = e.length ? refTo(d, pick(e)) : "no_such_model"; break; } // embeds an entity
+        case 13: { const v = kinds(true); fields[key] = { type: LINK_KEYWORD, to: v.length ? refTo(d, pick(v)) : "email" }; break; } // links to a value
+        case 14: fields[key] = { type: LINK_KEYWORD, to: refTo(d, pick(file.names)), many: true, one: true }; break;
+        case 15: fields[ID_FIELD] = "string"; break;
         case 10: fields[key] = pick([...aliasOf.keys()]); break;
         case 11: { const [d2, m2] = pick(file.names); fields[key] = `${d2}:${m2}`; data[d2][m2].zz_back = `${d}:${m}`; break; }
         case 0: data.Bad_Domain = { m: { a: "text" } }; break;
@@ -100,10 +120,11 @@ function modelsFile() {
     for (const d of domains) for (let i = int(1, 4); i > 0; i--) file.names.push([d, `m${i}`]);
     const data = {}, done = [];
     for (const [d, m] of file.names) {
+        const isValue = chance(0.5);
         const fields = {};
-        for (const name of NAMES.slice(0, int(1, 5))) fields[name] = field(done, d);
-        (data[d] ??= {})[m] = fields;
-        done.push([d, m, fields]);
+        for (const name of NAMES.slice(0, int(1, 5))) fields[name] = field(done, d, [d, m, isValue]);
+        (data[d] ??= {})[m] = isValue ? { [VALUE_KEY]: true, ...fields } : fields;
+        done.push([d, m, fields, isValue]);
     }
     if (chance(0.2)) mistake(data, file);
     return data;
@@ -124,6 +145,7 @@ function value(data, domain, written, depth = 0) {
     }
     if (written && typeof written === "object" && typeof written.type === "string") {
         if (written.nullable && chance(0.15)) return null;
+        if (written.type === LINK_KEYWORD) return written.many ? ids() : id();
         if (written.type === "array") return Array.from({ length: int(0, 3) }, () => value(data, domain, written.items, depth + 1));
         const t = typeOf(written.type);
         if (t) return valueOf(t, written);
@@ -156,15 +178,34 @@ function valueOf(t, written) {
     return valid.length ? structuredClone(pick(valid)) : "x";
 }
 
+const hex = (n) => Array.from({ length: n }, () => "0123456789abcdef"[int(0, 15)]).join("");
+
+/** A uuid v7, upper-case or space-padded sometimes; or, sometimes, a mistake (a v4 uuid, a number). */
+function id() {
+    if (chance(0.08)) return pick(["f81d4fae-7dec-11d0-a765-00a0c91e6bf6", 3]);
+    let u = `${hex(8)}-${hex(4)}-7${hex(3)}-${pick(["8", "9", "a", "b"])}${hex(3)}-${hex(12)}`;
+    if (chance(0.2)) u = u.toUpperCase();
+    return chance(0.15) ? ` ${u} ` : u;
+}
+
+/** A `many` link's list: 0 to 4 ids, sometimes with a repeat (the same id, maybe spelled otherwise). */
+function ids() {
+    const list = Array.from({ length: int(0, 4) }, id);
+    if (list.length && chance(0.15)) list.push(typeof list[0] === "string" ? list[0].toUpperCase() : list[0]);
+    return list;
+}
+
 function payload(data, domain, fields, depth = 0) {
     const out = {};
-    for (const [k, f] of Object.entries(fields)) out[k] = value(data, domain, f, depth);
+    // An entity's implicit id is sometimes there: an id, or null.
+    if (fields[VALUE_KEY] !== true && chance(0.3)) out[ID_FIELD] = chance(0.8) ? id() : null;
+    for (const k of ownKeys(fields)) out[k] = value(data, domain, fields[k], depth);
     return out;
 }
 
 /** A payload with one random change that should often make it fail. */
 function mutate(data, domain, fields, p) {
-    const keys = Object.keys(fields);
+    const keys = ownKeys(fields);
     const key = pick(keys);
     const t = typeof fields[key] === "string" ? typeOf(fields[key]) : typeOf(fields[key]?.type ?? "");
     switch (int(0, 7)) {

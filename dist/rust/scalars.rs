@@ -808,6 +808,9 @@ enum FieldKind {
     Model(usize),
     /// An array of the field with this index in the Arena.
     Array(usize),
+    /// A link to the entity with this full name: its value is an id (a list of ids when `many`), checked as the
+    /// Arena's `id_type`.
+    Link { to: String, many: bool, one: bool },
 }
 
 /// A resolved field.
@@ -854,11 +857,13 @@ struct Body {
     entries: Vec<(String, usize)>,
 }
 
-/// What every Model of one load shares: the resolved fields and the models, each found by index.
+/// What every Model of one load shares: the resolved fields and the models, each found by index, and the type
+/// of an id (an entity's own, and a link's value).
 #[derive(Debug)]
 struct Arena {
     fields: Vec<Field>,
     models: Vec<Body>,
+    id_type: (Kind, &'static Meta),
 }
 
 /// One model of a loaded models file. It is safe to share between threads: nothing changes after load.
@@ -915,19 +920,33 @@ pub fn models(data: &Value) -> Result<Models, ModelsError> {
             problems: sorted(l.problems),
         });
     }
+    // Every entity's implicit id comes first: a uuid v7, missing or null until the record is saved.
+    let id_kind = lookup(ID_TYPE).expect("the id type is in the catalogue");
+    let id_type = (id_kind, meta_of(id_kind));
+    let id = l.fields.len();
+    l.fields.push(Field::new(
+        FieldKind::Type {
+            kind: id_kind,
+            meta: id_type.1,
+            settings: Vec::new(),
+        },
+        true,
+    ));
     let bodies = l
         .nodes
         .iter()
         .map(|n| {
+            let own = n.list.iter().map(|&d| {
+                (
+                    l.defs[d].at[2].to_owned(),
+                    l.defs[d].field.expect("a loaded field resolved"),
+                )
+            });
             let entries: Vec<(String, usize)> = n
-                .list
-                .iter()
-                .map(|&d| {
-                    (
-                        l.defs[d].at[2].to_owned(),
-                        l.defs[d].field.expect("a loaded field resolved"),
-                    )
-                })
+                .entity
+                .then(|| (ID_FIELD.to_owned(), id))
+                .into_iter()
+                .chain(own)
                 .collect();
             Body {
                 fields: entries.iter().cloned().collect(),
@@ -938,6 +957,7 @@ pub fn models(data: &Value) -> Result<Models, ModelsError> {
     let arena = Arc::new(Arena {
         fields: l.fields,
         models: bodies,
+        id_type,
     });
     let mut all: Vec<String> = l.nodes.iter().map(|n| n.name.clone()).collect();
     all.sort();
@@ -977,6 +997,7 @@ enum Ref {
     Type(Kind, &'static Meta),
     Model(usize), // a Node
     Field(usize), // a Def
+    Link,         // LINK_KEYWORD
 }
 
 /// A written field, or an `items` definition (linked to its parent instead of copying the path), during load.
@@ -1012,11 +1033,14 @@ impl<'a> Def<'a> {
     }
 }
 
-/// A model during load.
+/// A model during load. An entity can be linked to and has an id; a value can be embedded. A bad VALUE_KEY is
+/// reported once and makes the model both, so embedding it or linking to it reports nothing more.
 struct Node<'a> {
     name: String,
     fields: HashMap<&'a str, usize>,
     list: Vec<usize>,
+    entity: bool,
+    value: bool,
     marks: Marks,
 }
 
@@ -1039,13 +1063,16 @@ enum BaseKind {
     Type(Kind, &'static Meta),
     Model(usize),
     Array,
+    Link,
 }
 
-/// Whether a field of this kind takes the setting `key`, besides `nullable`.
+/// Whether a field of this kind takes the setting `key`, besides `nullable`. A link's settings are models-only,
+/// like `items`.
 fn allowed(kind: BaseKind, key: &str) -> bool {
     match kind {
         BaseKind::Type(_, meta) => meta.params.contains(&key),
         BaseKind::Array => key == "items",
+        BaseKind::Link => matches!(key, "to" | "many" | "one"),
         BaseKind::Model(_) => false,
     }
 }
@@ -1104,6 +1131,10 @@ impl<'a> Loader<'a> {
                     self.report(vec![key(d), key(m)], "bad_name", Map::new());
                     continue;
                 }
+                if m == LINK_KEYWORD {
+                    self.report(vec![key(d), key(m)], "reserved", Map::new());
+                    continue;
+                }
                 if lookup(m).is_some() {
                     self.report(vec![key(d), key(m)], "type_name", Map::new());
                     continue;
@@ -1116,11 +1147,26 @@ impl<'a> Loader<'a> {
                     name: format!("{d}:{m}"),
                     fields: HashMap::with_capacity(fields.len()),
                     list: Vec::with_capacity(fields.len()),
+                    entity: true,
+                    value: false,
                     marks: Marks::default(),
                 };
                 for (f, raw) in fields {
+                    if f == VALUE_KEY {
+                        if raw.as_bool() == Some(true) {
+                            node.entity = false;
+                        } else {
+                            self.report(vec![key(d), key(m), key(f)], "bad_setting", Map::new());
+                        }
+                        node.value = true;
+                        continue;
+                    }
                     if !is_name(f) {
                         self.report(vec![key(d), key(m), key(f)], "bad_name", Map::new());
+                        continue;
+                    }
+                    if f == ID_FIELD {
+                        self.report(vec![key(d), key(m), key(f)], "reserved", Map::new());
                         continue;
                     }
                     let def = self.defs.len();
@@ -1154,6 +1200,10 @@ impl<'a> Loader<'a> {
             },
             _ => return self.report(self.path(d, &[]), "bad_setting", Map::new()),
         };
+        if written == LINK_KEYWORD {
+            self.defs[d].reference = Ref::Link;
+            return;
+        }
         let Some((domain, name, field)) = parse_ref(written) else {
             return self.report(self.path(d, &[]), "unresolved", Map::new());
         };
@@ -1243,9 +1293,10 @@ impl<'a> Loader<'a> {
 
     /// Step 3, resolution and cycles in one pass: Tarjan's strongly connected components over written fields and
     /// models, with an explicit stack. Edges: a model reference -> that model; a model -> its fields; a field
-    /// reference -> the field it copies; an array field -> its `items`. A field's settings, `items` included, are
-    /// read only once its type resolves, so `items` is an edge only when the resolved type is an array.
-    /// Components finish dependencies-first, so each field resolves exactly once, after what it copies.
+    /// reference -> the field it copies; an array field -> its `items`. A link is no edge: its value is an id, not
+    /// the target's contents. A field's settings, `items` included, are read only once its type resolves, so
+    /// `items` is an edge only when the resolved type is an array. Components finish dependencies-first, so each
+    /// field resolves exactly once, after what it copies.
     fn resolve_all(&mut self) {
         let mut counter = 0;
         let mut stack: Vec<Vertex> = Vec::new();
@@ -1306,8 +1357,9 @@ impl<'a> Loader<'a> {
     /// Builds the def's field from its resolved type plus the settings written next to it, or marks it failed.
     fn resolve(&mut self, v: usize) {
         let (reference, raw) = (self.defs[v].reference, self.defs[v].raw);
-        // What the field starts from: its kind, settings (for a type), nullable and items.
-        let (kind, base_settings, base_nullable, base_items) = match reference {
+        // What the field starts from: its kind, settings (for a type), nullable, items, and a link's to, many, one.
+        let no_link = (None, false, false);
+        let (kind, base_settings, base_nullable, base_items, base_link) = match reference {
             Ref::None => {
                 self.defs[v].failed = true;
                 return;
@@ -1325,11 +1377,21 @@ impl<'a> Loader<'a> {
                             Some(settings.clone()),
                             f.nullable,
                             None,
+                            no_link,
                         ),
-                        &FieldKind::Model(n) => (BaseKind::Model(n), None, f.nullable, None),
-                        &FieldKind::Array(items) => {
-                            (BaseKind::Array, None, f.nullable, Some(items))
+                        &FieldKind::Model(n) => {
+                            (BaseKind::Model(n), None, f.nullable, None, no_link)
                         }
+                        &FieldKind::Array(items) => {
+                            (BaseKind::Array, None, f.nullable, Some(items), no_link)
+                        }
+                        FieldKind::Link { to, many, one } => (
+                            BaseKind::Link,
+                            None,
+                            f.nullable,
+                            None,
+                            (Some(to.clone()), *many, *one),
+                        ),
                     }
                 }
                 _ => {
@@ -1337,10 +1399,26 @@ impl<'a> Loader<'a> {
                     return;
                 }
             },
-            Ref::Model(n) => (BaseKind::Model(n), None, false, None),
-            Ref::Type(_, meta) if meta.name == "array" => (BaseKind::Array, None, false, None),
-            Ref::Type(kind, meta) => (BaseKind::Type(kind, meta), Some(Vec::new()), false, None),
+            Ref::Link => (BaseKind::Link, None, false, None, no_link),
+            Ref::Model(n) => (BaseKind::Model(n), None, false, None, no_link),
+            Ref::Type(_, meta) if meta.name == "array" => {
+                (BaseKind::Array, None, false, None, no_link)
+            }
+            Ref::Type(kind, meta) => (
+                BaseKind::Type(kind, meta),
+                Some(Vec::new()),
+                false,
+                None,
+                no_link,
+            ),
         };
+        let link = matches!(kind, BaseKind::Link);
+        // A list of links is `many: true`, never an array of links.
+        if link && self.defs[v].up.is_some() {
+            self.report(self.path(v, &[]), "misplaced", Map::new());
+            self.defs[v].failed = true;
+            return;
+        }
         let type_kind = match kind {
             BaseKind::Type(kind, _) => Some(kind),
             _ => None,
@@ -1349,8 +1427,13 @@ impl<'a> Loader<'a> {
         let written = raw.as_object().unwrap_or(&empty);
         let mut settings = base_settings.clone();
         let (mut nullable, mut items) = (base_nullable, base_items);
+        let (mut to, mut many, mut one) = base_link;
         let mut failed = false;
         let before = self.problems.len();
+        // Only a value can be embedded (DDD's aggregate rule). A copy of an embedding field was checked at its source.
+        if matches!(reference, Ref::Model(n) if !self.nodes[n].value) {
+            self.report(self.path(v, &[]), "not_value", Map::new());
+        }
         for k in written.keys() {
             let k = k.as_str();
             if k == "type" {
@@ -1370,6 +1453,16 @@ impl<'a> Loader<'a> {
                     failed = true;
                 } else {
                     items = own.field;
+                }
+            } else if k == "to" {
+                if let Some(target) = self.link_target(v) {
+                    to = Some(target);
+                }
+            } else if link {
+                match written[k].as_bool() {
+                    None => self.report(self.path(v, &[key(k)]), "bad_setting", Map::new()),
+                    Some(flag) if k == "many" => many = flag,
+                    Some(flag) => one = flag,
                 }
             } else if let Some(value) = self.check_setting(type_kind, v, k) {
                 let list = settings.as_mut().expect("only a type takes these settings");
@@ -1399,6 +1492,20 @@ impl<'a> Loader<'a> {
             let setting = params([("setting", "precision".into())]);
             self.report(self.path(v, &[key("scale")]), "missing_setting", setting);
         }
+        if link && to.is_none() && !has("to") {
+            let setting = params([("setting", "to".into())]);
+            self.report(self.path(v, &[]), "missing_setting", setting);
+        }
+        // Judged on the result, and reported on whichever of the two is written here (`one` if both are).
+        if many && one {
+            let (at, other) = if written.contains_key("one") {
+                ("one", "many")
+            } else {
+                ("many", "one")
+            };
+            let setting = params([("setting", other.into())]);
+            self.report(self.path(v, &[key(at)]), "conflicting_setting", setting);
+        }
         if failed || self.problems.len() > before {
             self.defs[v].failed = true;
             return;
@@ -1411,6 +1518,11 @@ impl<'a> Loader<'a> {
             },
             BaseKind::Model(n) => FieldKind::Model(n),
             BaseKind::Array => FieldKind::Array(items.expect("an array has items")),
+            BaseKind::Link => FieldKind::Link {
+                to: to.expect("a link has a target"),
+                many,
+                one,
+            },
         };
         self.defs[v].field = Some(self.fields.len());
         self.fields.push(Field::new(field, nullable));
@@ -1432,6 +1544,33 @@ impl<'a> Loader<'a> {
             Some(f) if Some(f) == own_items => 1 + self.defs[f].arrays,
             Some(f) => self.defs[f].arrays,
         };
+    }
+
+    /// The full name of the entity the def's written `to` names, resolved in the domain where it's written, or
+    /// None once reported. A field part is `not_entity` whether or not that field exists.
+    fn link_target(&mut self, v: usize) -> Option<String> {
+        let d = &self.defs[v];
+        let code = match d.raw["to"].as_str() {
+            None => "bad_setting",
+            Some(s) => match parse_ref(s) {
+                None => "unresolved",
+                Some((domain, name, field)) => {
+                    let home = format!("{}:{name}", domain.unwrap_or(d.domain));
+                    let target = self.by_name.get(&home).copied();
+                    if field.is_none() && target.is_some_and(|n| self.nodes[n].entity) {
+                        return Some(home);
+                    }
+                    let is_type = domain.is_none() && lookup(name).is_some();
+                    if field.is_some() || target.is_some() || is_type {
+                        "not_entity"
+                    } else {
+                        "unresolved"
+                    }
+                }
+            },
+        };
+        self.report(self.path(v, &[key("to")]), code, Map::new());
+        None
     }
 
     /// Checks the value the def's setting `k` holds against its PARAM_RULES rule: the value to keep (a list is
@@ -1705,23 +1844,20 @@ impl<'m> Walker<'m> {
         };
         match field.kind {
             FieldKind::Type { kind, meta, .. } => {
-                // The reason is the code; a type-level too_long reads like the field's, with the type's limit as max.
-                let out = match check(kind, v) {
-                    Ok(out) => out,
-                    Err(reason) => {
-                        let mut p = params([("type", meta.name.into())]);
-                        if let (Reason::TooLong, Kind::Text(t)) = (reason, kind) {
-                            p.insert("max".to_owned(), t.max_len.into());
-                        }
-                        self.report(at, reason.as_str(), p, Some(meta.error));
-                        return Value::Null;
-                    }
+                let Some(out) = self.scalar(kind, meta, v, at) else {
+                    return Value::Null;
                 };
                 if let Some(s) = out.as_str() {
                     self.limits(field, meta.name, s, at);
                 }
                 out
             }
+            // A link without `many` is checked exactly as a field of its id type.
+            FieldKind::Link { many: false, .. } => {
+                let (kind, meta) = self.arena.id_type;
+                self.scalar(kind, meta, v, at).unwrap_or(Value::Null)
+            }
+            FieldKind::Link { many: true, .. } => self.ids(v, at),
             FieldKind::Model(model) => match v.as_object() {
                 Some(obj) => self.model(model, obj, at),
                 None => {
@@ -1750,6 +1886,64 @@ impl<'m> Walker<'m> {
                 Value::Array(out)
             }
         }
+    }
+
+    /// The typed scalar's cleaned `v`, or None after reporting its failure: the reason is the code; a type-level
+    /// too_long reads like the field's, with the type's limit as max.
+    fn scalar(
+        &mut self,
+        kind: Kind,
+        meta: &'static Meta,
+        v: &Value,
+        at: Option<&Loc<'_>>,
+    ) -> Option<Value> {
+        match check(kind, v) {
+            Ok(out) => Some(out),
+            Err(reason) => {
+                let mut p = params([("type", meta.name.into())]);
+                if let (Reason::TooLong, Kind::Text(t)) = (reason, kind) {
+                    p.insert("max".to_owned(), t.max_len.into());
+                }
+                self.report(at, reason.as_str(), p, Some(meta.error));
+                None
+            }
+        }
+    }
+
+    /// A `many` link's list of ids: each entry a leaf, never null, compared after cleaning so no id is listed
+    /// twice.
+    fn ids(&mut self, v: &Value, at: Option<&Loc<'_>>) -> Value {
+        let Some(list) = v.as_array() else {
+            self.report(at, "not_list", Map::new(), None);
+            return Value::Null;
+        };
+        let (kind, meta) = self.arena.id_type;
+        let mut seen: HashSet<String> = HashSet::with_capacity(list.len());
+        let mut out = Vec::with_capacity(list.len());
+        for (i, x) in list.iter().enumerate() {
+            let here = Loc {
+                up: at,
+                seg: At::Index(i),
+            };
+            let clean = if x.is_null() {
+                self.report(Some(&here), "required", Map::new(), None);
+                Value::Null
+            } else {
+                let clean = self.scalar(kind, meta, x, Some(&here));
+                if let Some(id) = clean.as_ref().and_then(Value::as_str) {
+                    if !seen.insert(id.to_owned()) {
+                        let p = params([("type", meta.name.into())]);
+                        self.report(Some(&here), "duplicate", p, None);
+                    }
+                }
+                clean.unwrap_or(Value::Null)
+            };
+            if self.stopped() {
+                return Value::Null;
+            }
+            out.push(clean);
+        }
+        Value::Array(out)
     }
 
     /// The settings checked on cleaned text, all of them, in order: length, values, precision.
@@ -1842,15 +2036,11 @@ impl Reason {
 const MAX_DEPTH: usize = 64;
 
 /// Every entity's implicit field, and its type.
-#[allow(dead_code)]
 const ID_FIELD: &str = "id";
-#[allow(dead_code)]
 const ID_TYPE: &str = "uuid_v7";
 /// The type of a link field.
-#[allow(dead_code)]
 const LINK_KEYWORD: &str = "link";
 /// The one "$" key a model may hold: true makes it a value, the only kind that can be embedded.
-#[allow(dead_code)]
 const VALUE_KEY: &str = "$value";
 
 /// The limits of each setting in $meta.params.

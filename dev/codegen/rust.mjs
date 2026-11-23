@@ -139,15 +139,11 @@ ${reasons.map(([r]) => `            Reason::${pascal(r)} => ${str(r)},\n`).join(
 const MAX_DEPTH: usize = ${MAX_DEPTH};
 
 /// Every entity's implicit field, and its type.
-#[allow(dead_code)]
 const ID_FIELD: &str = ${str(ID_FIELD)};
-#[allow(dead_code)]
 const ID_TYPE: &str = ${str(ID_TYPE)};
 /// The type of a link field.
-#[allow(dead_code)]
 const LINK_KEYWORD: &str = ${str(LINK_KEYWORD)};
 /// The one "$" key a model may hold: true makes it a value, the only kind that can be embedded.
-#[allow(dead_code)]
 const VALUE_KEY: &str = ${str(VALUE_KEY)};
 
 /// The limits of each setting in $meta.params.

@@ -174,6 +174,10 @@ fn hostile_payload(kind: &str, n: usize) -> Option<Value> {
         }
         "long_decimal" => json!({"to": address(), "status": "draft", "total": format!("1{}", "0".repeat(n))}),
         "ref_chain" => Value::Object((0..n).map(|i| (format!("f{i}"), json!("a"))).collect()),
+        "wide_many" => {
+            let tags: Vec<Value> = (0..n).map(|i| json!(format!("018f4b2c-9c1e-7a3b-8f2d-{i:012x}"))).collect();
+            json!({"customer": "018f4b2c-9c1e-7a3b-8f2d-1a2b3c4d5e6f", "ship_to": address(), "items": [], "tags": tags})
+        }
         _ => return None,
     })
 }

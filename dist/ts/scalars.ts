@@ -1145,6 +1145,12 @@ const ERRORS: Readonly<Record<string, string>> = {"required":"Required.","unknow
 
 /** Nesting deeper than this, each model and each `items` one level, is refused at load. */
 const MAX_DEPTH = 64;
+/** Every entity's implicit field, and its type. */
+const ID_FIELD = "id";
+const ID_TYPE = "uuid_v7";
+/** The type of a link field, and the one `$` key a model may hold (true: a value, which can be embedded). */
+const LINK_KEYWORD = "link";
+const VALUE_KEY = "$value";
 /** A domain, model or field name, and a reference: [domain:]name[.field]. */
 const NAME_PATTERN = "^[a-z][a-z0-9_]*$";
 const REF_PATTERN = "^(?:([a-z][a-z0-9_]*):)?([a-z][a-z0-9_]*)(?:\\.([a-z][a-z0-9_]*))?$";

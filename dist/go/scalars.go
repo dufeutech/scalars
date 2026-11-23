@@ -1644,6 +1644,17 @@ const (
 // maxDepth is how deep models may nest, each model and each `items` one level; deeper is refused at load.
 const maxDepth = 64
 
+// idField is every entity's implicit field, and idType its type.
+const idField = "id"
+
+const idType = "uuid_v7"
+
+// linkKeyword is the type of a link field.
+const linkKeyword = "link"
+
+// valueKey is the one "$" key a model may hold: true makes it a value, the only kind that can be embedded.
+const valueKey = "$value"
+
 // paramRules holds the limits of each setting in $meta.params.
 var paramRules = [...]paramRule{
 	{"length", "integer", 1, 10485760, 0, 0},

@@ -1,7 +1,7 @@
 // Emits dist/ts/scalars.ts: the hand-written engine (engine.ts, then models.ts) followed by one generated record per type.
 import { header, readEngine } from "./common.mjs";
 import { identifiers, metaFields, paramRules, pascal } from "./model.mjs";
-import { MAX_DEPTH, NAME, REF } from "../lib/models.mjs";
+import { ID_FIELD, ID_TYPE, LINK_KEYWORD, MAX_DEPTH, NAME, REF, VALUE_KEY } from "../lib/models.mjs";
 
 /** Names the engine defines on the `scalars` object, so no type may take them. */
 export const RESERVED_TS = ["get", "all", "models", "__proto__"];
@@ -53,6 +53,12 @@ const ERRORS: Readonly<Record<string, string>> = ${lit(meta.errors)};
 
 /** Nesting deeper than this, each model and each \`items\` one level, is refused at load. */
 const MAX_DEPTH = ${MAX_DEPTH};
+/** Every entity's implicit field, and its type. */
+const ID_FIELD = ${lit(ID_FIELD)};
+const ID_TYPE = ${lit(ID_TYPE)};
+/** The type of a link field, and the one \`$\` key a model may hold (true: a value, which can be embedded). */
+const LINK_KEYWORD = ${lit(LINK_KEYWORD)};
+const VALUE_KEY = ${lit(VALUE_KEY)};
 /** A domain, model or field name, and a reference: [domain:]name[.field]. */
 const NAME_PATTERN = ${lit(NAME.source)};
 const REF_PATTERN = ${lit(REF.source)};

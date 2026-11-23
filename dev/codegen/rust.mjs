@@ -2,11 +2,12 @@
 // Everything is written rustfmt-clean, and every static is a plain constant expression, so nothing runs at load.
 import { header, int64, lockedVersion, noLoneSurrogate, readEngine } from "./common.mjs";
 import { engineNames, identifiers, metaFields, paramRules, pascal } from "./model.mjs";
-import { MAX_DEPTH } from "../lib/models.mjs";
+import { ID_FIELD, ID_TYPE, LINK_KEYWORD, MAX_DEPTH, VALUE_KEY } from "../lib/models.mjs";
 
 /** Names the engine defines and the statics it uses, so no type may take them (only upper-case ones can meet a type). */
 export const RESERVED_RUST = [
-    "META", "ALL", "INDEX", "WS", "PARAM_RULES", "ERRORS", "MAX_DEPTH", "Kind", "lookup",
+    "META", "ALL", "INDEX", "WS", "PARAM_RULES", "ERRORS", "MAX_DEPTH", "ID_FIELD", "ID_TYPE", "LINK_KEYWORD", "VALUE_KEY",
+    "Kind", "lookup",
     "models", "Models", "Model", "ModelError", "ModelsError", "Problem",
 ];
 
@@ -136,6 +137,18 @@ ${reasons.map(([r]) => `            Reason::${pascal(r)} => ${str(r)},\n`).join(
 
 /// How deep models may nest, each model and each \`items\` one level; deeper is refused at load.
 const MAX_DEPTH: usize = ${MAX_DEPTH};
+
+/// Every entity's implicit field, and its type.
+#[allow(dead_code)]
+const ID_FIELD: &str = ${str(ID_FIELD)};
+#[allow(dead_code)]
+const ID_TYPE: &str = ${str(ID_TYPE)};
+/// The type of a link field.
+#[allow(dead_code)]
+const LINK_KEYWORD: &str = ${str(LINK_KEYWORD)};
+/// The one "$" key a model may hold: true makes it a value, the only kind that can be embedded.
+#[allow(dead_code)]
+const VALUE_KEY: &str = ${str(VALUE_KEY)};
 
 /// The limits of each setting in $meta.params.
 static PARAM_RULES: &[ParamRule] = &[

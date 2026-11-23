@@ -1841,6 +1841,18 @@ impl Reason {
 /// How deep models may nest, each model and each `items` one level; deeper is refused at load.
 const MAX_DEPTH: usize = 64;
 
+/// Every entity's implicit field, and its type.
+#[allow(dead_code)]
+const ID_FIELD: &str = "id";
+#[allow(dead_code)]
+const ID_TYPE: &str = "uuid_v7";
+/// The type of a link field.
+#[allow(dead_code)]
+const LINK_KEYWORD: &str = "link";
+/// The one "$" key a model may hold: true makes it a value, the only kind that can be embedded.
+#[allow(dead_code)]
+const VALUE_KEY: &str = "$value";
+
 /// The limits of each setting in $meta.params.
 static PARAM_RULES: &[ParamRule] = &[
     ParamRule {

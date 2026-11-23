@@ -2,7 +2,7 @@
 // Everything is written already gofmt-clean, and the table is plain composite literals, so Go builds it statically.
 import { fail, header, int64, lockedVersion, noLoneSurrogate, readEngine } from "./common.mjs";
 import { engineNames, identifiers, metaFields, paramRules, pascal } from "./model.mjs";
-import { MAX_DEPTH } from "../lib/models.mjs";
+import { ID_FIELD, ID_TYPE, LINK_KEYWORD, MAX_DEPTH, VALUE_KEY } from "../lib/models.mjs";
 
 /** Names the engine exports, so no type may take them (nor the Reason constants: see emitGo). */
 export const RESERVED_GO = [
@@ -152,6 +152,17 @@ ${reasons.join("")})
 
 // maxDepth is how deep models may nest, each model and each \`items\` one level; deeper is refused at load.
 const maxDepth = ${MAX_DEPTH}
+
+// idField is every entity's implicit field, and idType its type.
+const idField = ${str(ID_FIELD)}
+
+const idType = ${str(ID_TYPE)}
+
+// linkKeyword is the type of a link field.
+const linkKeyword = ${str(LINK_KEYWORD)}
+
+// valueKey is the one "$" key a model may hold: true makes it a value, the only kind that can be embedded.
+const valueKey = ${str(VALUE_KEY)}
 
 // paramRules holds the limits of each setting in $meta.params.
 var paramRules = [...]paramRule{

@@ -223,6 +223,21 @@ test("models constants are emitted once, from the reference", async () => {
     has("python/scalars.py", `_REF_PATTERN: Final = ${JSON.stringify(REF.source.slice(1, -1))}`);
     has("go/scalars.go", `const maxDepth = ${MAX_DEPTH}\n`);
     has("rust/scalars.rs", `const MAX_DEPTH: usize = ${MAX_DEPTH};`);
+    // The models keywords: TS and Rust by their reference name, Python with a leading `_`, Go in lower camel case.
+    const { ID_FIELD, ID_TYPE, LINK_KEYWORD, VALUE_KEY } = await import("../lib/models.mjs");
+    const keywords = { ID_FIELD, ID_TYPE, LINK_KEYWORD, VALUE_KEY };
+    const camel = (name) => name.toLowerCase().replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+    for (const [name, value] of Object.entries(keywords)) {
+        has("ts/scalars.ts", `const ${name} = ${JSON.stringify(value)};`);
+        has("python/scalars.py", `_${name}: Final = ${JSON.stringify(value)}\n`);
+        has("go/scalars.go", `const ${camel(name)} = ${JSON.stringify(value)}\n`);
+        has("rust/scalars.rs", `const ${name}: &str = ${JSON.stringify(value)};`);
+    }
+    // No hand-written engine spells a keyword: each reads the emitted constant.
+    const spelled = new RegExp(`["'](${Object.values(keywords).map((k) => k.replace("$", "\\$")).join("|")})["']`);
+    for (const file of ["models.ts", "models.py", "models.go", "models.rs"]) {
+        assert.doesNotMatch(common.readEngine(file), spelled, `${file} spells a models keyword`);
+    }
     // The hand-written engines define none of them, so they can't drift from the reference.
     for (const [file, defs] of [
         ["models.ts", [/const MAX_DEPTH\b/, /\[a-z\]\[a-z0-9_\]/]],

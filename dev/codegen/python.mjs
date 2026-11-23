@@ -1,7 +1,7 @@
 // Emits dist/python/scalars.py: the hand-written engine (engine.py, then models.py) followed by one generated record per type.
 import { header, readEngine } from "./common.mjs";
 import { identifiers, metaFields, paramRules } from "./model.mjs";
-import { MAX_DEPTH, NAME, REF } from "../lib/models.mjs";
+import { ID_FIELD, ID_TYPE, LINK_KEYWORD, MAX_DEPTH, NAME, REF, VALUE_KEY } from "../lib/models.mjs";
 
 /** A ^...$ pattern's source without its anchors. */
 const unanchored = (re) => re.source.replace(/^\^/, "").replace(/\$$/, "");
@@ -70,6 +70,9 @@ export function emitPython(models, version, meta) {
         reasons.map(([r]) => `    ${r.toUpperCase()}: Final = _Failure(Reason.${r.toUpperCase()})\n`).join("") + "\n\n";
     const tables = `${reasonClass}_PARAM_RULES: Final = ${lit(paramRules(meta))}\n_ERRORS: Final = ${lit(meta.errors)}\n` +
         `_MAX_DEPTH: Final = ${MAX_DEPTH}  # nesting deeper than this, each model and each \`items\` one level, is refused at load\n` +
+        `# Every entity's implicit field and its type; the type of a link field; the one "$" key a model may hold.\n` +
+        `_ID_FIELD: Final = ${lit(ID_FIELD)}\n_ID_TYPE: Final = ${lit(ID_TYPE)}\n` +
+        `_LINK_KEYWORD: Final = ${lit(LINK_KEYWORD)}\n_VALUE_KEY: Final = ${lit(VALUE_KEY)}\n` +
         `# A name, and a reference ([domain:]name[.field]); unanchored, for fullmatch (with match, "$" would accept a final "\\n").\n` +
         `_NAME_PATTERN: Final = ${lit(unanchored(NAME))}\n_REF_PATTERN: Final = ${lit(unanchored(REF))}\n`;
     return { "python/scalars.py": `${top}${ENGINE}\n\n${tables}\n${table}\n${names}\n\n${every}\n` };

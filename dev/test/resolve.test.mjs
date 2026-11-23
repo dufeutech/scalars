@@ -148,7 +148,7 @@ test("file schemas validate", () => {
 test("repo root holds only data: YAML source in src/, JSON elsewhere", () => {
     // dist/ also holds the generated per-language files (dist/python, ...), so it is not walked.
     const skip = new Set(["dev", "docs", "coding", "node_modules", "dist"]);
-    const allowed = new Set(["README.md", "LICENSE", "CHANGELOG.md"]);
+    const allowed = new Set(["README.md", "LICENSE", "CHANGELOG.md", "AGENTS.md"]);
     const bad = [];
     const inSrc = (p) => path.relative(root, p).split(path.sep)[0] === "src";
     const walk = (dir) => {

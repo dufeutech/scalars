@@ -220,6 +220,12 @@ const HOSTILE: Record<string, (n: number) => unknown> = {
     many_unknown: (n) => ({ ...ADDRESS, ...Object.fromEntries(Array.from({ length: n }, (_, i) => [`k${i}`, 1])) }),
     long_decimal: (n) => ({ to: { ...ADDRESS }, status: "draft", total: "1" + "0".repeat(n) }),
     ref_chain: (n) => Object.fromEntries(Array.from({ length: n }, (_, i) => [`f${i}`, "a"])),
+    wide_many: (n) => ({
+        customer: "018f4b2c-9c1e-7a3b-8f2d-1a2b3c4d5e6f",
+        ship_to: { ...ADDRESS },
+        items: [],
+        tags: Array.from({ length: n }, (_, i) => "018f4b2c-9c1e-7a3b-8f2d-" + i.toString(16).padStart(12, "0")),
+    }),
 };
 const HOSTILE_MODELS: Record<string, (n: number) => unknown> = {
     ref_chain: (n) => ({ app: { c: { ...Object.fromEntries(Array.from({ length: n - 1 }, (_, i) => [`f${i}`, `c.f${i + 1}`])), [`f${n - 1}`]: "string" } } }),
@@ -269,7 +275,7 @@ const frozenModel = scalars.models(loadCases.proto_model.data).get("app:p");
 Object.freeze(Object.prototype);
 try {
     const out = frozenModel.validate({ constructor: "a" });
-    if (canon(out) !== canon({ constructor: "a" }) || !Object.hasOwn(out, "constructor")) fails.push(`models: with Object.prototype frozen, out is ${canon(out)}`);
+    if (canon(out) !== canon({ id: null, constructor: "a" }) || !Object.hasOwn(out, "constructor")) fails.push(`models: with Object.prototype frozen, out is ${canon(out)}`);
     if (!frozenModel.isValid({ constructor: "a" })) fails.push("models: with Object.prototype frozen, isValid says no");
 } catch (e: any) {
     fails.push(`models: with Object.prototype frozen, validate threw ${e?.message ?? e}`);

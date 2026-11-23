@@ -505,7 +505,12 @@ interface Catalogue {
     readonly name: RegExp;
     readonly ref: RegExp;
     readonly settings: ReadonlyMap<string, readonly string[]>;
+    /** Every entity's implicit id field, shared by all of them. */
+    readonly id: ModelField;
 }
+
+/** The settings a link takes besides `nullable`. Models-only, like `items`. */
+const LINK_SETTINGS: readonly string[] = ["to", "many", "one"];
 
 /** The type whose canonical name is exactly `name`, or undefined: get() forgives aliases, a models file doesn't. */
 function typeNamed(name: string): Scalar<unknown> | undefined {
@@ -513,9 +518,12 @@ function typeNamed(name: string): Scalar<unknown> | undefined {
     return found !== undefined && found.name === name ? found : undefined;
 }
 
-/** A resolved field: kind "type" (a scalar and its settings), "model" (a full model name) or "array" (`items`). */
+/**
+ * A resolved field: kind "type" (a scalar and its settings), "model" (a full model name), "array" (`items`) or
+ * LINK_KEYWORD (`to`, the full name of the entity it points at; its value is an id, checked by `type`, the ID_TYPE scalar).
+ */
 class ModelField {
-    readonly kind: "type" | "model" | "array";
+    readonly kind: "type" | "model" | "array" | typeof LINK_KEYWORD;
     readonly nullable: boolean;
     readonly type: Scalar<unknown> | null;
     readonly settings: Readonly<Record<string, unknown>> | null;
@@ -523,6 +531,10 @@ class ModelField {
     readonly allowed: ReadonlySet<unknown> | null;
     readonly model: string;
     readonly items: ModelField | null;
+    /** A link's target (null only on the base a link is built from), and whether it's many-to-many or one-to-one. */
+    readonly to: string | null;
+    readonly many: boolean;
+    readonly one: boolean;
     /** The loaded Model named `model`, bound once the file has loaded. */
     target: Model | null = null;
     // The settings validate reads, unpacked once here.
@@ -533,8 +545,8 @@ class ModelField {
     /** Whether validate has any setting to check after the type's own: a plain field skips those reads. */
     readonly limited: boolean;
 
-    constructor(kind: "type" | "model" | "array", nullable: boolean, type: Scalar<unknown> | null, settings: Readonly<Record<string, unknown>> | null,
-        allowed: ReadonlySet<unknown> | null, model: string, items: ModelField | null) {
+    constructor(kind: "type" | "model" | "array" | typeof LINK_KEYWORD, nullable: boolean, type: Scalar<unknown> | null, settings: Readonly<Record<string, unknown>> | null,
+        allowed: ReadonlySet<unknown> | null, model: string, items: ModelField | null, to: string | null = null, many = false, one = false) {
         this.kind = kind;
         this.nullable = nullable;
         this.type = type;
@@ -542,6 +554,9 @@ class ModelField {
         this.allowed = allowed;
         this.model = model;
         this.items = items;
+        this.to = to;
+        this.many = many;
+        this.one = one;
         const s: Readonly<Record<string, unknown>> = settings ?? {};
         this.length = Object.hasOwn(s, "length") ? (s.length as number) : null;
         this.values = Object.hasOwn(s, "values") ? (s.values as readonly string[]) : null;
@@ -551,10 +566,11 @@ class ModelField {
     }
 }
 
-/** What a written field names: a type, a model, or another field it copies. */
+/** What a written field names: a type, a model, another field it copies, or a link (LINK_KEYWORD). */
 type Ref = { readonly kind: "type"; readonly type: Scalar<unknown> }
     | { readonly kind: "model"; readonly target: ModelNode }
-    | { readonly kind: "field"; readonly target: Def };
+    | { readonly kind: "field"; readonly target: Def }
+    | { readonly kind: typeof LINK_KEYWORD };
 
 /** A written field, or an `items` definition (linked to its parent instead of copying the path), during load. */
 class Def {
@@ -603,6 +619,12 @@ class ModelNode {
     readonly name: string;
     readonly fields = new Map<string, Def>();
     readonly list: Def[] = [];
+    /**
+     * An entity can be linked to and has an id; a value can be embedded. A bad VALUE_KEY is reported once and makes
+     * the model both, so embedding it or linking to it reports nothing more.
+     */
+    entity = true;
+    value = false;
     index = -1;
     low = -1;
     onStack = false;
@@ -623,7 +645,7 @@ class Loader {
     readonly nodes = new Map<string, ModelNode>(); // "domain:model" -> model node
     readonly defs: Def[] = []; // every written field, in file order
     readonly fields: ModelField[] = []; // every field resolve built, `items` included: models() binds their targets
-    private readonly cat: Catalogue;
+    readonly cat: Catalogue;
 
     constructor(data: Record<string, unknown>, cat: Catalogue) {
         this.cat = cat;
@@ -646,12 +668,20 @@ class Loader {
             if (!isObject(domain)) { this.report([d], "not_object"); continue; }
             for (const [m, fields] of Object.entries(domain)) {
                 if (!rx.test(m)) { this.report([d, m], "bad_name"); continue; }
+                if (m === LINK_KEYWORD) { this.report([d, m], "reserved"); continue; }
                 if (typeNamed(m) !== undefined) { this.report([d, m], "type_name"); continue; }
                 if (!isObject(fields)) { this.report([d, m], "not_object"); continue; }
                 const node = new ModelNode(`${d}:${m}`);
                 this.nodes.set(node.name, node);
                 for (const [f, raw] of Object.entries(fields)) {
+                    if (f === VALUE_KEY) {
+                        if (raw === true) node.entity = false;
+                        else this.report([d, m, f], "bad_setting");
+                        node.value = true;
+                        continue;
+                    }
                     if (!rx.test(f)) { this.report([d, m, f], "bad_name"); continue; }
+                    if (f === ID_FIELD) { this.report([d, m, f], "reserved"); continue; }
                     const df = new Def([d, m, f], raw, d, null);
                     node.fields.set(f, df);
                     node.list.push(df);
@@ -669,6 +699,10 @@ class Loader {
         else if (!isObject(raw)) return this.report(df.path(), "bad_setting");
         else if (Object.hasOwn(raw, "type") && typeof raw.type === "string") written = raw.type;
         else return this.report(df.path(), "missing_setting", { setting: "type" });
+        if (written === LINK_KEYWORD) {
+            df.ref = { kind: LINK_KEYWORD };
+            return;
+        }
         const m = this.cat.ref.exec(written);
         if (m === null) return this.report(df.path(), "unresolved");
         const [, domain, name, field] = m;
@@ -703,7 +737,7 @@ class Loader {
         if (v.isModel) return frame.step < v.list.length ? v.list[frame.step++] : null;
         while (frame.step < 2) {
             const step = frame.step++;
-            if (step === 0 && v.ref !== null && v.ref.kind !== "type") return v.ref.target;
+            if (step === 0 && v.ref !== null && (v.ref.kind === "model" || v.ref.kind === "field")) return v.ref.target;
             if (step === 1 && this.takesItems(v)) {
                 const items = new Def(null, (v.raw as Record<string, unknown>).items, v.domain, v);
                 v.items = items;
@@ -717,9 +751,10 @@ class Loader {
     /**
      * 3. Resolution and cycles in one pass: Tarjan's strongly connected components over written fields and models,
      * with an explicit stack. Edges: a model reference -> that model; a model -> its fields; a field reference ->
-     * the field it copies; an array field -> its `items`. A field's settings, `items` included, are read only once
-     * its type resolves, so `items` is an edge only when the resolved type is an array. Components finish
-     * dependencies-first, so each field resolves exactly once, after what it copies.
+     * the field it copies; an array field -> its `items`. A link is no edge: its value is an id, not the target's
+     * contents. A field's settings, `items` included, are read only once its type resolves, so `items` is an edge
+     * only when the resolved type is an array. Components finish dependencies-first, so each field resolves exactly
+     * once, after what it copies.
      */
     private resolveAll(): void {
         let counter = 0;
@@ -780,18 +815,32 @@ class Loader {
             return;
         }
         const base: ModelField = ref.kind === "field" ? (ref.target.field as ModelField)
+            : ref.kind === LINK_KEYWORD ? new ModelField(LINK_KEYWORD, false, this.cat.id.type, null, null, "", null)
             : ref.kind === "model" ? new ModelField("model", false, null, null, null, ref.target.name, null)
             : ref.type.name === "array" ? new ModelField("array", false, null, null, null, "", null)
             : new ModelField("type", false, ref.type, {}, null, "", null);
+        const link = base.kind === LINK_KEYWORD;
+        // A list of links is `many: true`, never an array of links.
+        if (link && v.up !== null) {
+            this.report(v.path(), "misplaced");
+            v.failed = true;
+            return;
+        }
         const type = base.kind === "type" ? base.type : null;
-        const allowed: readonly string[] = type !== null ? (this.cat.settings.get(type.name) as readonly string[]) : base.kind === "array" ? ["items"] : [];
+        const allowed: readonly string[] = type !== null ? (this.cat.settings.get(type.name) as readonly string[])
+            : base.kind === "array" ? ["items"] : link ? LINK_SETTINGS : [];
         const written: Record<string, unknown> = isObject(v.raw) ? v.raw : {};
         const settings: Record<string, unknown> | null = type !== null ? { ...base.settings } : null;
         let nullable = base.nullable;
         let items = base.items;
         let valueSet = base.allowed;
+        let to = base.to;
+        let many = base.many;
+        let one = base.one;
         let failed = false;
         const before = this.problems.length;
+        // Only a value can be embedded (DDD's aggregate rule). A copy of an embedding field was checked at its source.
+        if (ref.kind === "model" && !ref.target.value) this.report(v.path(), "not_value");
         for (const key of Object.keys(written)) {
             if (key === "type") continue;
             if (key === "nullable") {
@@ -801,6 +850,12 @@ class Loader {
                 const own = v.items as Def;
                 if (own.failed) failed = true;
                 else items = own.field;
+            } else if (key === "to") to = this.linkTarget(v) ?? to;
+            else if (link) {
+                const flag = written[key];
+                if (typeof flag !== "boolean") this.report(v.path(key), "bad_setting");
+                else if (key === "many") many = flag;
+                else one = flag;
             } else if (this.checkSetting(type, v, key)) {
                 let value = written[key];
                 if (Array.isArray(value)) {
@@ -816,12 +871,19 @@ class Loader {
         if (base.kind === "array" && items === null && !has("items")) this.report(v.path(), "missing_setting", { setting: "items" });
         if (type !== null && type.name === "enum" && !has("values")) this.report(v.path(), "missing_setting", { setting: "values" });
         if (allowed.includes("scale") && has("scale") && !has("precision")) this.report(v.path("scale"), "missing_setting", { setting: "precision" });
+        if (link && to === null && !has("to")) this.report(v.path(), "missing_setting", { setting: "to" });
+        // Judged on the result, and reported on whichever of the two is written here (`one` if both are).
+        if (many && one) {
+            if (Object.hasOwn(written, "one")) this.report(v.path("one"), "conflicting_setting", { setting: "many" });
+            else this.report(v.path("many"), "conflicting_setting", { setting: "one" });
+        }
         if (failed || this.problems.length > before) {
             v.failed = true;
             return;
         }
         v.field = type !== null ? new ModelField("type", nullable, type, settings, valueSet, "", null)
             : base.kind === "array" ? new ModelField("array", nullable, null, null, null, "", items)
+            : link ? new ModelField(LINK_KEYWORD, nullable, base.type, null, null, "", null, to, many, one)
             : new ModelField("model", nullable, null, null, null, base.model, null);
         this.fields.push(v.field);
         // The model this field nests, through any `items` (an edge of the nesting graph), and how many `items`
@@ -831,6 +893,28 @@ class Loader {
             : ref.kind === "field" ? ref.target : null;
         v.leaf = ref.kind === "model" ? ref.target : from !== null ? from.leaf : null;
         v.arrays = from === null ? 0 : from === v.items ? 1 + from.arrays : from.arrays;
+    }
+
+    /**
+     * The full name of the entity v's written `to` names, resolved in the domain where it's written, or null once
+     * reported. A field part is `not_entity` whether or not that field exists.
+     */
+    private linkTarget(v: Def): string | null {
+        const value = (v.raw as Record<string, unknown>).to;
+        const m = typeof value === "string" ? this.cat.ref.exec(value) : null;
+        let code: string;
+        if (typeof value !== "string") code = "bad_setting";
+        else if (m === null) code = "unresolved";
+        else {
+            const [, domain, name, field] = m;
+            const home = `${domain ?? v.domain}:${name}`;
+            const target = this.nodes.get(home);
+            if (field === undefined && target !== undefined && target.entity) return home;
+            const notEntity = field !== undefined || target !== undefined || (domain === undefined && typeNamed(name) !== undefined);
+            code = notEntity ? "not_entity" : "unresolved";
+        }
+        this.report(v.path("to"), code);
+        return null;
     }
 
     /** Checks the value v's `key` holds against its PARAM_RULES rule; reports and returns false when refused. */
@@ -983,13 +1067,12 @@ function walk(f: ModelField, v: unknown, up: Loc | null, seg: Segment | undefine
         if (!f.nullable) report(problems, seg === undefined ? up : { up, seg }, "required");
         return null;
     }
-    if (f.kind === "type") {
+    // A link without `many` is checked exactly as a field of its id type.
+    if (f.kind === "type" || (f.kind === LINK_KEYWORD && !f.many)) {
         const t = f.type as Scalar<unknown>;
         const r = t["run"](v);
-        // The reason is the code; a type-level too_long reads like the field's, with the type's limit as max.
         if (r instanceof Failure) {
-            const params = r.reason === Reason.TooLong ? { type: t.name, max: t["maxLen"] } : { type: t.name };
-            report(problems, seg === undefined ? up : { up, seg }, r.reason, params, t.error);
+            reportFailure(problems, seg === undefined ? up : { up, seg }, t, r);
             return null;
         }
         if (f.limited) {
@@ -1004,6 +1087,7 @@ function walk(f: ModelField, v: unknown, up: Loc | null, seg: Segment | undefine
     }
     // A container's own link is the parent of its entries' links.
     const at = seg === undefined ? up : { up, seg };
+    if (f.kind === LINK_KEYWORD) return walkIds(f.type as Scalar<unknown>, v, at, problems);
     if (f.kind === "model") {
         if (!isObject(v)) {
             report(problems, at, "not_object");
@@ -1029,6 +1113,39 @@ function walk(f: ModelField, v: unknown, up: Loc | null, seg: Segment | undefine
     const items = f.items as ModelField;
     const out = new Array<unknown>(v.length);
     for (let i = 0; i < v.length; i++) out[i] = walk(items, v[i], at, i, problems);
+    return out;
+}
+
+/** A scalar's failure: the reason is the code; a type-level too_long reads like the field's, with the type's limit as max. */
+function reportFailure(problems: Located[] | null, at: Loc | null, t: Scalar<unknown>, r: Failure): void {
+    const params = r.reason === Reason.TooLong ? { type: t.name, max: t["maxLen"] } : { type: t.name };
+    report(problems, at, r.reason, params, t.error);
+}
+
+/** A `many` link's list of ids: each entry a leaf, never null, compared after cleaning so no id is listed twice. */
+function walkIds(t: Scalar<unknown>, v: unknown, at: Loc | null, problems: Located[] | null): unknown {
+    if (!Array.isArray(v)) {
+        report(problems, at, "not_list");
+        return null;
+    }
+    const out = new Array<unknown>(v.length);
+    const seen = new Set<unknown>();
+    for (let i = 0; i < v.length; i++) {
+        const e: unknown = v[i];
+        out[i] = null;
+        if (e === null || e === undefined) {
+            report(problems, { up: at, seg: i }, "required");
+            continue;
+        }
+        const r = t["run"](e);
+        if (r instanceof Failure) {
+            reportFailure(problems, { up: at, seg: i }, t, r);
+            continue;
+        }
+        if (seen.has(r)) report(problems, { up: at, seg: i }, "duplicate", { type: t.name });
+        else seen.add(r);
+        out[i] = r;
+    }
     return out;
 }
 
@@ -1082,6 +1199,7 @@ function catalogue(): Catalogue {
             name: new RegExp(NAME_PATTERN),
             ref: new RegExp(REF_PATTERN),
             settings,
+            id: new ModelField("type", true, typeNamed(ID_TYPE) as Scalar<unknown>, {}, null, "", null),
         };
         Models["catalogue"] = cat;
     }
@@ -1096,6 +1214,8 @@ function loadModels(data: unknown): Models {
     const byName = new Map<string, Model>();
     for (const node of loaded.nodes.values()) {
         const fields = new Map<string, ModelField>();
+        // An entity's implicit id comes first: a uuid v7, missing or null until the record is saved.
+        if (node.entity) fields.set(ID_FIELD, loaded.cat.id);
         for (const [f, d] of node.fields) fields.set(f, d.field as ModelField);
         byName.set(node.name, new Model(INTERNAL, node.name, fields));
     }

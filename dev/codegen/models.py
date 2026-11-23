@@ -264,9 +264,10 @@ class _Loader:
                     if f == _VALUE_KEY:
                         if raw is True:
                             node.entity = False
-                        else:
+                            node.value = True
+                        elif raw is not False:
                             self.report([d, m, f], "bad_setting")
-                        node.value = True
+                            node.value = True
                         continue
                     if not self.named(f):
                         self.report([d, m, f], "bad_name")

@@ -286,7 +286,8 @@ test("schema refuses bad names and unknown settings", async () => {
     assert.ok(!validate({ app: { user: { x: { type: "array", items: { type: "string", nullable: 1 } } } } }), "a nested bad setting");
     assert.ok(!validate({ app: { user: { x: "Not a ref" } } }), "a bad reference");
     assert.ok(!validate({ app: { "user-1": {} } }), "a bad model name");
-    assert.ok(!validate({ app: { user: { $value: false } } }), "$value is true or absent");
+    assert.ok(!validate({ app: { user: { $value: "yes" } } }), "$value is a boolean");
+    assert.ok(validate({ app: { user: { $value: false } } }), "$value false is an entity");
     assert.ok(!validate({ app: { user: { $note: 1 } } }), "no other $ key in a model");
     assert.ok(validate({ $schema: "../schema/models.schema.json", app: { user: { x: "billing:invoice.total" } } }));
 });

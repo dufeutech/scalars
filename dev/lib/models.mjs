@@ -142,9 +142,8 @@ export function loadModels(data, scalars) {
             models.set(model.name, model);
             for (const [f, raw] of Object.entries(fields)) {
                 if (f === VALUE_KEY) {
-                    if (raw === true) model.entity = false;
-                    else report([d, m, f], "bad_setting");
-                    model.value = true;
+                    if (raw === true) { model.entity = false; model.value = true; }
+                    else if (raw !== false) { report([d, m, f], "bad_setting"); model.value = true; }
                     continue;
                 }
                 if (!NAME.test(f)) { report([d, m, f], "bad_name"); continue; }

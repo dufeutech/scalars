@@ -1153,12 +1153,21 @@ impl<'a> Loader<'a> {
                 };
                 for (f, raw) in fields {
                     if f == VALUE_KEY {
-                        if raw.as_bool() == Some(true) {
-                            node.entity = false;
-                        } else {
-                            self.report(vec![key(d), key(m), key(f)], "bad_setting", Map::new());
+                        match raw.as_bool() {
+                            Some(true) => {
+                                node.entity = false;
+                                node.value = true;
+                            }
+                            Some(false) => {}
+                            None => {
+                                self.report(
+                                    vec![key(d), key(m), key(f)],
+                                    "bad_setting",
+                                    Map::new(),
+                                );
+                                node.value = true;
+                            }
                         }
-                        node.value = true;
                         continue;
                     }
                     if !is_name(f) {

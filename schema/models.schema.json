@@ -41,7 +41,7 @@
                 ]
             },
             "properties": {
-                "$value": { "const": true }
+                "$value": { "type": "boolean" }
             },
             "additionalProperties": { "$ref": "#/$defs/field" }
         },

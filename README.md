@@ -188,7 +188,7 @@ let clean = order.validate(&payload)?; // Err(ModelError), or the cleaned payloa
 
 The split is domain-driven design's: an **entity** has an identity of its own (a user, an order), a **value** is defined only by its contents (an address, a line item). Values are embedded; another entity is reached by its id.
 
-- Every model is an entity unless it says `"$value": true` (the one `$` key a model may hold; leave it out for an entity). An entity has an implicit field `id`, a `uuid_v7`. A payload may leave it out or send `null` (a record not saved yet); when present it's checked like any `uuid_v7`. No model may declare a field named `id`.
+- Every model is an entity unless it says `"$value": true` (the one `$` key a model may hold; `false` or left out means an entity). An entity has an implicit field `id`, a `uuid_v7`. A payload may leave it out or send `null` (a record not saved yet); when present it's checked like any `uuid_v7`. No model may declare a field named `id`.
 - Only a value can be embedded: as a field (`"bill_to": "billing:address"`), as `items`, or through a field it copies. Embedding an entity is refused when the file loads (`not_value`): link to it instead.
 - A link is `{ "type": "link", "to": "auth:user", ...settings }`. Its value is the target's id, checked and cleaned exactly like a `uuid_v7` field.
 

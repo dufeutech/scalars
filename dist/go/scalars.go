@@ -948,10 +948,11 @@ func (l *loader) names(data map[string]any) {
 				if f == valueKey {
 					if raw == true {
 						node.entity = false
-					} else {
+						node.value = true
+					} else if raw != false {
 						l.report([]segment{key(d), key(m), key(f)}, "bad_setting", nil)
+						node.value = true
 					}
-					node.value = true
 					continue
 				}
 				if !isName(f) {

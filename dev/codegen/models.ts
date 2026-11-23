@@ -289,9 +289,8 @@ class Loader {
                 this.nodes.set(node.name, node);
                 for (const [f, raw] of Object.entries(fields)) {
                     if (f === VALUE_KEY) {
-                        if (raw === true) node.entity = false;
-                        else this.report([d, m, f], "bad_setting");
-                        node.value = true;
+                        if (raw === true) { node.entity = false; node.value = true; }
+                        else if (raw !== false) { this.report([d, m, f], "bad_setting"); node.value = true; }
                         continue;
                     }
                     if (!rx.test(f)) { this.report([d, m, f], "bad_name"); continue; }

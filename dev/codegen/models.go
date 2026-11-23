@@ -14,7 +14,7 @@ import (
 	"sync"
 )
 
-// maxDepth (how deep models may nest) is emitted after this file, from dev/lib/models.mjs.
+// maxDepth (how deep models may nest) and the models keywords are emitted after this file, from dev/lib/models.mjs.
 
 // Problem is one problem: an RFC 6901 Pointer, a fixed Code, the Params its message needs (never nil; each value
 // a string, an int64 or a []string), and the English Message.
@@ -210,17 +210,23 @@ type typeInfo struct {
 var (
 	catalogueOnce sync.Once
 	catalogue     struct {
-		types  map[string]*typeInfo // canonical name -> type
-		rules  map[string]*paramRule
-		errors map[string]string // code -> template
+		types   map[string]*typeInfo // canonical name -> type
+		rules   map[string]*paramRule
+		errors  map[string]string // code -> template
+		idField *field            // every entity's implicit id field, shared by all of them
 	}
 )
+
+// linkSettings are the settings a link takes besides nullable. Models-only, like items.
+var linkSettings = []string{"to", "many", "one"}
 
 func buildCatalogue() {
 	catalogue.types = make(map[string]*typeInfo, len(All))
 	for _, m := range All {
 		catalogue.types[m.Name] = &typeInfo{Lookup(m.Name), m}
 	}
+	catalogue.idField = &field{kind: kindType, nullable: true, typ: catalogue.types[idType], settings: map[string]any{}}
+	catalogue.idField.unpack()
 	catalogue.rules = make(map[string]*paramRule, len(paramRules))
 	for i := range paramRules {
 		catalogue.rules[paramRules[i].name] = &paramRules[i]
@@ -288,9 +294,11 @@ const (
 	kindType fieldKind = iota
 	kindModel
 	kindArray
+	kindLink
 )
 
-// field is a resolved field: a type and its settings, a model (by full name), or an array of items.
+// field is a resolved field: a type and its settings, a model (by full name), an array of items, or a link (to
+// the full name of the entity it points at; its value is an id, checked by typ, the idType scalar).
 type field struct {
 	kind     fieldKind
 	nullable bool
@@ -299,6 +307,9 @@ type field struct {
 	model    string
 	target   *Model // the loaded Model named model, bound once the file has loaded
 	items    *field
+	to       string // a link's target; "" only on the base a link is built from
+	many     bool   // a link: many-to-many, the value a list of ids
+	one      bool   // a link: one-to-one
 	// The settings validate reads, unpacked once here.
 	length    int64 // 0 when absent (the least length is 1)
 	values    []string
@@ -332,6 +343,7 @@ const (
 	refType
 	refModel
 	refField
+	refLink
 )
 
 // modelDef is a written field, or an `items` definition (linked to its parent instead of copying the path),
@@ -369,11 +381,14 @@ func (d *modelDef) path(extra ...segment) []segment {
 	return append(out, extra...)
 }
 
-// modelNode is a model during load.
+// modelNode is a model during load. An entity can be linked to and has an id; a value can be embedded. A bad
+// valueKey is reported once and makes the model both, so embedding it or linking to it reports nothing more.
 type modelNode struct {
 	name   string
 	fields map[string]*modelDef
 	list   []*modelDef
+	entity bool
+	value  bool
 	marks
 }
 
@@ -414,6 +429,10 @@ func (l *loader) names(data map[string]any) {
 				l.report([]segment{key(d), key(m)}, "bad_name", nil)
 				continue
 			}
+			if m == linkKeyword {
+				l.report([]segment{key(d), key(m)}, "reserved", nil)
+				continue
+			}
 			if _, isType := catalogue.types[m]; isType {
 				l.report([]segment{key(d), key(m)}, "type_name", nil)
 				continue
@@ -423,11 +442,24 @@ func (l *loader) names(data map[string]any) {
 				l.report([]segment{key(d), key(m)}, "not_object", nil)
 				continue
 			}
-			node := &modelNode{name: d + ":" + m, fields: make(map[string]*modelDef, len(fields))}
+			node := &modelNode{name: d + ":" + m, fields: make(map[string]*modelDef, len(fields)), entity: true}
 			l.nodes[node.name] = node
 			for f, raw := range fields {
+				if f == valueKey {
+					if raw == true {
+						node.entity = false
+					} else {
+						l.report([]segment{key(d), key(m), key(f)}, "bad_setting", nil)
+					}
+					node.value = true
+					continue
+				}
 				if !isName(f) {
 					l.report([]segment{key(d), key(m), key(f)}, "bad_name", nil)
+					continue
+				}
+				if f == idField {
+					l.report([]segment{key(d), key(m), key(f)}, "reserved", nil)
 					continue
 				}
 				def := &modelDef{segments: []segment{key(d), key(m), key(f)}, raw: raw, domain: d}
@@ -455,6 +487,10 @@ func (l *loader) parse(d *modelDef) {
 		written = t
 	default:
 		l.report(d.path(), "bad_setting", nil)
+		return
+	}
+	if written == linkKeyword {
+		d.ref = refLink
 		return
 	}
 	domain, name, fieldName, ok := parseRef(written)
@@ -543,9 +579,10 @@ func (l *loader) successor(f *frame) vertex {
 
 // resolveAll is step 3, resolution and cycles in one pass: Tarjan's strongly connected components over written
 // fields and models, with an explicit stack. Edges: a model reference -> that model; a model -> its fields; a
-// field reference -> the field it copies; an array field -> its `items`. A field's settings, `items` included,
-// are read only once its type resolves, so `items` is an edge only when the resolved type is an array.
-// Components finish dependencies-first, so each field resolves exactly once, after what it copies.
+// field reference -> the field it copies; an array field -> its `items`. A link is no edge: its value is an id,
+// not the target's contents. A field's settings, `items` included, are read only once its type resolves, so
+// `items` is an edge only when the resolved type is an array. Components finish dependencies-first, so each
+// field resolves exactly once, after what it copies.
 func (l *loader) resolveAll() {
 	counter := 0
 	var stack []vertex
@@ -623,6 +660,8 @@ func (l *loader) resolve(v *modelDef) {
 	switch {
 	case v.ref == refField:
 		base = v.refField.field
+	case v.ref == refLink:
+		base = &field{kind: kindLink, typ: catalogue.idField.typ}
 	case v.ref == refModel:
 		base = &field{kind: kindModel, model: v.refModel.name}
 	case v.refType.meta.Name == "array":
@@ -630,12 +669,20 @@ func (l *loader) resolve(v *modelDef) {
 	default:
 		base = &field{kind: kindType, typ: v.refType, settings: map[string]any{}}
 	}
+	// A list of links is `many: true`, never an array of links.
+	if base.kind == kindLink && v.up != nil {
+		l.report(v.path(), "misplaced", nil)
+		v.failed = true
+		return
+	}
 	var allowed []string
 	switch base.kind {
 	case kindType:
 		allowed = base.typ.meta.Params
 	case kindArray:
 		allowed = []string{"items"}
+	case kindLink:
+		allowed = linkSettings
 	}
 	written, _ := v.raw.(map[string]any)
 	var settings map[string]any
@@ -646,8 +693,13 @@ func (l *loader) resolve(v *modelDef) {
 		}
 	}
 	nullable, items, valueSet := base.nullable, base.items, base.allowed
+	to, many, one := base.to, base.many, base.one
 	failed := false
 	before := len(l.problems)
+	// Only a value can be embedded (DDD's aggregate rule). A copy of an embedding field was checked at its source.
+	if v.ref == refModel && !v.refModel.value {
+		l.report(v.path(), "not_value", nil)
+	}
 	for k := range written {
 		switch {
 		case k == "type":
@@ -662,6 +714,20 @@ func (l *loader) resolve(v *modelDef) {
 				failed = true
 			} else {
 				items = v.items.field
+			}
+		case k == "to":
+			if target, ok := l.linkTarget(v); ok {
+				to = target
+			}
+		case base.kind == kindLink:
+			flag, ok := written[k].(bool)
+			switch {
+			case !ok:
+				l.report(v.path(key(k)), "bad_setting", nil)
+			case k == "many":
+				many = flag
+			default:
+				one = flag
 			}
 		default:
 			if value, ok := l.checkSetting(base.typ, v, k); ok {
@@ -692,11 +758,23 @@ func (l *loader) resolve(v *modelDef) {
 	if slices.Contains(allowed, "scale") && has("scale") && !has("precision") {
 		l.report(v.path(key("scale")), "missing_setting", map[string]any{"setting": "precision"})
 	}
+	if base.kind == kindLink && to == "" && !has("to") {
+		l.report(v.path(), "missing_setting", map[string]any{"setting": "to"})
+	}
+	// Judged on the result, and reported on whichever of the two is written here (`one` if both are).
+	if many && one {
+		if _, here := written["one"]; here {
+			l.report(v.path(key("one")), "conflicting_setting", map[string]any{"setting": "many"})
+		} else {
+			l.report(v.path(key("many")), "conflicting_setting", map[string]any{"setting": "one"})
+		}
+	}
 	if failed || len(l.problems) > before {
 		v.failed = true
 		return
 	}
-	v.field = &field{kind: base.kind, nullable: nullable, typ: base.typ, settings: settings, allowed: valueSet, model: base.model, items: items}
+	v.field = &field{kind: base.kind, nullable: nullable, typ: base.typ, settings: settings, allowed: valueSet, model: base.model, items: items,
+		to: to, many: many, one: one}
 	v.field.unpack()
 	l.fields = append(l.fields, v.field)
 	// The model this field nests, through any `items` (an edge of the nesting graph), and how many `items`
@@ -727,6 +805,32 @@ func (l *loader) resolve(v *modelDef) {
 	default:
 		v.arrays = from.arrays
 	}
+}
+
+// linkTarget is the full name of the entity v's written `to` names, resolved in the domain where it's written,
+// or false once reported. A field part is not_entity whether or not that field exists.
+func (l *loader) linkTarget(v *modelDef) (string, bool) {
+	code := "bad_setting"
+	if s, isText := v.raw.(map[string]any)["to"].(string); isText {
+		code = "unresolved"
+		if domain, name, fieldName, ok := parseRef(s); ok {
+			home := domain
+			if home == "" {
+				home = v.domain
+			}
+			home += ":" + name
+			target := l.nodes[home]
+			if fieldName == "" && target != nil && target.entity {
+				return home, true
+			}
+			_, isType := catalogue.types[name]
+			if fieldName != "" || target != nil || (domain == "" && isType) {
+				code = "not_entity"
+			}
+		}
+	}
+	l.report(v.path(key("to")), code, nil)
+	return "", false
 }
 
 // checkSetting checks the value v's setting k holds against its paramRules rule: the value to keep (an int64,
@@ -906,7 +1010,12 @@ func Models(data any) (*ModelSet, error) {
 	}
 	set := &ModelSet{all: make([]string, 0, len(l.nodes)), byName: make(map[string]*Model, len(l.nodes))}
 	for name, node := range l.nodes {
-		m := &Model{name: name, fields: make(map[string]*field, len(node.list)), entries: make([]entry, 0, len(node.list))}
+		m := &Model{name: name, fields: make(map[string]*field, len(node.list)+1), entries: make([]entry, 0, len(node.list)+1)}
+		// An entity's implicit id: a uuid v7, missing or nil until the record is saved.
+		if node.entity {
+			m.fields[idField] = catalogue.idField
+			m.entries = append(m.entries, entry{idField, catalogue.idField})
+		}
 		for _, d := range node.list {
 			f := d.segments[2].key
 			m.fields[f] = d.field
@@ -991,17 +1100,15 @@ func (w *walker) walk(f *field, v any, at *loc) any {
 		}
 		return nil
 	}
+	if f.kind == kindLink && f.many {
+		return w.ids(f.typ, v, at)
+	}
 	switch f.kind {
-	case kindType:
+	case kindType, kindLink: // a link without many is checked exactly as a field of its id type
 		t := f.typ
 		r, reason := check(t.scalar, v)
-		// The reason is the code; a type-level too_long reads like the field's, with the type's limit as max.
 		if reason != "" {
-			params := map[string]any{"type": t.meta.Name}
-			if reason == ReasonTooLong {
-				params["max"] = int64(t.scalar.(*TextScalar).maxLen)
-			}
-			w.report(at, string(reason), params, t.meta.Error)
+			w.failure(at, t, reason)
 			return nil
 		}
 		if f.limited {
@@ -1059,6 +1166,48 @@ func (w *walker) walk(f *field, v any, at *loc) any {
 	for i, x := range list {
 		here := loc{at, segment{idx: i}}
 		out[i] = w.walk(f.items, x, &here)
+		if w.stopped() {
+			return nil
+		}
+	}
+	return out
+}
+
+// failure reports a scalar's failure: the reason is the code; a type-level too_long reads like the field's, with
+// the type's limit as max.
+func (w *walker) failure(at *loc, t *typeInfo, reason Reason) {
+	params := map[string]any{"type": t.meta.Name}
+	if reason == ReasonTooLong {
+		params["max"] = int64(t.scalar.(*TextScalar).maxLen)
+	}
+	w.report(at, string(reason), params, t.meta.Error)
+}
+
+// ids is a many link's list of ids: each entry a leaf, never nil, compared after cleaning so no id is listed
+// twice.
+func (w *walker) ids(t *typeInfo, v any, at *loc) any {
+	list, ok := v.([]any)
+	if !ok {
+		w.report(at, "not_list", map[string]any{}, "")
+		return nil
+	}
+	out := make([]any, len(list))
+	seen := make(map[string]struct{}, len(list))
+	for i, x := range list {
+		here := loc{at, segment{idx: i}}
+		if x == nil {
+			w.report(&here, "required", map[string]any{}, "")
+		} else if r, reason := check(t.scalar, x); reason != "" {
+			w.failure(&here, t, reason)
+		} else {
+			id := r.(string)
+			if _, dup := seen[id]; dup {
+				w.report(&here, "duplicate", map[string]any{"type": t.meta.Name}, "")
+			} else {
+				seen[id] = struct{}{}
+			}
+			out[i] = id
+		}
 		if w.stopped() {
 			return nil
 		}

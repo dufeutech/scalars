@@ -597,6 +597,13 @@ var hostilePayloads = map[string]func(n int) any{
 		}
 		return p
 	},
+	"wide_many": func(n int) any {
+		tags := make([]any, n)
+		for i := range tags {
+			tags[i] = fmt.Sprintf("018f4b2c-9c1e-7a3b-8f2d-%012x", i)
+		}
+		return map[string]any{"customer": "018f4b2c-9c1e-7a3b-8f2d-1a2b3c4d5e6f", "ship_to": copyMap(address), "items": []any{}, "tags": tags}
+	},
 }
 
 // hostileModels builds the models file of a hostile case that names no load case.

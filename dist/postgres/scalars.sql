@@ -1,4 +1,4 @@
--- scalars.sql, catalogue version 0.8.1.
+-- scalars.sql, catalogue version 0.9.0.
 -- Generated from dist/scalars.json by dev/codegen/postgres.mjs. Do not edit: run `npm run build` in dev/.
 -- Postgres 16+, plain SQL and PL/pgSQL, no extensions. Install or upgrade: psql -v ON_ERROR_STOP=1 -1 -f scalars.sql
 

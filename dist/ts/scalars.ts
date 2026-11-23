@@ -1,4 +1,4 @@
-// scalars.ts, catalogue version 0.8.1.
+// scalars.ts, catalogue version 0.9.0.
 // Generated from dist/scalars.json by dev/codegen/ts.mjs. Do not edit: run `npm run build` in dev/.
 // Requires TypeScript >= 5.6 or Node >= 22.18 (tested on Node 24). Erasable syntax only. No dependencies.
 /**

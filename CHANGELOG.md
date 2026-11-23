@@ -1,6 +1,18 @@
 # Changelog
 
-## Unreleased
+## 0.9.0 — 2026-11-22
+
+### Added
+- **Models describe entities, values and links**, after domain-driven design. Every model is an entity unless it says `"$value": true`; an entity has an implicit `id`, a `uuid_v7` that a payload may leave out or send as `null` (a record not saved yet) and that's checked when present. Only a value can be embedded; another entity is reached by a link.
+- **Links:** `{ "type": "link", "to": "auth:user" }` holds the target's id, checked and cleaned like a `uuid_v7` field. `many: true` makes it many-to-many (a list of ids, none `null`, none twice); `one: true` marks it one-to-one (descriptive: `validate` sees one record at a time). Links can point anywhere, the model's own included, since they're no edges for cycles or depth. A copied link keeps its target and takes overrides like any setting. `validate` checks an id's shape, never that the record exists.
+- New load codes `reserved`, `not_value`, `not_entity`, `conflicting_setting` and `misplaced`, and the payload code `duplicate`, with their templates in `$meta.errors`.
+- `schema/models.schema.json` knows `$value` on a model and `to`, `many` and `one` on a field.
+- The keywords (`id`, `uuid_v7`, `link`, `$value`) are emitted into each generated file once, from the reference, as `MAX_DEPTH` is.
+
+### Changed (breaking)
+- **An embedded model needs `"$value": true`.** A model reference, `items` or copied field that embeds an entity is now `not_value`.
+- A field named `id` and a model named `link` are refused (`reserved`).
+- An entity's cleaned payload gains `id` (`null` when missing), first where the language keeps key order.
 
 ### Removed
 - `link` is no longer an alias of `uri`, so the word means one thing: a models link. `scalars.get("link")` finds nothing; write `url` or `uri`.

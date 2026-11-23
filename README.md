@@ -11,7 +11,7 @@ Download one file into your project and use it. There's no package to install.
 **Python** (3.10 or newer, no dependencies)
 
 ```sh
-curl -O https://raw.githubusercontent.com/dufeutech/scalars/v0.8.1/dist/python/scalars.py
+curl -O https://raw.githubusercontent.com/dufeutech/scalars/v0.9.0/dist/python/scalars.py
 ```
 
 ```python
@@ -28,7 +28,7 @@ except scalars.ScalarError as e:
 **TypeScript** (5.6 or newer, or Node 22.18 or newer; no dependencies)
 
 ```sh
-curl -O https://raw.githubusercontent.com/dufeutech/scalars/v0.8.1/dist/ts/scalars.ts
+curl -O https://raw.githubusercontent.com/dufeutech/scalars/v0.9.0/dist/ts/scalars.ts
 ```
 
 ```ts
@@ -46,8 +46,8 @@ try {
 **Go** (1.21 or newer, needs `golang.org/x/text`)
 
 ```sh
-curl --create-dirs -o scalars/go.mod     https://raw.githubusercontent.com/dufeutech/scalars/v0.8.1/dist/go/go.mod
-curl --create-dirs -o scalars/scalars.go https://raw.githubusercontent.com/dufeutech/scalars/v0.8.1/dist/go/scalars.go
+curl --create-dirs -o scalars/go.mod     https://raw.githubusercontent.com/dufeutech/scalars/v0.9.0/dist/go/go.mod
+curl --create-dirs -o scalars/scalars.go https://raw.githubusercontent.com/dufeutech/scalars/v0.9.0/dist/go/scalars.go
 go mod edit -require=scalars@v0.0.0 -replace=scalars=./scalars
 go mod tidy
 ```
@@ -63,7 +63,7 @@ _, err := scalars.Phone.Validate("4155552671")  // err.Error() is the type's err
 **Rust** (1.80 or newer, needs the `regex` and `serde_json` crates)
 
 ```sh
-curl -o src/scalars.rs https://raw.githubusercontent.com/dufeutech/scalars/v0.8.1/dist/rust/scalars.rs
+curl -o src/scalars.rs https://raw.githubusercontent.com/dufeutech/scalars/v0.9.0/dist/rust/scalars.rs
 cargo add regex serde_json
 ```
 
@@ -78,7 +78,7 @@ let err = scalars::PHONE.validate("4155552671"); // Err(ScalarError): displays t
 **Postgres** (16 or newer, plain SQL, no extensions, so it runs on managed hosts too)
 
 ```sh
-curl -O https://raw.githubusercontent.com/dufeutech/scalars/v0.8.1/dist/postgres/scalars.sql
+curl -O https://raw.githubusercontent.com/dufeutech/scalars/v0.9.0/dist/postgres/scalars.sql
 psql -v ON_ERROR_STOP=1 -1 -f scalars.sql  # creates the scalars schema in one transaction; run it again to upgrade
 ```
 
@@ -110,12 +110,15 @@ A failed `validate` says why with one reason from a fixed set: `wrong_kind`, `ma
 
 A form or request body has several fields, some with settings (`length`, `values`), some nested. Write them once as data, then check a payload against a model. Same file, same rules, same errors in all four languages.
 
-Always three levels: domain → model → field. A field is a type name, another model, or `{ "type": …, ...settings }`.
+Always three levels: domain → model → field. A field is a type name, a value model to embed, or `{ "type": …, ...settings }`, which includes a link to another entity (`{ "type": "link", "to": "auth:user" }`).
 
 ```json
 {
+  "auth": {
+    "user": { "email": "email" }
+  },
   "billing": {
-    "address": { "street": { "type": "string", "length": 200 }, "country": "country" },
+    "address": { "$value": true, "street": { "type": "string", "length": 200 }, "country": "country" },
     "invoice": {
       "status": { "type": "enum", "values": ["draft", "sent", "paid"] },
       "total":  { "type": "decimal", "precision": 12, "scale": 2 },
@@ -123,17 +126,20 @@ Always three levels: domain → model → field. A field is a type name, another
     }
   },
   "shop": {
-    "line_item": { "sku": "gtin", "qty": "int32" },
+    "tag":       { "name": "string" },
+    "line_item": { "$value": true, "sku": "gtin", "qty": "int32" },
     "order": {
-      "bill_to": "billing:address",
-      "items":   { "type": "array", "items": "line_item" },
-      "status":  "billing:invoice.status"
+      "customer": { "type": "link", "to": "auth:user" },
+      "bill_to":  "billing:address",
+      "items":    { "type": "array", "items": "line_item" },
+      "tags":     { "type": "link", "to": "tag", "many": true },
+      "status":   "billing:invoice.status"
     }
   }
 }
 ```
 
-Load it, get a model, validate. The three lines are the same everywhere; `payload` is a parsed JSON object like `{"bill_to": {"street": "1 Main St", "country": " us "}, "items": [{"sku": "4006381333931", "qty": 2}], "status": "sent"}`.
+Load it, get a model, validate. The three lines are the same everywhere; `payload` is a parsed JSON object like `{"customer": "018f4b2c-9c1e-7a3b-8f2d-1a2b3c4d5e6f", "bill_to": {"street": "1 Main St", "country": " us "}, "items": [{"sku": "4006381333931", "qty": 2}], "tags": [], "status": "sent"}`.
 
 ```python
 models = scalars.models(data)            # raises ModelsError listing every problem in the file
@@ -175,8 +181,27 @@ let clean = order.validate(&payload)?; // Err(ModelError), or the cleaned payloa
 - **Rust:** `cargo add regex serde_json`. Data and payloads are `serde_json::Value`.
 - **Python** returns a float for number-kind fields (`3` → `3.0`), as it does for single scalars.
 - Values of `object` and `any` fields come back as given, even inside a list: Python, TypeScript and Go return the input's own object, so the cleaned payload shares it with the payload you passed in. Rust returns a copy. Lists themselves are always new.
-- On success you get the cleaned payload: normalized values, only the declared keys, missing nullable keys as `null`. A missing key and `null` are the same. A key the model doesn't declare is an error.
+- On success you get the cleaned payload: normalized values, only the declared keys, missing nullable keys as `null`. An entity's `id` is one of them: it comes back as `null` when missing, first where the language keeps key order (Python, TypeScript). A missing key and `null` are the same. A key the model doesn't declare is an error.
 - Every bad field is reported, sorted by location. Limits: models nest at most 64 levels (models and `items` combined), and `get` takes the full `domain:model` name only.
+
+### Entities, values and links
+
+The split is domain-driven design's: an **entity** has an identity of its own (a user, an order), a **value** is defined only by its contents (an address, a line item). Values are embedded; another entity is reached by its id.
+
+- Every model is an entity unless it says `"$value": true` (the one `$` key a model may hold; leave it out for an entity). An entity has an implicit field `id`, a `uuid_v7`. A payload may leave it out or send `null` (a record not saved yet); when present it's checked like any `uuid_v7`. No model may declare a field named `id`.
+- Only a value can be embedded: as a field (`"bill_to": "billing:address"`), as `items`, or through a field it copies. Embedding an entity is refused when the file loads (`not_value`): link to it instead.
+- A link is `{ "type": "link", "to": "auth:user", ...settings }`. Its value is the target's id, checked and cleaned exactly like a `uuid_v7` field.
+
+| Setting         | Meaning                                                                    | Checked by `validate`                                        |
+| --------------- | -------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `to` (required) | The entity it points at, `[domain:]model`, found where the link is written | —                                                            |
+| `many`          | `true`: many-to-many. The value is a list of ids                           | each entry a `uuid_v7`, never `null`; no id twice (`duplicate`) |
+| `one`           | `true`: one-to-one. At most one record links to each target                | no: that spans records                                       |
+| `nullable`      | The link (or the whole list) may be missing or `null`                      | yes                                                          |
+
+With neither `many` nor `one`, a link is many-to-one: each order has one customer, a customer has many orders. `many` and `one` together are refused. Only the side holding the id declares the link; the reverse (a user's orders) is for whatever reads the file to derive. A many-to-many whose pairing has data of its own is an entity with two links: `"post_tag": { "post": { "type": "link", "to": "post" }, "tag": { "type": "link", "to": "tag" }, "added_at": "date_time" }`. A link holds an id, not the target's contents, so links never make a cycle and add no nesting level: `"parent": { "type": "link", "to": "category", "nullable": true }` inside `category` is fine. A list of links is `many: true`, never an `array` of links.
+
+`validate` checks an id's shape, never that the record exists: that needs the database. `link` is a word of the models file, not a type (`scalars.get("link")` finds nothing), so no model may be named `link`.
 
 ### References
 
@@ -187,7 +212,7 @@ let clean = order.validate(&payload)?; // Err(ModelError), or the cleaned payloa
 | `billing:address`       | a model in another domain                                        |
 | `billing:invoice.total` | a field of a model in another domain                             |
 
-Settings written next to a reference override the copied ones: `{ "type": "billing:invoice.note", "nullable": false }`. Names are lowercase snake_case. A model can't share a name with a type, and cycles are refused. A top-level `"$schema"` key is ignored, so an editor can check the file against [`schema/models.schema.json`](schema/models.schema.json).
+Settings written next to a reference override the copied ones: `{ "type": "billing:invoice.note", "nullable": false }`. A copied link keeps the target it names where it's written, and takes `to`, `many` and `one` overrides like any setting: `{ "type": "shop:order.customer", "nullable": true }`. Names are lowercase snake_case. A model can't share a name with a type, and cycles are refused. A top-level `"$schema"` key is ignored, so an editor can check the file against [`schema/models.schema.json`](schema/models.schema.json).
 
 ### Settings
 
@@ -200,6 +225,7 @@ Settings written next to a reference override the copied ones: `{ "type": "billi
 | `precision`, `scale`   | Fits Postgres `numeric(p, s)`: extra fraction digits are fine (Postgres rounds), too many integer digits are not. The value comes back unchanged. |
 | `nullable`             | `null` or a missing key is accepted only when `true`.                             |
 | `items`                | On `array`: a field definition for each entry (required).                         |
+| `to`, `many`, `one`    | On `link`: see [Entities, values and links](#entities-values-and-links).          |
 | `fractional_seconds`   | Accepted, not checked: Postgres rounds and never refuses.                         |
 
 Loading the file refuses:
@@ -222,10 +248,11 @@ Each problem is `{ pointer, code, params, message }`: an RFC 6901 JSON Pointer i
 | `too_long`        | `type`, `max`                | `At most {max} characters.`                                 |
 | `not_allowed`     | `type`, `values`             | `Must be one of: {values}.`                                 |
 | `too_many_digits` | `type`, `precision`, `scale` | `Too many digits for precision {precision}, scale {scale}.` |
+| `duplicate`       | `type`                       | `Listed twice.` (an id repeated in a `many` link)           |
 
 A field whose value fails its type reports the reason `validate` gives as its code: `wrong_kind`, `malformed`, `too_short`, `pattern`, `out_of_range`, `check` or `not_in_list` (the list and its order are `$meta.reasons`). The message rule is one: a code with a template in `$meta.errors` uses it, any other uses the type's `error`. So `too_long` reads `At most {max} characters.` whether the limit is the type's own (`char` given `"ab"`: `max` 1) or the field's `length`. Every problem on a type field carries `params.type`.
 
-A bad models file raises `ModelsError` with the same shape, pointing into the file (`/billing/invoice/total/precision`). Its codes are `not_object`, `bad_name`, `type_name` (a model named like a type), `unresolved`, `alias`, `unknown_setting`, `bad_setting`, `missing_setting` and `cycle`, plus `too_deep` for nesting past 64 levels. All the templates are in `$meta.errors` in `dist/scalars.json`.
+A bad models file raises `ModelsError` with the same shape, pointing into the file (`/billing/invoice/total/precision`). Its codes are `not_object`, `bad_name`, `type_name` (a model named like a type), `reserved` (a field named `id`, a model named `link`), `unresolved`, `alias`, `unknown_setting`, `bad_setting`, `missing_setting`, `conflicting_setting` (`many` with `one`), `misplaced` (a link under `items`), `not_value` (an embedded entity), `not_entity` (a link to a value, a type or a field) and `cycle`, plus `too_deep` for nesting past 64 levels. All the templates are in `$meta.errors` in `dist/scalars.json`.
 
 **Translating:** key a catalogue by `code` and fill in the `{params}`; for a code with no template, key by `params.type` (and the code, if you want a message per reason). Problems drop into an [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) response unchanged:
 

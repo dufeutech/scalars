@@ -1962,7 +1962,10 @@ impl<'m> Walker<'m> {
             self.report(at, Reason::TooLong.as_str(), p, None);
         }
         if let Some(values) = field.values.as_ref().filter(|v| !v.set.contains(s)) {
-            let list = params([("type", name.into()), ("values", values.list.clone().into())]);
+            let list = params([
+                ("type", name.into()),
+                ("values", values.list.clone().into()),
+            ]);
             self.report(at, "not_allowed", list, None);
         }
         if let Some(precision) = field

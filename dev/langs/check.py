@@ -244,6 +244,12 @@ HOSTILE = {
     "many_unknown": lambda n: {**ADDRESS, **{f"k{i}": 1 for i in range(n)}},
     "long_decimal": lambda n: {"to": dict(ADDRESS), "status": "draft", "total": "1" + "0" * n},
     "ref_chain": lambda n: {f"f{i}": "a" for i in range(n)},
+    "wide_many": lambda n: {
+        "customer": "018f4b2c-9c1e-7a3b-8f2d-1a2b3c4d5e6f",
+        "ship_to": dict(ADDRESS),
+        "items": [],
+        "tags": [f"018f4b2c-9c1e-7a3b-8f2d-{i:012x}" for i in range(n)],
+    },
 }
 HOSTILE_MODELS = {
     "ref_chain": lambda n: {"app": {"c": {**{f"f{i}": f"c.f{i + 1}" for i in range(n - 1)}, f"f{n - 1}": "string"}}},

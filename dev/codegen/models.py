@@ -4,7 +4,7 @@
 
 from typing import NamedTuple as _NamedTuple
 
-# _MAX_DEPTH, _NAME_PATTERN and _REF_PATTERN are emitted after this file, from dev/lib/models.mjs.
+# _MAX_DEPTH, the models keywords, _NAME_PATTERN and _REF_PATTERN are emitted after this file, from dev/lib/models.mjs.
 _INTERNAL: Final = _Obj()  # the key only models() holds: a Model or Models built by hand would skip load's checks
 
 
@@ -92,7 +92,7 @@ def _sorted(problems: list[tuple[_Any, Problem]]) -> tuple[Problem, ...]:
 class _Catalogue:
     """Built on the first models() call, not at import: the name patterns and the settings each type takes."""
 
-    __slots__ = ("name", "ref", "settings")
+    __slots__ = ("name", "ref", "settings", "id_field")
 
     def __init__(self) -> None:
         # Used with fullmatch, not match: "$" would also accept a final "\n".
@@ -101,6 +101,11 @@ class _Catalogue:
         self.settings: dict[str, tuple[str, ...]] = {}
         for t in all:  # the tuple of types, not the builtin
             self.settings[t.name] = t.params
+        # Every entity's implicit id field, shared by all of them.
+        self.id_field = _Field("type", True, type=_type_named(_ID_TYPE), settings={})
+
+
+_LINK_SETTINGS: Final = ("to", "many", "one")  # the settings a link takes besides `nullable`; models-only, like `items`
 
 
 _catalogue: _Catalogue | None = None
@@ -121,14 +126,16 @@ def _is_integer(v: _Any) -> bool:
 
 
 class _Field:
-    """A resolved field: kind "type" (a scalar and its settings), "model" (a full model name) or "array" (`items`).
-    The settings validate reads are unpacked here once, at load."""
+    """A resolved field: kind "type" (a scalar and its settings), "model" (a full model name), "array" (`items`) or
+    _LINK_KEYWORD (`to`, the full name of the entity it points at; its value is an id, checked by `type`, the
+    _ID_TYPE scalar). The settings validate reads are unpacked here once, at load."""
 
-    __slots__ = ("kind", "nullable", "type", "settings", "allowed", "model", "target", "items", "length", "values",
-                 "precision", "scale", "limited")
+    __slots__ = ("kind", "nullable", "type", "settings", "allowed", "model", "target", "items", "to", "many", "one",
+                 "length", "values", "precision", "scale", "limited")
 
     def __init__(self, kind: str, nullable: bool, *, type: Scalar[_Any] | None = None, settings: dict[str, _Any] | None = None,
-                 allowed: frozenset[str] | None = None, model: str = "", items: _Field | None = None) -> None:
+                 allowed: frozenset[str] | None = None, model: str = "", items: _Field | None = None,
+                 to: str | None = None, many: bool = False, one: bool = False) -> None:
         self.kind = kind
         self.nullable = nullable
         self.type = type
@@ -137,6 +144,10 @@ class _Field:
         self.model = model
         self.target: Model | None = None  # the loaded Model named `model`, bound once the file has loaded
         self.items = items
+        # A link's target (None only on the base a link is built from), and whether it's many-to-many or one-to-one.
+        self.to = to
+        self.many = many
+        self.one = one
         s = {} if settings is None else settings
         self.length = s.get("length")
         self.values = s.get("values")
@@ -158,7 +169,8 @@ class _Def:
         self.up = up
         self.raw = raw
         self.domain = domain
-        self.ref: tuple[str, _Any] | None = None  # ("type", Scalar) | ("model", _Node) | ("field", _Def)
+        # ("type", Scalar) | ("model", _Node) | ("field", _Def) | (_LINK_KEYWORD, None)
+        self.ref: tuple[str, _Any] | None = None
         self.items: _Def | None = None
         self.field: _Field | None = None
         self.leaf: _Node | None = None  # the model this field nests, through any `items`
@@ -183,13 +195,17 @@ class _Def:
 class _Node:
     """A model during load."""
 
-    __slots__ = ("name", "fields", "list", "index", "low", "on_stack", "done", "self_loop")
+    __slots__ = ("name", "fields", "list", "entity", "value", "index", "low", "on_stack", "done", "self_loop")
     is_model = True
 
     def __init__(self, name: str) -> None:
         self.name = name
         self.fields: dict[str, _Def] = {}
         self.list: list[_Def] = []
+        # An entity can be linked to and has an id; a value can be embedded. A bad _VALUE_KEY is reported once and
+        # makes the model both, so embedding it or linking to it reports nothing more.
+        self.entity = True
+        self.value = False
         self.index = -1
         self.low = -1
         self.on_stack = False
@@ -233,6 +249,9 @@ class _Loader:
                 if not self.named(m):
                     self.report([d, m], "bad_name")
                     continue
+                if m == _LINK_KEYWORD:
+                    self.report([d, m], "reserved")
+                    continue
                 if _type_named(m) is not None:
                     self.report([d, m], "type_name")
                     continue
@@ -242,8 +261,18 @@ class _Loader:
                 node = _Node(f"{d}:{m}")
                 self.nodes[node.name] = node
                 for f, raw in fields.items():
+                    if f == _VALUE_KEY:
+                        if raw is True:
+                            node.entity = False
+                        else:
+                            self.report([d, m, f], "bad_setting")
+                        node.value = True
+                        continue
                     if not self.named(f):
                         self.report([d, m, f], "bad_name")
+                        continue
+                    if f == _ID_FIELD:
+                        self.report([d, m, f], "reserved")
                         continue
                     df = _Def([d, m, f], raw, d)
                     node.fields[f] = df
@@ -261,6 +290,9 @@ class _Loader:
             written = raw["type"]
         else:
             return self.report(df.path(), "missing_setting", {"setting": "type"})
+        if written == _LINK_KEYWORD:
+            df.ref = (_LINK_KEYWORD, None)
+            return None
         m = self.cat.ref.fullmatch(written)
         if m is None:
             return self.report(df.path(), "unresolved")
@@ -306,7 +338,7 @@ class _Loader:
         while frame[1] < 2:
             step = frame[1]
             frame[1] = step + 1
-            if step == 0 and v.ref is not None and v.ref[0] != "type":
+            if step == 0 and v.ref is not None and (v.ref[0] == "model" or v.ref[0] == "field"):
                 return v.ref[1]
             if step == 1 and self.takes_items(v):
                 v.items = _Def(None, v.raw["items"], v.domain, v)
@@ -317,9 +349,10 @@ class _Loader:
     def resolve_all(self) -> None:
         """3. Resolution and cycles in one pass: Tarjan's strongly connected components over written fields and
         models, with an explicit stack. Edges: a model reference -> that model; a model -> its fields; a field
-        reference -> the field it copies; an array field -> its `items`. A field's settings, `items` included, are
-        read only once its type resolves, so `items` is an edge only when the resolved type is an array.
-        Components finish dependencies-first, so each field resolves exactly once, after what it copies."""
+        reference -> the field it copies; an array field -> its `items`. A link is no edge: its value is an id, not
+        the target's contents. A field's settings, `items` included, are read only once its type resolves, so
+        `items` is an edge only when the resolved type is an array. Components finish dependencies-first, so each
+        field resolves exactly once, after what it copies."""
         counter = 0
         stack: list[_Any] = []
         for root in self.defs:
@@ -380,21 +413,36 @@ class _Loader:
         kind, target = ref
         if kind == "field":
             base: _Field = target.field
+        elif kind == _LINK_KEYWORD:
+            base = _Field(_LINK_KEYWORD, False, type=self.cat.id_field.type)
         elif kind == "model":
             base = _Field("model", False, model=target.name)
         elif target.name == "array":
             base = _Field("array", False)
         else:
             base = _Field("type", False, type=target, settings={})
+        link = base.kind == _LINK_KEYWORD
+        if link and v.up is not None:
+            # A list of links is `many: true`, never an array of links.
+            self.report(v.path(), "misplaced")
+            v.failed = True
+            return
         typ = base.type if base.kind == "type" else None
-        allowed: tuple[str, ...] = self.cat.settings[typ.name] if typ is not None else ("items",) if base.kind == "array" else ()
+        allowed: tuple[str, ...] = (self.cat.settings[typ.name] if typ is not None else ("items",) if base.kind == "array"
+                                    else _LINK_SETTINGS if link else ())
         written: dict[_Any, _Any] = v.raw if _b.isinstance(v.raw, _b.dict) else {}
         settings = _b.dict(base.settings) if typ is not None else None  # type: ignore[arg-type]
         nullable = base.nullable
         items = base.items
         values_set = base.allowed
+        to = base.to
+        many = base.many
+        one = base.one
         failed = False
         before = _b.len(self.problems)
+        # Only a value can be embedded (DDD's aggregate rule). A copy of an embedding field was checked at its source.
+        if kind == "model" and not target.value:
+            self.report(v.path(), "not_value")
         for key in written:
             if key == "type":
                 continue
@@ -408,6 +456,18 @@ class _Loader:
                     failed = True
                 else:
                     items = v.items.field  # type: ignore[union-attr]
+            elif key == "to":
+                found = self.link_target(v)
+                if found is not None:
+                    to = found
+            elif link:
+                flag = written[key]
+                if not _b.isinstance(flag, _b.bool):
+                    self.report(v.path(key), "bad_setting")
+                elif key == "many":
+                    many = flag
+                else:
+                    one = flag
             elif self.check_setting(typ, v, key):
                 value = written[key]
                 if _b.isinstance(value, _b.list):
@@ -429,6 +489,14 @@ class _Loader:
             self.report(v.path(), "missing_setting", {"setting": "values"})
         if "scale" in allowed and has("scale") and not has("precision"):
             self.report(v.path("scale"), "missing_setting", {"setting": "precision"})
+        if link and to is None and not has("to"):
+            self.report(v.path(), "missing_setting", {"setting": "to"})
+        # Judged on the result, and reported on whichever of the two is written here (`one` if both are).
+        if many and one:
+            if "one" in written:
+                self.report(v.path("one"), "conflicting_setting", {"setting": "many"})
+            else:
+                self.report(v.path("many"), "conflicting_setting", {"setting": "one"})
         if failed or _b.len(self.problems) > before:
             v.failed = True
             return
@@ -436,6 +504,8 @@ class _Loader:
             v.field = _Field("type", nullable, type=typ, settings=settings, allowed=values_set)
         elif base.kind == "array":
             v.field = _Field("array", nullable, items=items)
+        elif link:
+            v.field = _Field(_LINK_KEYWORD, nullable, type=base.type, to=to, many=many, one=one)
         else:
             v.field = _Field("model", nullable, model=base.model)
         self.fields.append(v.field)
@@ -451,6 +521,26 @@ class _Loader:
             src = None
         v.leaf = target if kind == "model" else None if src is None else src.leaf
         v.arrays = 0 if src is None else 1 + src.arrays if src is v.items else src.arrays
+
+    def link_target(self, v: _Def) -> str | None:
+        """The full name of the entity v's written `to` names, resolved in the domain where it's written, or None
+        once reported. A field part is `not_entity` whether or not that field exists."""
+        value = v.raw["to"]
+        m = self.cat.ref.fullmatch(value) if _b.isinstance(value, _b.str) else None
+        if not _b.isinstance(value, _b.str):
+            code = "bad_setting"
+        elif m is None:
+            code = "unresolved"
+        else:
+            domain, name, field = m.groups()
+            home = f"{v.domain if domain is None else domain}:{name}"
+            target = self.nodes.get(home)
+            if field is None and target is not None and target.entity:
+                return home
+            not_entity = field is not None or target is not None or (domain is None and _type_named(name) is not None)
+            code = "not_entity" if not_entity else "unresolved"
+        self.report(v.path("to"), code)
+        return None
 
     def check_setting(self, typ: Scalar[_Any] | None, v: _Def, key: str) -> bool:
         """Checks the value v's `key` holds against its `_PARAM_RULES` rule; reports and returns False when refused."""
@@ -604,15 +694,12 @@ class _Run:
                 self.report(_at(up, seg), "required")
             return None
         kind = f.kind
-        if kind == "type":
+        # A link without `many` is checked exactly as a field of its id type.
+        if kind == "type" or (kind == _LINK_KEYWORD and not f.many):
             t: Scalar[_Any] = f.type  # type: ignore[assignment]
             r = t._check(v)
-            # The reason is the code; a type-level too_long reads like the field's, with the type's limit as max.
             if _b.isinstance(r, _Failure):
-                params: dict[str, _Any] = {"type": t.name}
-                if r.reason == Reason.TOO_LONG:
-                    params["max"] = t._max_len
-                self.report(_at(up, seg), r.reason, params, t.error)
+                self.failure(t, r, _at(up, seg))
                 return None
             if f.limited:
                 length = f.length
@@ -625,6 +712,8 @@ class _Run:
             return r
         # A container's own link is the parent of its entries' links (inline: no call per container).
         at = up if seg is None else (up, seg)
+        if kind == _LINK_KEYWORD:
+            return self.ids(f.type, v, at)  # type: ignore[arg-type]
         if kind == "model":
             if not _b.isinstance(v, _b.dict):
                 self.report(at, "not_object")
@@ -643,6 +732,39 @@ class _Run:
         items: _Field = f.items  # type: ignore[assignment]
         walk = self.walk
         return [walk(items, x, at, i) for i, x in _b.enumerate(v)]
+
+    def failure(self, t: Scalar[_Any], r: _Failure, at: _Any) -> None:
+        """Reports a scalar's failure: the reason is the code; a type-level too_long reads like the field's, with the
+        type's limit as max."""
+        params: dict[str, _Any] = {"type": t.name}
+        if r.reason == Reason.TOO_LONG:
+            params["max"] = t._max_len
+        self.report(at, r.reason, params, t.error)
+
+    def ids(self, t: Scalar[_Any], v: _Any, at: _Any) -> _Any:
+        """A `many` link's list of ids: each entry a leaf, never None, compared after cleaning so no id is listed
+        twice."""
+        if not _b.isinstance(v, _b.list):
+            self.report(at, "not_list")
+            return None
+        out: list[_Any] = []
+        seen: set[_Any] = _b.set()
+        for i, x in _b.enumerate(v):
+            if x is None:
+                self.report((at, i), "required")
+                out.append(None)
+                continue
+            r = t._check(x)
+            if _b.isinstance(r, _Failure):
+                self.failure(t, r, (at, i))
+                out.append(None)
+                continue
+            if r in seen:
+                self.report((at, i), "duplicate", {"type": t.name})
+            else:
+                seen.add(r)
+            out.append(r)
+        return out
 
 
 def _at(up: _Any, seg: _Any) -> _Any:
@@ -712,7 +834,11 @@ def models(data: _Obj) -> Models:
         raise ModelsError(_sorted(loaded.problems))
     by_name: dict[str, Model] = {}
     for node in loaded.nodes.values():
-        by_name[node.name] = Model(_INTERNAL, node.name, {f: d.field for f, d in node.fields.items()})  # type: ignore[misc]
+        # An entity's implicit id comes first: a uuid v7, missing or None until the record is saved.
+        fields: dict[str, _Field] = {_ID_FIELD: cat.id_field} if node.entity else {}
+        for f, d in node.fields.items():
+            fields[f] = d.field  # type: ignore[assignment]
+        by_name[node.name] = Model(_INTERNAL, node.name, fields)
     # Each model field points at its Model once, here, so validate never looks a model up by name.
     for field in loaded.fields:
         if field.kind == "model":

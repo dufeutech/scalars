@@ -3,10 +3,19 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Go HTML Server</title>
+        <title>scalars · fields explorer</title>
+        <link rel="stylesheet" href="static/style.css" />
     </head>
     <body>
-        <h1>Hello from Go!</h1>
-        <p>Simple HTML served using Go net/http.</p>
+        <aside>
+            <header>
+                <h1>scalars <small id="version"></small></h1>
+                <input id="search" type="search" placeholder="Search name, alias, label…" autofocus />
+                <div id="levels"></div>
+            </header>
+            <ul id="list"></ul>
+        </aside>
+        <main id="detail"><p class="muted">Loading…</p></main>
+        <script src="static/index.js"></script>
     </body>
 </html>

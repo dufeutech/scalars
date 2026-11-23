@@ -20,6 +20,8 @@ and links). All languages must give the same answer for every input.
   reference defines the behaviour; the engines follow it.
 - `dev/langs/`: one runner per language and the shared `cases.json`; `go/` also has hand-written Go tests.
 - `dev/test/`: `node --test` suites. `schema/`: JSON Schemas for the source and dist files.
+- `dev/gui/`: a no-dependency fields explorer over `dist/scalars.json` (`go run .` from `dev/gui/`, then
+  http://localhost:8080).
 - `coding/`: the owner's gitignored scratch folder. Leave it alone.
 
 ## Commands

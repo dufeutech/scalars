@@ -1,0 +1,36 @@
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    height: 100vh;
+    font: 14px/1.5 system-ui, sans-serif;
+    color: #222;
+}
+aside { display: flex; flex-direction: column; border-right: 1px solid #ddd; background: #fafafa; min-height: 0; }
+aside header { padding: 12px; border-bottom: 1px solid #ddd; }
+h1 { margin: 0 0 8px; font-size: 18px; }
+h1 small, .muted { color: #888; font-weight: normal; }
+#search { width: 100%; padding: 6px 8px; }
+#levels { display: flex; gap: 10px; margin-top: 8px; font-size: 12px; }
+#list { list-style: none; margin: 0; padding: 0; overflow-y: auto; flex: 1; }
+#list li { padding: 6px 12px; cursor: pointer; display: flex; justify-content: space-between; gap: 8px; }
+#list li:hover { background: #eee; }
+#list li.active { background: #dbe8ff; }
+#list li span { color: #888; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+main { overflow-y: auto; padding: 20px 28px; }
+main h2 { margin: 0; }
+main h3 { margin: 24px 0 6px; font-size: 13px; text-transform: uppercase; color: #666; }
+code, pre { font: 12px ui-monospace, monospace; background: #f3f3f3; border-radius: 4px; }
+code { padding: 1px 4px; }
+pre { padding: 10px; overflow-x: auto; margin: 0; }
+.tag { display: inline-block; padding: 0 6px; margin: 0 4px 4px 0; border-radius: 10px; background: #eee; font-size: 12px; }
+.tag.core { background: #d8f5dd; } .tag.advanced { background: #fff0c8; } .tag.domain { background: #e6ddff; }
+table { border-collapse: collapse; }
+td { padding: 2px 12px 2px 0; vertical-align: top; }
+td:first-child { color: #666; white-space: nowrap; }
+.examples { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.examples ul { margin: 0; padding-left: 18px; }
+.ok { color: #18794e; } .bad { color: #c62828; }
+#try input:not([type=checkbox]), #try textarea, #try select { width: 100%; max-width: 480px; padding: 6px 8px; }
+#try input:invalid, #try textarea:invalid { border-color: #c62828; outline-color: #c62828; }

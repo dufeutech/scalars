@@ -1,6 +1,6 @@
 # Scalars
 
-**One definition per data type that works the same in HTML forms, JSON / OpenAPI and Postgres.**
+**One definition per data type that works the same in Go, Python, Rust, TypeScript and Postgres, plus HTML forms and JSON / OpenAPI.** Models built from those types check whole payloads the same way.
 
 Pick `phone` once and you get the form input (`<input type="tel">`), the JSON rule (`^\+[1-9]\d{1,14}$`), the database column type (`scalars.phone`, enforcing the same rule), a friendly label, a hint, an error message, and examples, all agreeing with each other.
 
@@ -357,7 +357,7 @@ One type in `dist/scalars.json` (shortened):
 - `examples.invalid` values break the rule in `schema` before any cleanup. A few become valid once `normalize` has run: `country` lists `"us"`, which `validate` turns into `"US"`.
 - `examples.db_invalid` holds values that pass the JSON rule but that only the database can reject, like `2026-02-30`.
 - `check` (on a few types) names a rule beyond the pattern, defined in `$meta.checks`: a check digit or a 64-bit range. `examples.check_invalid` holds values that match the pattern but fail it, like a barcode with a wrong last digit.
-- `schema.enum` (on `country`, `country_alpha3`, `currency`) is a closed list, checked after everything else. `examples.list_invalid` holds values that match the pattern but aren't on it.
+- `schema.enum` (on `country`, `country_alpha3`, `currency`, `language`) is a closed list, checked after everything else. `examples.list_invalid` holds values that match the pattern but aren't on it.
 - The rule for matching a word to a type (as `get` does) is in `$meta.lookup`.
 
 **No compatibility promise before 1.0:** a release may rename, move or remove a field when that gives a cleaner design, and the changelog says so (0.8.0 replaced `postgres.check` with `postgres.domain`).

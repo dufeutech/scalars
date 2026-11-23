@@ -1,4 +1,4 @@
-// Dev-only reference loader for models files, as docs/superpowers/specs/2026-11-20-models-design.md describes them.
+// Dev-only reference loader for models files, as the README's models section describes them.
 // Every language engine copies this behaviour; the shared cases are in dev/langs/cases.json under "models".
 // Load is O(file) and iterative: no recursion is driven by the input, so long reference chains can't overflow.
 import { modelOf, paramRules } from "../codegen/model.mjs";

@@ -43,8 +43,13 @@ test("meta carries the error templates", () => {
     const e = out.scalars.$meta.errors;
     assert.equal(e.too_long, "At most {max} characters.");
     assert.deepEqual(Object.keys(e).sort(), [
-        "alias", "bad_name", "bad_setting", "cycle", "missing_setting", "not_allowed", "not_list", "not_object",
-        "required", "too_deep", "too_long", "too_many_digits", "type_name", "unknown_field", "unknown_setting", "unresolved",
+        "alias", "bad_name", "bad_setting", "conflicting_setting", "cycle", "duplicate", "misplaced", "missing_setting",
+        "not_allowed", "not_entity", "not_list", "not_object", "not_value", "required", "reserved", "too_deep", "too_long",
+        "too_many_digits", "type_name", "unknown_field", "unknown_setting", "unresolved",
+    ]);
+    assert.deepEqual([e.reserved, e.not_value, e.not_entity, e.conflicting_setting, e.misplaced, e.duplicate], [
+        "This name is reserved.", "Only a value model can be embedded; link to an entity instead.", "A link must point at an entity.",
+        'Can\'t be used with "{setting}".', "Not allowed here.", "Listed twice.",
     ]);
 });
 

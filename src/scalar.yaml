@@ -99,8 +99,14 @@ $defs:
     too_long: At most {max} characters.
     not_allowed: 'Must be one of: {values}.'
     too_many_digits: Too many digits for precision {precision}, scale {scale}.
+    duplicate: Listed twice.
     bad_name: Names are lowercase letters, digits and underscores, starting with a letter.
     type_name: A model can't take a type's name.
+    reserved: This name is reserved.
+    not_value: Only a value model can be embedded; link to an entity instead.
+    not_entity: A link must point at an entity.
+    conflicting_setting: Can't be used with "{setting}".
+    misplaced: Not allowed here.
     unresolved: No type or model by this name.
     alias: This is an alias; write "{canonical}".
     unknown_setting: This type takes no such setting.
@@ -656,7 +662,6 @@ uri:
   error: That link looks wrong. Try https://example.com/page.
   aliases:
     - url
-    - link
     - website
   format: uri
   examples:

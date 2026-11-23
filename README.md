@@ -271,7 +271,7 @@ Start with the **core** types below; they cover almost everything. Each one also
 | **People and the web**                |                   |                          |                                          |
 | Email address                         | `email`           | `email_address`          | `"user@example.com"`                     |
 | Phone number                          | `phone`           | `tel`, `mobile`          | `"+14155552671"`                         |
-| Web link                              | `uri`             | `url`, `link`            | `"https://example.com/a/b?c=1"`          |
+| Web link                              | `uri`             | `url`, `website`         | `"https://example.com/a/b?c=1"`          |
 | Website name                          | `hostname`        | `domain`                 | `"api.example.com"`                      |
 | Web address name                      | `slug`            | `permalink`              | `"getting-started"`                      |
 | IP address                            | `ipv4`, `ipv6`    | `ip`                     | `"192.0.2.1"`                            |

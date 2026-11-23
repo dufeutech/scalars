@@ -1141,7 +1141,7 @@ const FAIL = {
 const PARAM_RULES: Readonly<Record<string, ParamRule>> = {"length":{"kind":"integer","minimum":1,"maximum":10485760,"minItems":null,"maxItemBytes":null},"precision":{"kind":"integer","minimum":1,"maximum":1000,"minItems":null,"maxItemBytes":null},"scale":{"kind":"integer","minimum":-1000,"maximum":1000,"minItems":null,"maxItemBytes":null},"fractional_seconds":{"kind":"integer","minimum":0,"maximum":6,"minItems":null,"maxItemBytes":null},"values":{"kind":"array","minimum":null,"maximum":null,"minItems":1,"maxItemBytes":63},"nullable":{"kind":"boolean","minimum":null,"maximum":null,"minItems":null,"maxItemBytes":null}};
 
 /** The message template of each error code in $meta.errors. */
-const ERRORS: Readonly<Record<string, string>> = {"required":"Required.","unknown_field":"Not a field of this model.","not_object":"Must be an object.","not_list":"Must be a list.","too_long":"At most {max} characters.","not_allowed":"Must be one of: {values}.","too_many_digits":"Too many digits for precision {precision}, scale {scale}.","bad_name":"Names are lowercase letters, digits and underscores, starting with a letter.","type_name":"A model can't take a type's name.","unresolved":"No type or model by this name.","alias":"This is an alias; write \"{canonical}\".","unknown_setting":"This type takes no such setting.","bad_setting":"Out of range or the wrong kind of value.","missing_setting":"Needs \"{setting}\".","cycle":"This reference leads back to itself.","too_deep":"Models nest more than {max} levels deep."};
+const ERRORS: Readonly<Record<string, string>> = {"required":"Required.","unknown_field":"Not a field of this model.","not_object":"Must be an object.","not_list":"Must be a list.","too_long":"At most {max} characters.","not_allowed":"Must be one of: {values}.","too_many_digits":"Too many digits for precision {precision}, scale {scale}.","duplicate":"Listed twice.","bad_name":"Names are lowercase letters, digits and underscores, starting with a letter.","type_name":"A model can't take a type's name.","reserved":"This name is reserved.","not_value":"Only a value model can be embedded; link to an entity instead.","not_entity":"A link must point at an entity.","conflicting_setting":"Can't be used with \"{setting}\".","misplaced":"Not allowed here.","unresolved":"No type or model by this name.","alias":"This is an alias; write \"{canonical}\".","unknown_setting":"This type takes no such setting.","bad_setting":"Out of range or the wrong kind of value.","missing_setting":"Needs \"{setting}\".","cycle":"This reference leads back to itself.","too_deep":"Models nest more than {max} levels deep."};
 
 /** Nesting deeper than this, each model and each `items` one level, is refused at load. */
 const MAX_DEPTH = 64;
@@ -2216,7 +2216,7 @@ export const scalars = {
         details: "An absolute URI with scheme: links, webhooks, resource locators. International text is percent-encoded and the host is punycode. Prefer uri_reference for relative paths.",
         level: "core",
         primitive: "string",
-        aliases: ["url","link","website"],
+        aliases: ["url","website"],
         examples: { valid: ["https://example.com/a/b?c=1","mailto:user@example.com","urn:isbn:9780306406157"], invalid: [] },
         kind: "text",
     }),

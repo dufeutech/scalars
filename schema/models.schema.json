@@ -32,9 +32,17 @@
             "additionalProperties": { "$ref": "#/$defs/model" }
         },
         "model": {
-            "description": "Fields by name.",
+            "description": "Fields by name. An entity (with an implicit id, a uuid v7) unless \"$value\" is true; only a value can be embedded.",
             "type": "object",
-            "propertyNames": { "$ref": "#/$defs/name" },
+            "propertyNames": {
+                "oneOf": [
+                    { "$ref": "#/$defs/name" },
+                    { "const": "$value" }
+                ]
+            },
+            "properties": {
+                "$value": { "const": true }
+            },
             "additionalProperties": { "$ref": "#/$defs/field" }
         },
         "field": {
@@ -49,9 +57,12 @@
                         "fractional_seconds": { "type": "integer", "minimum": 0, "maximum": 6 },
                         "items": { "$ref": "#/$defs/field" },
                         "length": { "type": "integer", "minimum": 1, "maximum": 10485760 },
+                        "many": { "type": "boolean", "description": "A link: true for many-to-many, the value a list of ids." },
                         "nullable": { "type": "boolean" },
+                        "one": { "type": "boolean", "description": "A link: true for one-to-one." },
                         "precision": { "type": "integer", "minimum": 1, "maximum": 1000 },
                         "scale": { "type": "integer", "minimum": -1000, "maximum": 1000 },
+                        "to": { "$ref": "#/$defs/reference", "description": "A link: the entity it points at, [domain:]model." },
                         "values": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "maxLength": 63, "description": "At most 63 bytes as UTF-8; maxLength counts characters, so loading checks the bytes." } }
                     },
                     "additionalProperties": false

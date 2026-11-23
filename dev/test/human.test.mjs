@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadSources, resolve } from "../lib/resolve.mjs";
 import { lookup } from "../lib/reference.mjs";
+import { LINK_KEYWORD } from "../lib/models.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const types = resolve(loadSources(path.join(root, "src")));
@@ -45,6 +46,7 @@ test("aliases are well formed and unique", () => {
         for (const a of t.aliases ?? []) {
             if (!/^[a-z][a-z0-9_]*$/.test(a)) bad.push(`${t.name}: bad alias ${a}`);
             if (a in types) bad.push(`${t.name}: alias ${a} is a type name`);
+            if (a === LINK_KEYWORD) bad.push(`${t.name}: alias ${a} is a models keyword`);
             if (seen.has(a)) bad.push(`${t.name}: alias ${a} also on ${seen.get(a)}`);
             seen.set(a, t.name);
         }

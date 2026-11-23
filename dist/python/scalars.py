@@ -1114,7 +1114,7 @@ class _FAIL:
 
 
 _PARAM_RULES: Final = {"length": {"kind": "integer", "minimum": 1, "maximum": 10485760, "minItems": None, "maxItemBytes": None}, "precision": {"kind": "integer", "minimum": 1, "maximum": 1000, "minItems": None, "maxItemBytes": None}, "scale": {"kind": "integer", "minimum": -1000, "maximum": 1000, "minItems": None, "maxItemBytes": None}, "fractional_seconds": {"kind": "integer", "minimum": 0, "maximum": 6, "minItems": None, "maxItemBytes": None}, "values": {"kind": "array", "minimum": None, "maximum": None, "minItems": 1, "maxItemBytes": 63}, "nullable": {"kind": "boolean", "minimum": None, "maximum": None, "minItems": None, "maxItemBytes": None}}
-_ERRORS: Final = {"required": "Required.", "unknown_field": "Not a field of this model.", "not_object": "Must be an object.", "not_list": "Must be a list.", "too_long": "At most {max} characters.", "not_allowed": "Must be one of: {values}.", "too_many_digits": "Too many digits for precision {precision}, scale {scale}.", "bad_name": "Names are lowercase letters, digits and underscores, starting with a letter.", "type_name": "A model can't take a type's name.", "unresolved": "No type or model by this name.", "alias": "This is an alias; write \"{canonical}\".", "unknown_setting": "This type takes no such setting.", "bad_setting": "Out of range or the wrong kind of value.", "missing_setting": "Needs \"{setting}\".", "cycle": "This reference leads back to itself.", "too_deep": "Models nest more than {max} levels deep."}
+_ERRORS: Final = {"required": "Required.", "unknown_field": "Not a field of this model.", "not_object": "Must be an object.", "not_list": "Must be a list.", "too_long": "At most {max} characters.", "not_allowed": "Must be one of: {values}.", "too_many_digits": "Too many digits for precision {precision}, scale {scale}.", "duplicate": "Listed twice.", "bad_name": "Names are lowercase letters, digits and underscores, starting with a letter.", "type_name": "A model can't take a type's name.", "reserved": "This name is reserved.", "not_value": "Only a value model can be embedded; link to an entity instead.", "not_entity": "A link must point at an entity.", "conflicting_setting": "Can't be used with \"{setting}\".", "misplaced": "Not allowed here.", "unresolved": "No type or model by this name.", "alias": "This is an alias; write \"{canonical}\".", "unknown_setting": "This type takes no such setting.", "bad_setting": "Out of range or the wrong kind of value.", "missing_setting": "Needs \"{setting}\".", "cycle": "This reference leads back to itself.", "too_deep": "Models nest more than {max} levels deep."}
 _MAX_DEPTH: Final = 64  # nesting deeper than this, each model and each `items` one level, is refused at load
 # A name, and a reference ([domain:]name[.field]); unanchored, for fullmatch (with match, "$" would accept a final "\n").
 _NAME_PATTERN: Final = "[a-z][a-z0-9_]*"
@@ -2527,7 +2527,7 @@ uri: Final[Scalar[str]] = Scalar(
     details="An absolute URI with scheme: links, webhooks, resource locators. International text is percent-encoded and the host is punycode. Prefer uri_reference for relative paths.",
     level="core",
     primitive="string",
-    aliases=("url", "link", "website"),
+    aliases=("url", "website"),
     examples={"valid": ("https://example.com/a/b?c=1", "mailto:user@example.com", "urn:isbn:9780306406157"), "invalid": ()},
     kind="text",
 )

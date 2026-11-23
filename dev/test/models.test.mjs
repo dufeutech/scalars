@@ -5,7 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "../build.mjs";
-import { NAME, REF, fitsNumeric, isValidModel, loadModels, problem, sortProblems, validateModel } from "../lib/models.mjs";
+import { ID_FIELD, ID_TYPE, NAME, REF, fitsNumeric, isValidModel, loadModels, problem, sortProblems, validateModel } from "../lib/models.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const { scalars } = build(root);
@@ -50,6 +50,41 @@ test("fields resolve where they are written", () => {
     assert.equal(over.get("billing:invoice").fields.get("note").nullable, true);
 });
 
+test("links and ids resolve to their shapes", () => {
+    const { models } = loadModels(caseNamed("ok_links").data, scalars);
+    const order = models.get("shop:order").fields;
+    assert.deepEqual([...order.keys()], ["id", "customer", "ship_to", "items", "tags"]);
+    assert.deepEqual(order.get(ID_FIELD), { kind: "type", type: ID_TYPE, settings: {}, nullable: true });
+    assert.deepEqual(order.get("customer"), { kind: "link", to: "auth:user", many: false, one: false, nullable: false });
+    assert.equal(order.get("tags").many, true);
+    assert.equal(order.get("tags").to, "shop:tag");
+    assert.equal(models.get("auth:profile").fields.get("user").one, true);
+    assert.equal(models.get("shop:address").fields.has(ID_FIELD), false);
+});
+
+test("a copied link keeps its home-domain target", () => {
+    const r = loadModels({ a: { user: {}, o: { l: { type: "link", to: "user" } } }, b: { user: {}, p: { m: "a:o.l" } } }, scalars);
+    assert.equal(r.ok, true, JSON.stringify(r.problems));
+    assert.equal(r.models.get("b:p").fields.get("m").to, "a:user");
+});
+
+test("a 50,000-id many list validates in linear time", () => {
+    const m = loadModels(caseNamed("ok_links").data, scalars).models.get("shop:order");
+    const best = (n) => {
+        const payload = HOSTILE.wide_many(n);
+        let ms = Infinity;
+        for (let i = 0; i < 3; i++) {
+            const start = performance.now();
+            assert.equal(validateModel(m, payload).ok, true);
+            ms = Math.min(ms, performance.now() - start);
+        }
+        return ms;
+    };
+    const small = best(50000);
+    const large = best(100000);
+    assert.ok(large < 3 * small, `50,000 ids: ${small.toFixed(1)} ms, 100,000: ${large.toFixed(1)} ms`);
+});
+
 test("a 5,000-long field-reference chain loads without recursion", () => {
     const user = {};
     for (let i = 0; i < 5000; i++) user[`f${i}`] = `user.f${i + 1}`;
@@ -69,8 +104,8 @@ test("a 20,000-deep items chain is refused at each field holding it, and a probl
 
 test("a 5,000-long model chain is refused once, at the outermost model", () => {
     const app = {};
-    for (let i = 0; i < 5000; i++) app[`m${i}`] = { n: `m${i + 1}` };
-    app.m5000 = { n: "string" };
+    for (let i = 0; i < 5000; i++) app[`m${i}`] = { $value: true, n: `m${i + 1}` };
+    app.m5000 = { $value: true, n: "string" };
     const r = loadModels({ app }, scalars);
     assert.deepEqual(r.problems.map((p) => p.pointer), ["/app/m0/n"]);
 });
@@ -165,6 +200,12 @@ const HOSTILE = {
     many_unknown: (n) => { const p = { ...ADDRESS }; for (let i = 0; i < n; i++) p[`k${i}`] = 1; return p; },
     long_decimal: (n) => ({ to: ADDRESS, status: "draft", total: "1" + "0".repeat(n) }),
     ref_chain: (n) => { const p = {}; for (let i = 0; i < n; i++) p[`f${i}`] = "a"; return p; },
+    wide_many: (n) => ({
+        customer: "018f4b2c-9c1e-7a3b-8f2d-1a2b3c4d5e6f",
+        ship_to: ADDRESS,
+        items: [],
+        tags: Array.from({ length: n }, (_, i) => "018f4b2c-9c1e-7a3b-8f2d-" + i.toString(16).padStart(12, "0")),
+    }),
 };
 /** Hostile kinds without a load case build their models file from the count. */
 const HOSTILE_MODELS = {
@@ -245,12 +286,14 @@ test("schema refuses bad names and unknown settings", async () => {
     assert.ok(!validate({ app: { user: { x: { type: "array", items: { type: "string", nullable: 1 } } } } }), "a nested bad setting");
     assert.ok(!validate({ app: { user: { x: "Not a ref" } } }), "a bad reference");
     assert.ok(!validate({ app: { "user-1": {} } }), "a bad model name");
+    assert.ok(!validate({ app: { user: { $value: false } } }), "$value is true or absent");
+    assert.ok(!validate({ app: { user: { $note: 1 } } }), "no other $ key in a model");
     assert.ok(validate({ $schema: "../schema/models.schema.json", app: { user: { x: "billing:invoice.total" } } }));
 });
 
-test("schema setting keys are the $meta.params keys plus items", () => {
+test("schema setting keys are the $meta.params keys plus items, to, many and one", () => {
     const keys = Object.keys(modelsSchema.$defs.field.oneOf.find((s) => s.type === "object").properties).filter((k) => k !== "type");
-    assert.deepEqual([...keys].sort(), [...Object.keys(scalars.$meta.params), "items"].sort());
+    assert.deepEqual([...keys].sort(), [...Object.keys(scalars.$meta.params), "items", "to", "many", "one"].sort());
     assert.equal(new RegExp(modelsSchema.$defs.name.pattern).source, NAME.source);
     assert.equal(new RegExp(modelsSchema.$defs.reference.pattern).source, REF.source);
 });

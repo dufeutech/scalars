@@ -8,6 +8,15 @@ export const NAME = /^[a-z][a-z0-9_]*$/;
 export const REF = /^(?:([a-z][a-z0-9_]*):)?([a-z][a-z0-9_]*)(?:\.([a-z][a-z0-9_]*))?$/;
 /** Nesting deeper than this, each model and each `items` one level, is refused at load: it bounds a payload's depth. */
 export const MAX_DEPTH = 64;
+/** Every entity's implicit field, and its type. No model may declare a field by this name. */
+export const ID_FIELD = "id";
+export const ID_TYPE = "uuid_v7";
+/** The type of a link field. No model may take this name, so a field's `"type": "link"` always means a link. */
+export const LINK_KEYWORD = "link";
+/** The one `$` key a model may hold: `true` makes it a value, the only kind that can be embedded. */
+export const VALUE_KEY = "$value";
+/** The settings a link takes besides `nullable`. Models-only, like `items`: not in `$meta.params`. */
+const LINK_SETTINGS = ["to", "many", "one"];
 /** A field's `values` array → its Set, built at load so validate looks a value up in O(1). */
 const valueSets = new WeakMap();
 
@@ -124,12 +133,22 @@ export function loadModels(data, scalars) {
         if (!isObject(domain)) { report([d], "not_object"); continue; }
         for (const [m, fields] of Object.entries(domain)) {
             if (!NAME.test(m)) { report([d, m], "bad_name"); continue; }
+            if (m === LINK_KEYWORD) { report([d, m], "reserved"); continue; }
             if (Object.hasOwn(types, m)) { report([d, m], "type_name"); continue; }
             if (!isObject(fields)) { report([d, m], "not_object"); continue; }
-            const model = { isModel: true, name: `${d}:${m}`, fields: new Map(), list: [] };
+            // An entity can be linked to and has an id; a value can be embedded. A bad `$value` is reported once
+            // and makes the model both, so embedding it or linking to it reports nothing more.
+            const model = { isModel: true, name: `${d}:${m}`, fields: new Map(), list: [], entity: true, value: false };
             models.set(model.name, model);
             for (const [f, raw] of Object.entries(fields)) {
+                if (f === VALUE_KEY) {
+                    if (raw === true) model.entity = false;
+                    else report([d, m, f], "bad_setting");
+                    model.value = true;
+                    continue;
+                }
                 if (!NAME.test(f)) { report([d, m, f], "bad_name"); continue; }
+                if (f === ID_FIELD) { report([d, m, f], "reserved"); continue; }
                 const def = newDef([d, m, f], raw, d);
                 model.fields.set(f, def);
                 model.list.push(def);
@@ -146,6 +165,7 @@ export function loadModels(data, scalars) {
         else if (!isObject(raw)) return report(pathOf(def), "bad_setting");
         else if (Object.hasOwn(raw, "type") && typeof raw.type === "string") written = raw.type;
         else return report(pathOf(def), "missing_setting", { setting: "type" });
+        if (written === LINK_KEYWORD) { def.ref = { kind: "link" }; return; }
         const m = REF.exec(written);
         if (!m) return report(pathOf(def), "unresolved");
         const [, domain, name, field] = m;
@@ -163,8 +183,9 @@ export function loadModels(data, scalars) {
 
     // 3. Resolution and cycles in one pass: Tarjan's strongly connected components over written fields and
     // models, with an explicit stack. Edges: a model reference → that model; a model → its fields; a field
-    // reference → the field it copies; an array field → its `items`. A field's settings, `items` included, are
-    // read only once its type resolves, so `items` is an edge only when the resolved type is an array.
+    // reference → the field it copies; an array field → its `items`. A link is no edge: its value is an id, not
+    // the target's contents. A field's settings, `items` included, are read only once its type resolves, so
+    // `items` is an edge only when the resolved type is an array.
     // Components finish dependencies-first, so each field resolves exactly once, after what it copies.
     const takesItems = (v) => {
         if (!v.ref || !isObject(v.raw) || !Object.hasOwn(v.raw, "items")) return false;
@@ -177,7 +198,7 @@ export function loadModels(data, scalars) {
         if (v.isModel) return frame.step < v.list.length ? v.list[frame.step++] : null;
         while (frame.step < 2) {
             const step = frame.step++;
-            if (step === 0 && v.ref && v.ref.kind !== "type") return v.ref.target;
+            if (step === 0 && (v.ref?.kind === "model" || v.ref?.kind === "field")) return v.ref.target;
             if (step === 1 && takesItems(v)) {
                 v.items = newDef(null, v.raw.items, v.domain, v);
                 parse(v.items);
@@ -237,21 +258,33 @@ export function loadModels(data, scalars) {
         const { ref, raw } = v;
         if (!ref || (ref.kind === "field" && ref.target.failed)) { v.failed = true; return; }
         const base = ref.kind === "field" ? ref.target.field
+            : ref.kind === "link" ? { kind: "link", to: null, many: false, one: false, nullable: false }
             : ref.kind === "model" ? { kind: "model", model: ref.target.name, nullable: false }
             : ref.type.name === "array" ? { kind: "array", items: null, nullable: false }
             : { kind: "type", type: ref.type.name, settings: {}, nullable: false };
+        const link = base.kind === "link";
+        // A list of links is `many: true`, never an array of links.
+        if (link && v.up) { report(pathOf(v), "misplaced"); v.failed = true; return; }
         const type = base.kind === "type" ? types[base.type] : null;
-        const allowed = type ? cat.settings.get(base.type) : base.kind === "array" ? ["items"] : [];
+        const allowed = type ? cat.settings.get(base.type) : base.kind === "array" ? ["items"] : link ? LINK_SETTINGS : [];
         const written = isObject(raw) ? raw : {};
         const settings = type ? { ...base.settings } : null;
-        let { nullable, items } = base;
+        let { nullable, items, to, many, one } = base;
         let failed = false;
         const before = problems.length;
+        // Only a value can be embedded (DDD's aggregate rule). A copy of an embedding field was checked at its source.
+        if (ref.kind === "model" && !ref.target.value) report(pathOf(v), "not_value");
         for (const key of Object.keys(written)) {
             if (key === "type") continue;
             if (key === "nullable") { if (checkSetting(null, v, key)) nullable = written[key]; }
             else if (!allowed.includes(key)) report(pathOf(v, key), "unknown_setting");
             else if (key === "items") { if (v.items.failed) failed = true; else items = v.items.field; }
+            else if (key === "to") to = linkTarget(v) ?? to;
+            else if (link) {
+                if (typeof written[key] !== "boolean") report(pathOf(v, key), "bad_setting");
+                else if (key === "many") many = written[key];
+                else one = written[key];
+            }
             // A list setting (`values`) is copied, so the loaded models never alias the caller's data.
             else if (checkSetting(type, v, key)) settings[key] = Array.isArray(written[key]) ? [...written[key]] : written[key];
         }
@@ -260,9 +293,16 @@ export function loadModels(data, scalars) {
         if (base.kind === "array" && items === null && !has("items")) report(pathOf(v), "missing_setting", { setting: "items" });
         if (type?.name === "enum" && !has("values")) report(pathOf(v), "missing_setting", { setting: "values" });
         if (allowed.includes("scale") && has("scale") && !has("precision")) report(pathOf(v, "scale"), "missing_setting", { setting: "precision" });
+        if (link && to === null && !has("to")) report(pathOf(v), "missing_setting", { setting: "to" });
+        // Judged on the result, and reported on whichever of the two is written here (`one` if both are).
+        if (many && one) {
+            if (Object.hasOwn(written, "one")) report(pathOf(v, "one"), "conflicting_setting", { setting: "many" });
+            else report(pathOf(v, "many"), "conflicting_setting", { setting: "one" });
+        }
         if (failed || problems.length > before) { v.failed = true; return; }
         v.field = type ? { kind: "type", type: base.type, settings, nullable }
             : base.kind === "array" ? { kind: "array", items, nullable }
+            : link ? { kind: "link", to, many, one, nullable }
             : { kind: "model", model: base.model, nullable };
         // Once per written `values`: copies share the array.
         if (settings?.values && !valueSets.has(settings.values)) valueSets.set(settings.values, new Set(settings.values));
@@ -273,6 +313,27 @@ export function loadModels(data, scalars) {
             : ref.kind === "field" ? ref.target : null;
         v.leaf = ref.kind === "model" ? ref.target : from ? from.leaf : null;
         v.arrays = !from ? 0 : from === v.items ? 1 + from.arrays : from.arrays;
+    }
+
+    /**
+     * The full name of the entity v's written `to` names, resolved in the domain where it's written, or null
+     * once reported. A field part is `not_entity` whether or not that field exists.
+     */
+    function linkTarget(v) {
+        const value = v.raw.to;
+        const m = typeof value === "string" ? REF.exec(value) : null;
+        let code;
+        if (typeof value !== "string") code = "bad_setting";
+        else if (!m) code = "unresolved";
+        else {
+            const [, domain, name, field] = m;
+            const home = `${domain ?? v.domain}:${name}`;
+            const target = models.get(home);
+            if (field === undefined && target?.entity) return home;
+            code = field !== undefined || target || (domain === undefined && Object.hasOwn(types, name)) ? "not_entity" : "unresolved";
+        }
+        report(pathOf(v, "to"), code);
+        return null;
     }
 
     /** Checks the value v's `key` holds against its `$meta.params` rule; reports and returns false when refused. */
@@ -349,7 +410,9 @@ export function loadModels(data, scalars) {
     // visible shape.
     const context = { types, $meta, get };
     for (const m of models.values()) {
-        const model = { name: m.name, fields: new Map([...m.fields].map(([f, def]) => [f, def.field])) };
+        // An entity's implicit id comes first: a uuid v7, missing or null until the record is saved.
+        const id = m.entity ? [[ID_FIELD, { kind: "type", type: ID_TYPE, settings: {}, nullable: true }]] : [];
+        const model = { name: m.name, fields: new Map([...id, ...[...m.fields].map(([f, def]) => [f, def.field])]) };
         Object.defineProperty(model, "context", { value: context });
         // [name, field] in declared order, built once here rather than per payload object.
         Object.defineProperty(model, "entries", { value: [...model.fields] });
@@ -421,6 +484,16 @@ function run(model, payload, first) {
         if (typeof key === "number") out[key] = value;
         else Object.defineProperty(out, key, { value, writable: true, enumerable: true, configurable: true });
     };
+    /** Validates a scalar against its type, reporting the reason; the cleaned value, or undefined if refused. */
+    const scalar = (type, value, at) => {
+        const r = validate(type, value);
+        if (r.ok) return r.value;
+        // The reason is the code; a type-level too_long reads like the field's, with the type's limit as max.
+        const params = r.reason === "too_long" ? { type: type.name, max: modelOf(type).maxLen } : { type: type.name };
+        report(at, r.reason, params, type.error);
+        return undefined;
+    };
+    const idType = types[ID_TYPE];
     while (pending.length) {
         if (first && problems.length) break;
         const { field, value, at, out, key } = pending.pop();
@@ -445,20 +518,33 @@ function run(model, payload, first) {
             const list = new Array(value.length);
             put(out, key, list);
             for (let i = value.length - 1; i >= 0; i--) pending.push({ field: field.items, value: value[i], at: { up: at, seg: i }, out: list, key: i });
+        } else if (field.kind === "link" && field.many) {
+            // A list of ids: each entry a leaf, never null, compared after cleaning so no id is listed twice.
+            if (!Array.isArray(value)) { report(at, "not_list"); continue; }
+            const list = new Array(value.length);
+            put(out, key, list);
+            const seen = new Set();
+            for (let i = 0; i < value.length && !(first && problems.length); i++) {
+                const here = { up: at, seg: i };
+                if (value[i] === null || value[i] === undefined) { report(here, "required"); continue; }
+                const id = scalar(idType, value[i], here);
+                if (id === undefined) continue;
+                if (seen.has(id)) report(here, "duplicate", { type: ID_TYPE });
+                else seen.add(id);
+                list[i] = id;
+            }
+        } else if (field.kind === "link") {
+            const id = scalar(idType, value, at);
+            if (id !== undefined) put(out, key, id);
         } else {
             const type = types[field.type];
-            const r = validate(type, value);
-            // The reason is the code; a type-level too_long reads like the field's, with the type's limit as max.
-            if (!r.ok) {
-                const params = r.reason === "too_long" ? { type: type.name, max: modelOf(type).maxLen } : { type: type.name };
-                report(at, r.reason, params, type.error);
-                continue;
-            }
+            const v = scalar(type, value, at);
+            if (v === undefined) continue;
             const { length, values, precision, scale = 0 } = field.settings;
-            if (length !== undefined && codePoints(r.value) > length) report(at, "too_long", { type: type.name, max: length });
-            if (values !== undefined && !valueSets.get(values).has(r.value)) report(at, "not_allowed", { type: type.name, values: [...values] });
-            if (precision !== undefined && !fitsNumeric(r.value, precision, scale)) report(at, "too_many_digits", { type: type.name, precision, scale });
-            put(out, key, r.value);
+            if (length !== undefined && codePoints(v) > length) report(at, "too_long", { type: type.name, max: length });
+            if (values !== undefined && !valueSets.get(values).has(v)) report(at, "not_allowed", { type: type.name, values: [...values] });
+            if (precision !== undefined && !fitsNumeric(v, precision, scale)) report(at, "too_many_digits", { type: type.name, precision, scale });
+            put(out, key, v);
         }
     }
     return problems.length ? { ok: false, problems: sortProblems(problems) } : { ok: true, value: holder[0] };

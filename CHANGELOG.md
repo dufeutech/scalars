@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+### Removed
+- `link` is no longer an alias of `uri`, so the word means one thing: a models link. `scalars.get("link")` finds nothing; write `url` or `uri`.
+
 ## 0.8.1 — 2026-11-22
 
 ### Fixed

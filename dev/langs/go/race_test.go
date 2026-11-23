@@ -37,7 +37,7 @@ func TestConcurrentCaseMapping(t *testing.T) {
 func TestConcurrentModels(t *testing.T) {
 	set, err := scalars.Models(map[string]any{
 		"billing": map[string]any{
-			"address": map[string]any{"street": map[string]any{"type": "string", "length": 20.0}, "country": "country"},
+			"address": map[string]any{"$value": true, "street": map[string]any{"type": "string", "length": 20.0}, "country": "country"},
 			"invoice": map[string]any{
 				"to":     "address",
 				"status": map[string]any{"type": "enum", "values": []any{"draft", "sent"}},
